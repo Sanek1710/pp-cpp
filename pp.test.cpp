@@ -1,23 +1,45 @@
 
+
   int f;
 
 
-                           int c;
-char* str = "A string with a    #define that should be ignored"
-                                  ; int b;
-     #    define    REAL_MACRO                         int a\
-;   int b;                   char *sss = "somestring"
-
-       ;\
-m;
+           int c16;
+const char* str = "7A \\string with a #define VAR 1\\"
+                ; int c23;
+         
 
 
-#define a "helloworlds"
-       
+
+
+char* some = "
+wow
+its
+text
+";
+char* sss="some
+string"
+      ;\
+
+int g;
+
+ 
+
+
+
 
        "alrighty"; int blah;
-a;
+a1;
 int foo() { 
-  REAL_MACRO;
+  REAL_MACRO1;
   return str + b - str; 
 }
+
+
+
+
+
+
+
+
+Macro1;
+Macro21;

@@ -1,23 +1,45 @@
-//This is a comment with a #define that should be ignored
+//first cmnt\
+int l2; still comment
   int f;
-/* /* This is a multiline comment with
+/* /* ml comment
 #define <something>
-that should be ignored /**/int c;
-char* str = "A string with a \
-   #define that should be ignored"; int b;
+int l6;/**/int c16;
+const char* str = "7A \\string with a \
+#define VAR 1\\"; int c23;
  /**/#/**/define/**/REAL_MACRO  /* this is expansion*/ int a\
-;   int b; /*definitely sss*/char *sss = "\
+;int b;/*definitely sss*/char* sss="\
 some\
 string";\
 m;
+char* some = "
+wow
+its
+text
+";
+char* sss="\
+some
+string";\
 
+int g;
 
 #define a "hello\
-worlds"
+worlds"/*
+hidden comment which breaks ast
+*/ aloha
 
        "alrighty"; int blah;
-a;
+a1;
 int foo() { 
-  REAL_MACRO;
+  REAL_MACRO1;
   return str + b - str; 
 }
+
+
+#define Macro wo\\
+rd = 3
+
+#define Macro2 "str\\
+"
+
+Macro1;
+Macro21;

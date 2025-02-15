@@ -102,7 +102,7 @@ int main() {
   // std::cerr << source_code << "\n";
   std::string out = MicroParser{source_code}.process();
   // std::string out = parse_code(source_code);
-  write_file("pp.test.cpp", out);
+  write_file("/mnt/d/Projects/pp-cpp/pp.test.cpp", out);
   // std::cerr << out << "\n";
   return 0;
 }
