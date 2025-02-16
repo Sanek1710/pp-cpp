@@ -4,6 +4,9 @@ project(pp-cpp LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(pp-cpp main.cpp)
-target_link_libraries(pp-cpp PRIVATE)
+add_subdirectory(third-party)
 
+add_executable(pp-cpp main.cpp)
+
+add_executable(perftest perftest.cpp)
+target_link_libraries(perftest unordered_dense)
