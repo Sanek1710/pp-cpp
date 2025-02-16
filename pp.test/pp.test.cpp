@@ -1,3 +1,6 @@
+""
+ int f0;
+
 
 
   int f;
@@ -5,58 +8,85 @@
 
            int c16;
 
-_______CASE_______etuetuetu;
-       
-/gbg
-define arr 5
-
-int b = arr;
-_______CASE_______dhmdmhfdmfh;
-
 const char* str = "7A \\string with a #define VAR 1\\"
                 ; int c23;
-           /* this is expansion*/ int a\
-// ;int b;/*definitely sss*/char* sss="\
-// some\
-// string";\
-// m;
-// char* some = "
-// wow
-// its
-// text
-// ";
 
-_______CASE_______dyktdkydkykh;
+char* some = "
+wow
+"; c4;
 
 char* sss="(some
 string)"
         ;\
 
-int g;
+"\\"; c7;
+""; c5;
+    ; c7;
 
-_______CASE_______shfmsmhfsmhf;
+; c3;
 
 
-  "hello\
-worlds"/*
-hidden comment which breaks ast
-*/ aloha
 
-_______CASE_______jvabssbkvbks;
-      
-a1;
+
+
+____MACRO_MAGIC____;
+
+
+
+
+
+
+
+
+
+
+
+
+
+CAT              (          1,      
+    
+  2     
+  );
+MACRO(1,2, 3, 4);
+
+    
+
+
+
+#       
+
+define arr 5
+
+                                             "some
+string"
+       
+
+
+
+
+
+"helloworlds"
+       
+
+  
+
+
+
+
 int foo() { 
   REAL_MACRO1;
   return str + b - str; 
 }
 
-_______CASE_______klhkgfmfmg;
+#pragma once
 
- wo\\
-rd = 3
 
- "str\\
+
+
+"str\\
 "
+
 
 Macro1;
 Macro21;
+

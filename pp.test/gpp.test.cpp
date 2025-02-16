@@ -4,6 +4,9 @@
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 1 "<command-line>" 2
 # 1 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+""int
+     f0;
+
 
 
   int f;
@@ -11,50 +14,61 @@
 
            int c16;
 
-_______CASE_______etuetuetu;
-
-
-
-
-
-
-# 1 "/mnt/d/Projects/pp-cpp/pp.test/empty.h" 1
-# 16 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp" 2
-
-
-define arr 5
-
-int b = arr;
-_______CASE_______dhmdmhfdmfh;
-
 const char* str = "7A \\string with a #define VAR 1\\";
                   int c23;
-# 36 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
-_______CASE_______dyktdkydkykh;
+
+char* some = "
+wow
+"; c4;
 
 char* sss="(some
 
 string)";
 
-int g;
+"\\"; c7;
+""; c5;
+    ; c7;
 
-_______CASE_______shfmsmhfsmhf;
-
-
-
-
+; c3;
 
 
 
-_______CASE_______jvabssbkvbks;
 
-a1;
+
+____MACRO_MAGIC____;
+# 46 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+12
+
+
+   ;
+1 + 2; 3, 4;
+
+
+
+# 1 "/mnt/d/Projects/pp-cpp/pp.test/empty.h" 1
+# 55 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp" 2
+
+
+
+define arr 5
+
+
+
+
+string";m;
+
+
+
+
+
+
+
 int foo() {
   REAL_MACRO1;
   return str + b - str;
 }
 
-_______CASE_______klhkgfmfmg;
+       
 
 
 
