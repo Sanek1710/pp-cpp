@@ -13,6 +13,175 @@
 #include <tuple>
 #include <vector>
 
+struct Position {
+  unsigned offset;
+  unsigned line;
+  unsigned column;
+};
+
+struct PPCursor {
+  std::string_view src;
+  unsigned ahead = 0;
+  unsigned line_start_offset = 0;
+  unsigned nline = 0;
+  char c[2] = {0, 0};
+  // 2 more byte
+
+  PPCursor(std::string_view src, bool at_line_start = true) : src(src) {
+    c[1] = src.empty() ? 0 : src[0];
+    shift();
+  }
+
+  constexpr char getc() const { return c[0]; };
+  constexpr char get_next() const { return c[1]; };
+
+  constexpr bool at(char current) const { return c[0] == current; }
+  constexpr bool at(char current, char next) const {
+    return c[0] == current && c[1] == next;
+  }
+  constexpr bool at(char current, char next, char third) const {
+    return c[0] == current && c[1] == next &&  //
+           (ahead + 1 < src.size()) && src[ahead + 1] == third;
+  }
+
+  constexpr bool atalpha() const { return std::isalpha(c[0]); }
+  constexpr bool atalnum() const { return std::isalnum(c[0]); }
+  constexpr bool atspace() const { return std::isspace(c[0]); }
+  constexpr bool atdigit() const { return std::isdigit(c[0]); }
+
+  constexpr unsigned offset() const { return ahead - 1; }
+  constexpr unsigned line() const { return nline; }
+
+  constexpr std::string_view substr(unsigned from_offset) const {
+    return src.substr(from_offset, offset() - from_offset);
+  }
+
+  Position position() const {
+    return Position{.offset = offset(),
+                    .line = nline,
+                    .column = offset() - line_start_offset};
+  }
+
+  inline bool shift() {
+    if (c[0] == '\n') {
+      line_start_offset = ahead;
+      ++nline;
+    }
+    c[0] = c[1];
+    return c[1] = ++ahead < src.size() ? src[ahead] : 0;
+  }
+};
+
+class PPRunner {
+  PPRunner(PPCursor cursor) {}
+
+  // assuming we're at valid start of those tokens
+  void skip_line_comment(PPCursor& cursor) {
+    while (cursor.shift()) {
+      if (cursor.at('\n')) break;
+      if (cursor.at('\\', '\n')) {
+        cursor.shift();
+        continue;
+      }
+    }
+    cursor.shift();
+    cursor.shift();
+  }
+
+  void skip_multiline_comment(PPCursor& cursor) {
+    cursor.shift();
+    while (cursor.shift()) {
+      if (cursor.at('*', '/')) break;
+    }
+    cursor.shift();
+    cursor.shift();
+  }
+
+  void skip_string_like_literal(PPCursor& cursor) {
+    char quot = cursor.getc();
+    while (cursor.shift()) {
+      if (cursor.at(quot)) break;
+      if (cursor.at('\\')) cursor.shift();
+    }
+    cursor.shift();
+  }
+
+  std::string_view get_identifier(PPCursor& cursor) {
+    if (!cursor.at('_') && !cursor.atalpha()) return {};
+    auto start = cursor.offset();
+    while (cursor.shift()) {
+      if (!cursor.at('_') && !cursor.atalnum()) break;
+    }
+    return cursor.substr(start);
+  }
+
+  std::string_view get_macro_expansion(PPCursor& cursor) {
+    auto start = cursor.offset();
+    while (true) {
+      if (cursor.at('\n')) break;
+      if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+        continue;
+      }
+      if (cursor.at('\\', '\n')) cursor.shift();
+      cursor.shift();
+    }
+    cursor.shift();
+    return cursor.substr(start);
+  }
+
+  void skip_line_extras(PPCursor& cursor) {
+    while (true) {
+      if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+        continue;
+      }
+      if (cursor.at('\\', '\n')) {
+        cursor.shift();
+        cursor.shift();
+        continue;
+      }
+      if (!cursor.atspace() || cursor.at('\n')) break;
+      cursor.shift();
+    }
+  }
+
+  void dfkjnv(PPCursor& cursor) {
+    do {
+      if (cursor.at('/', '/')) {
+        skip_line_comment(cursor);
+      } else if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+      } else if (cursor.at('\\', '\n')) {
+        cursor.shift();
+        cursor.shift();
+      } else {
+        break;
+      }
+      continue;
+    } while (false);
+  }
+
+
+
+  void skip_extras(PPCursor& cursor) {
+    while (true) {
+      if (cursor.at('/', '/')) {
+        skip_line_comment(cursor);
+      } else if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+      } else if (cursor.at('\\', '\n')) {
+        cursor.shift();
+        cursor.shift();
+      } else if (!cursor.atspace()) {
+        break;
+      } else {
+        cursor.shift();
+      }
+    }
+  }
+};
+
 class CheckInner {
  public:
   CheckInner(const char* name) : name(name) {
