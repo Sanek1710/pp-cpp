@@ -12,4 +12,6 @@ add_executable(perftest perftest.cpp)
 target_link_libraries(perftest unordered_dense)
 
 add_executable(pp-cursored PPCursored.cpp)
-target_link_libraries(perftest unordered_dense)
+target_link_libraries(pp-cursored unordered_dense)
+
+add_compile_definitions(pp-cursored PRIVATE ROOT="${PROJECT_SOURCE_DIR}")

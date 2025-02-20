@@ -1,4 +1,5 @@
 
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <string_view>
@@ -75,14 +76,21 @@ struct PPCursorBase {
       ++nline;
     }
     ++it;
+    c = it < end ? *it : 0;
     if constexpr (skip_line_continuation) {
-      if (it < end && at('\\', '\n')) {
+      if (eval_at('\\') && next_at('\n')) {
         skip(2);
+        c = it < end ? *it : 0;
         line_start_offset = offset();
         ++nline;
       }
     }
-    return c = it < end ? *it : 0;
+    return c;
+  }
+
+ private:
+  inline constexpr bool eval_at(char current) const {
+    return it < end && *it == current;
   }
 };
 
@@ -116,9 +124,15 @@ void skip_multiline_comment(PPCursor& cursor) {
 
 void skip_string_like_literal(PPCursor& cursor, bool ppline = false) {
   const char quot = cursor.current();
-  while (cursor.shift() && !cursor.at(quot)) {
-    if (cursor.at('\\'))
+  while (cursor.shift()) {
+    if (cursor.at(quot)) {
+      cursor.shift();
+      return;
+    }
+    if (cursor.at('\\')) {
       if (!cursor.shift()) return;
+      continue;
+    }
     if (ppline && cursor.at('\n')) return;
   }
 }
@@ -153,6 +167,12 @@ void skip_ppline(PPCursor& cursor) {
     }
     if (!cursor.shift()) return;
   }
+}
+
+std::string_view get_pp_line(PPCursor& cursor) {
+  const unsigned start = cursor.offset();
+  skip_ppline(cursor);
+  return cursor.substr(start);
 }
 
 void skip_identifier(PPCursor& cursor) {
@@ -190,7 +210,7 @@ std::string_view get_include_string(PPCursor& cursor) {
 bool process_include(PPCursor& cursor) {
   skip_ppline_extras(cursor);
   auto include_string = get_include_string(cursor);
-  printit(include_string);
+  skip_ppline(cursor);
   return include_string.empty();
 }
 
@@ -200,32 +220,27 @@ struct MacroView {
   std::string_view name;
   std::string_view expansion;
   std::vector<std::string_view> args;
-  bool present = false;
+  bool is_functional = false;
   bool has_va_arg = false;
-  // kinda optional, can be checked afterwards
-  bool error = false;
 
   void print(std::ostream& os) {
-    if (present) os << "  (  )\n";
-    if (!present) os << "  [no args]\n";
-    os << "#define " << name << "\n";
-    {
+    os << "#define " << name;
+    if (is_functional) {
       bool first = true;
       os << "(";
       for (auto arg : args) {
         os << (first ? "" : ", ") << arg;
       }
+      if (has_va_arg) os << "...";
       os << ")";
     }
-    os << "  expand: `" << expansion << "`\n";
-    if (has_va_arg) os << "    ...\n";
-    if (error) os << "  [error]\n";
+    os << " " << expansion << "\n";
   }
 };
 
 bool get_macro_args(PPCursor& cursor, MacroView& macro) {
-  macro.present = cursor.at('(');
-  if (!macro.present) return true;
+  macro.is_functional = cursor.at('(');
+  if (!macro.is_functional) return true;
   while (cursor.shift()) {
     skip_ppline_extras(cursor);
     if (cursor.at(')')) break;
@@ -248,44 +263,122 @@ bool get_macro_args(PPCursor& cursor, MacroView& macro) {
 }
 
 bool process_define(PPCursor& cursor) {
-  skip_ppline_extras(cursor);
-  MacroView macroView;
-  macroView.name = get_identifier(cursor);
-  if (macroView.name.empty()) return false;
-  if (!get_macro_args(cursor, macroView)) return false;
-
-  const unsigned start = cursor.offset();
-  skip_ppline(cursor);
-  macroView.expansion = cursor.substr(start);
-  macroView.print(std::cerr);
-  return true;
-}
-
-bool process_directive() {
   do {
-    // process
+    skip_ppline_extras(cursor);
+    MacroView macroView;
+    macroView.name = get_identifier(cursor);
+    if (macroView.name.empty()) break;
+    if (!get_macro_args(cursor, macroView)) break;
+    macroView.expansion = get_pp_line(cursor);
     return true;
   } while (false);
-  // error recovery
+  // skeep as error
+  skip_ppline(cursor);
+  return false;
+}
 
+bool process_directive(PPCursor& cursor) {
+  if (!cursor.shift()) return false;
+  skip_ppline_extras(cursor);
+  std::string_view directive = get_identifier(cursor);
+
+  if (directive == "define") return process_define(cursor);
+  if (directive == "include") return process_include(cursor);
+  // TODO: add more handlers if needed
+  skip_ppline(cursor);
+  return false;
+}
+
+bool process_code(PPCursor& cursor, std::string& out) {
+  out.clear();
+  out.reserve(cursor.end - cursor.begin);
+
+  if (cursor.eof()) return true;
+
+  bool line_start = true;
+  unsigned last_dump_offset = 0;
+  auto dump = [&out, &cursor, &last_dump_offset]() {
+    out.append(cursor.substr(last_dump_offset));
+    last_dump_offset = cursor.offset();
+  };
+
+  while (true) {
+    if (cursor.atspace()) {
+      if (cursor.at('\n')) line_start = true;
+      if (!cursor.shift()) return true;
+      continue;
+    }
+    if (line_start && cursor.at('#')) {
+      dump();
+      const unsigned line = cursor.line();
+      process_directive(cursor);
+      out.append(cursor.line() - line, '\n');
+      last_dump_offset = cursor.offset();
+      continue;
+    }
+    if (cursor.at('/', '/')) {
+      dump();
+      const unsigned line = cursor.line();
+      skip_line_comment(cursor);
+      out.append(cursor.line() - line, '\n');
+      last_dump_offset = cursor.offset();
+      continue;
+    }
+    if (cursor.at('/', '*')) {
+      dump();
+      const Position pos = cursor.position();
+      skip_multiline_comment(cursor);
+      out.append(cursor.line() - pos.line, '\n');
+      out.append(
+          cursor.offset() - std::max(cursor.line_start_offset, pos.offset),
+          ' ');
+      last_dump_offset = cursor.offset();
+      continue;
+    }
+    if (cursor.at('\'') || cursor.at('\n')) {
+      line_start = false;
+      skip_string_like_literal(cursor);
+      continue;
+    }
+    if (cursor.at('_') || cursor.atalpha()) {
+      line_start = false;
+      auto identifier = get_identifier(cursor);
+      dump();
+      continue;
+    }
+
+    line_start = false;
+    if (!cursor.shift()) return true;
+  }
 }
 
 int main(int argc, char* argv[]) {
   timeit;
   checkin;
   //~8.9 Mb
-  std::string src = read_file("/mnt/d/Projects/pp-cpp/sqliteall.c");
-  std::cout << "Hello"
-            << "\n";
-  {
+  std::string src = read_file(ROOT "/sqliteall.c");
+  printit(src.size());
+  std::string out;
+
+  if (true) {
+    timeit;
+    PPCursor cursor{src};
+    process_code(cursor, out);
+  }
+  write_file(ROOT "/sqliteall.pp.c", out);
+
+  size_t summer = 0;
+  if (true) {
     //~8.9 Gb benchmark
     timeit;
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 100; ++i) {
       PPCursor cursor(src);
-      while (cursor.shift())
-        ;
+      process_code(cursor, out);
     }
+    summer += out.size();
   }
 
+  printit(out.size());
+  printit(summer);
   return 0;
 }

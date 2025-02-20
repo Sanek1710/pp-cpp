@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <iomanip>
 #include <iostream>
@@ -88,7 +89,7 @@ class PPRunner {
     cursor.shift();
   }
 
-  void skip_multiline_comment(PPCursor& cursor) {
+  constexpr void skip_multiline_comment(PPCursor& cursor) {
     cursor.shift();
     while (cursor.shift()) {
       if (cursor.at('*', '/')) break;
@@ -145,39 +146,100 @@ class PPRunner {
       cursor.shift();
     }
   }
-
-  void dfkjnv(PPCursor& cursor) {
-    do {
-      if (cursor.at('/', '/')) {
-        skip_line_comment(cursor);
-      } else if (cursor.at('/', '*')) {
-        skip_multiline_comment(cursor);
-      } else if (cursor.at('\\', '\n')) {
-        cursor.shift();
-        cursor.shift();
-      } else {
-        break;
+  void a(PPCursor& cursor) {
+    while (true) {
+      switch (cursor.getc()) {
+        case '/':
+          switch (cursor.get_next()) {
+            case '/':
+              skip_line_comment(cursor);
+              break;
+            case '*':
+              skip_multiline_comment(cursor);
+              break;
+            default:
+              cursor.shift();
+              break;
+          }
+          continue;
+        case '\\':
+          if (cursor.at('\n')) cursor.shift();
+          cursor.shift();
+          continue;
+        case '\n':
+          cursor.shift();
+          return;
+        default:
+          cursor.shift();
+          break;  // its switch break, not loop one
       }
-      continue;
-    } while (false);
+    }
   }
 
 
+  void skip_pp_extras(PPCursor& cursor) {
+ 
+    while (true) {
+      if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+        continue;
+      }
+      if (cursor.at('\\', '\n')) {
+        cursor.shift();
+        continue;
+      }
+      if (!cursor.atspace()) break;
+      if (cursor.at('\n')) break;
+      if (cursor.at('\\', '\n')) cursor.shift();
+      cursor.shift();
+    }
+  }
+
+  enum SkipEnum : uint8_t {
+    line_comment = 0x0001,
+    multiline_comment = 0x0002,
+    new_line = 0x0004,
+  };
+  // skipping profiles
+  static constexpr uint8_t extras = line_comment |  //
+                                    multiline_comment | new_line;
+
+  template <uint8_t skip_mask, uint8_t stop_at>
+  void skip(PPCursor& cursor) {
+    while (true) {
+      if constexpr (skip_mask & line_comment) {
+        if (cursor.at('/', '/')) {
+          skip_line_comment(cursor);
+          if constexpr (stop_at & line_comment) break;
+          continue;
+        }
+      }
+      if constexpr (skip_mask & multiline_comment) {
+        if (cursor.at('/', '*')) {
+          skip_multiline_comment(cursor);
+          if constexpr (stop_at & multiline_comment) break;
+          continue;
+        }
+      }
+      if (!cursor.atspace()) break;
+      if (cursor.at('\\', '\n')) cursor.shift();
+      cursor.shift();
+    }
+  }
 
   void skip_extras(PPCursor& cursor) {
     while (true) {
       if (cursor.at('/', '/')) {
         skip_line_comment(cursor);
-      } else if (cursor.at('/', '*')) {
-        skip_multiline_comment(cursor);
-      } else if (cursor.at('\\', '\n')) {
-        cursor.shift();
-        cursor.shift();
-      } else if (!cursor.atspace()) {
-        break;
-      } else {
-        cursor.shift();
+        continue;
       }
+      if (cursor.at('/', '*')) {
+        skip_multiline_comment(cursor);
+        continue;
+      }
+      if (!cursor.atspace()) break;
+      if (cursor.at('\\', '\n')) cursor.shift();
+      cursor.shift();
     }
   }
 };
