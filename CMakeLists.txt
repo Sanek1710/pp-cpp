@@ -10,3 +10,6 @@ add_executable(pp-cpp main.cpp)
 
 add_executable(perftest perftest.cpp)
 target_link_libraries(perftest unordered_dense)
+
+add_executable(pp-cursored PPCursored.cpp)
+target_link_libraries(perftest unordered_dense)
