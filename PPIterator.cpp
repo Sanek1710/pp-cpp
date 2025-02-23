@@ -12,7 +12,13 @@ struct Position {
   unsigned column;
 };
 
-bool atplain(char c) { return c != '\n' && std::isspace(c); }
+#ifdef _WIN32
+#define forse_inline __forceinline inline
+#else
+#define forse_inline __attribute__((always_inline)) inline
+#endif
+
+bool isplain(char c) { return c != '\n' && std::isspace(c); }
 
 class PPIterator {
  public:
@@ -27,33 +33,38 @@ class PPIterator {
  private:
   iterator begin;
   iterator end;
+  iterator last;
   iterator it;
   unsigned line_start_offset = 0;
   unsigned nline = 0;
   // cache
-  
-
 
  public:
   PPIterator(std::string_view str)
       : begin(str.begin()), end(str.end()), it(begin) {
-        
-      }
+    last = begin == end ? end : std::prev(end);
+  }
 
   PPIterator(iterator begin, iterator end, iterator current)
       : begin(begin), end(end), it(current) {}
 
   reference operator*() const { return *it; }
 
-  bool next_at(char next) const {
+  inline bool next_at(char next) const {
     return std::next(it) != end && *std::next(it) == next;
   }
+  inline bool has_next() const { return std::next(it) < end; }
+  inline bool unsafe_next_at(char next) const { return *std::next(it) == next; }
 
-  bool at(char c) const { return *it == c; }
-  bool at(char c1, char c2) const { return at(c1) && next_at(c2); }
-  bool at(char c1, char c2, char c3) const {
+  inline bool at(char c) const { return *it == c; }
+  inline bool at(char c1, char c2) const { return at(c1) && next_at(c2); }
+  inline bool at(char c1, char c2, char c3) const {
     return at(c1, c2) &&  //
            std::next(it, 2) != end && *std::next(it, 2) == c3;
+  }
+  inline bool unsafe_at(char c1) const { return at(c1); }
+  inline bool unsafe_at(char c1, char c2) const {
+    return unsafe_at(c1) && unsafe_next_at(c2);
   }
 
   unsigned offset() const { return it - begin; }
@@ -64,6 +75,7 @@ class PPIterator {
   }
 
   bool eof() const { return it == end; }
+  bool islast() const { return it == last; }
 
   Position position() const {
     return Position{.offset = offset(),
@@ -105,24 +117,22 @@ void skip_ws(PPIter& it) {
 }
 
 void skip_plain_ws(PPIter& it) {
-  while (!it.eof() && atplain(*it)) it.shift();
-  switch (*it) {
-    case '0' ... '9':
-      return;
-    case 'a' ... 'z':
-      return;
-  }
+  while (!it.eof() && isplain(*it)) it.shift();
 }
 
 void skip_line(PPIter& it) {
   while (!it.eof() && !it.at('\n')) it.shift();
 }
 
-void skip_line_comment(PPIter& it) { skip_line(it); }
+void skip_line_comment(PPIter& it) {
+  totaltimeit;
+  timeit;
+  skip_line(it);
+}
 
 void skip_multiline_comment(PPIter& it) {
   it.skip(2);
-  while (!it.eof() && !it.at('*', '/')) it.raw_shift();
+  while (!it.islast() && !it.at('*', '/')) it.raw_shift();
   if (it.eof()) return;
   it.skip();
   it.shift();
@@ -149,7 +159,7 @@ void skip_ppline_extras(PPIter& it) {
       skip_multiline_comment(it);
       continue;
     }
-    if (!atplain(*it)) return;
+    if (!isplain(*it)) return;
     it.shift();
   }
 }
@@ -159,7 +169,7 @@ void skip_ppline_extras2(PPIter& it) {
       skip_multiline_comment(it);
       continue;
     }
-    if (!atplain(*it)) return;
+    if (!isplain(*it)) return;
     it.shift();
   }
 }
@@ -318,7 +328,7 @@ bool process_code(PPIter& it, std::string& out) {
     last_dump_offset = it.offset();
   };
 
-  while (!it.eof()) {
+  while (!it.islast()) {
     if (std::isspace(*it)) {
       if (*it == '\n') line_start = true;
       it.shift();
@@ -334,7 +344,7 @@ bool process_code(PPIter& it, std::string& out) {
       continue;
     }
 
-    if (it.at('/', '/')) {
+    if (it.unsafe_at('/', '/')) {
       dump();
       const unsigned line = it.line();
       skip_line_comment(it);
@@ -343,12 +353,13 @@ bool process_code(PPIter& it, std::string& out) {
       continue;
     }
 
-    if (it.at('/', '*')) {
+    if (it.unsafe_at('/', '*')) {
       dump();
       const Position pos = it.position();
       skip_multiline_comment(it);
       out.append(it.line() - pos.line, '\n');
-      out.append(it.offset() - std::max(it.offset() - pos.column, pos.offset),
+      out.append(it.offset() - std::max(it.offset() - pos.column,
+      pos.offset),
                  ' ');
       last_dump_offset = it.offset();
       continue;
@@ -357,6 +368,7 @@ bool process_code(PPIter& it, std::string& out) {
     if (*it == '\'' || *it == '"') {
       line_start = false;
       skip_string_like_literal(it);
+      // it.shift();
       continue;
     }
 
@@ -399,6 +411,37 @@ int main(int argc, char* argv[]) {
       process_code(it, out);
     }
     summer += out.size();
+  }
+
+  if (true) {
+    //~8.9 Gb benchmark
+    stimeit("just reading");
+    std::string out;
+    for (int i = 0; i < 100; ++i) {
+      for (auto c : src) summer += c;
+    }
+  }
+
+  if (true) {
+    //~8.9 Gb benchmark
+    stimeit("for: raw_shift");
+    std::string out;
+    for (int i = 0; i < 100; ++i) {
+      for (PPIter it(src); !it.eof(); it.raw_shift()) {
+        summer += *it;
+      }
+    }
+  }
+
+  if (true) {
+    //~8.9 Gb benchmark
+    stimeit("for: shift");
+    std::string out;
+    for (int i = 0; i < 100; ++i) {
+      for (PPIter it(src); !it.eof(); it.shift()) {
+        summer += *it;
+      }
+    }
   }
 
   printit(out.size());
