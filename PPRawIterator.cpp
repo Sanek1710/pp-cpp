@@ -77,6 +77,44 @@ class PPRawIterator {
 using PPIter = PPRawIterator;
 
 // Helper functions
+struct MacroView {
+  std::string_view name;
+  std::string_view expansion;
+  std::vector<std::string_view> args;
+  bool is_functional = false;
+  bool has_va_arg = false;
+
+  void print(std::ostream& os) {
+    os << "#define " << name;
+    if (is_functional) {
+      bool first = true;
+      os << "(";
+      for (auto arg : args) {
+        os << (first ? "" : ", ") << arg;
+        first = false;
+      }
+      if (has_va_arg) os << "...";
+      os << ")";
+    }
+    os << " " << expansion << "\n";
+  }
+};
+
+class Dumper {
+ public:
+  void dump_include(std::string_view include) {
+    // std::cerr << "#include " << include << "\n";
+  }
+  void dump_macro(MacroView&& macro_view) {  //
+    // macro_view.print(std::cerr);
+  }
+  void dump_ref(std::string_view ref) {  //
+    // std::cerr << "> " << ref << "\n";
+  }
+  void dump_code() {}
+};
+
+Dumper dumper;
 
 void skip_ws(PPIter& it) {
   for (; it.ltlast(); ++it) {
@@ -139,6 +177,28 @@ void skip_string_like_literal(PPIter& it, bool ppline = false) {
   ++it;  // skip quot or last
 }
 
+void skip_word_like(PPIter& it) {
+  for (++it; it.ltend(); ++it) {
+    if (!std::isalnum(*it) && *it != '_') return;
+  }
+}
+bool consume_identifier(PPIter& it) {
+  if (!std::isalpha(*it) && *it != '_') return false;
+  skip_word_like(it);
+  return true;
+}
+bool consume_number(PPIter& it) {
+  if (!std::isdigit(*it)) return false;
+  skip_word_like(it);
+  return true;
+}
+
+std::string_view get_identifier(PPIter& it) {
+  unsigned start = it.offset();
+  consume_identifier(it);
+  return it.substr(start);
+}
+
 void skip_ppline_extras(PPIter& it) {
   while (it.ltlast()) {
     if (*it == '/' && it.next() == '*') {
@@ -170,6 +230,16 @@ void skip_ppline(PPIter& it) {
       skip_string_like_literal(it, true);
       continue;
     }
+    if (std::isalpha(*it) || *it == '_') {
+      auto identifier = get_identifier(it);
+      dumper.dump_ref(identifier);
+      continue;
+    }
+    if (std::isdigit(*it)) {
+      skip_word_like(it);
+      continue;
+    }
+
     if (*it == '\\' && it.next() == '\n') ++it;
     ++it;
   }
@@ -179,19 +249,6 @@ void skip_ppline(PPIter& it) {
 std::string_view get_pp_line(PPIter& it) {
   const unsigned start = it.offset();
   skip_ppline(it);
-  return it.substr(start);
-}
-
-void skip_identifier(PPIter& it) {
-  if (!std::isalpha(*it) && *it != '_') return;
-  for (++it; it.ltend(); ++it) {
-    if (!std::isalnum(*it) && *it != '_') return;
-  }
-}
-
-std::string_view get_identifier(PPIter& it) {
-  unsigned start = it.offset();
-  skip_identifier(it);
   return it.substr(start);
 }
 
@@ -217,32 +274,12 @@ bool process_include(PPIter& it) {
   skip_ppline_extras(it);
   auto include_string = get_include_string(it);
   skip_ppline(it);
-  return !include_string.empty();
+  if (include_string.empty()) return false;
+  dumper.dump_include(include_string);
+  return true;
 }
 
 // DEFINE PROCESSING
-struct MacroView {
-  std::string_view name;
-  std::string_view expansion;
-  std::vector<std::string_view> args;
-  bool is_functional = false;
-  bool has_va_arg = false;
-
-  void print(std::ostream& os) {
-    os << "#define " << name;
-    if (is_functional) {
-      bool first = true;
-      os << "(";
-      for (auto arg : args) {
-        os << (first ? "" : ", ") << arg;
-        first = false;
-      }
-      if (has_va_arg) os << "...";
-      os << ")";
-    }
-    os << " " << expansion << "\n";
-  }
-};
 
 bool get_macro_args(PPIter& it, MacroView& macro) {
   macro.is_functional = *it == '(';
@@ -290,6 +327,7 @@ bool process_define(PPIter& it) {
 
     if (!get_macro_args(it, macroView)) break;
     macroView.expansion = get_pp_line(it);
+    dumper.dump_macro(std::move(macroView));
     return true;
   } while (false);
   skip_ppline(it);
@@ -311,6 +349,15 @@ bool process_directive(PPIter& it) {
 
   skip_ppline(it);
   return false;
+}
+
+static constexpr bool is_string_prefix(std::string_view str) {
+  const char* str_prefixes[] = {
+      "R", "L", "LR", "u8", "u8R", "u", "uR", "U", "UR",
+  };
+  bool res = false;
+  for (auto str_prefix : str_prefixes) res |= str == str_prefix;
+  return res;
 }
 
 bool process_code(PPIter& it, std::string& out) {
@@ -338,6 +385,34 @@ bool process_code(PPIter& it, std::string& out) {
       process_directive(it);
       DUMP_LOGIC(out.append(it.line() - line, '\n');)
       last_dump_offset = it.offset();
+      continue;
+    }
+
+    if (std::isalpha(*it) || *it == '_') {
+      line_start = false;
+      auto identifier = get_identifier(it);
+      static const char* str_prefixes[] = {
+          "R", "L", "LR", "u8", "u8R", "u", "uR", "U", "UR",
+      };
+      if (it.ltlast() && (*it == '\'' || *it == '"')) {
+        bool is_str_prefix = false;
+        for (unsigned i = 0; i < sizeof(str_prefixes); ++i) {
+          if (identifier == str_prefixes[i]) {
+            is_str_prefix = true;
+            break;
+          }
+        }
+        if (is_str_prefix) {
+          skip_string_like_literal(it);
+          continue;
+        }
+      }
+
+      dump();
+      continue;
+    }
+    if (std::isdigit(*it)) {
+      skip_word_like(it);
       continue;
     }
 
@@ -374,10 +449,8 @@ bool process_code(PPIter& it, std::string& out) {
       continue;
     }
 
-    if (std::isalpha(*it) || *it == '_') {
-      line_start = false;
-      auto identifier = get_identifier(it);
-      dump();
+    if (*it == '\\' && it.next() == '\n') {
+      ++it;
       continue;
     }
 
