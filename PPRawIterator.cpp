@@ -157,6 +157,31 @@ void skip_multiline_comment(PPIter& it) {
   ++it;                   // skip '/' or last
 }
 
+void skip_word_like(PPIter& it) {
+  for (++it; it.ltend(); ++it) {
+    if (!std::isalnum(*it) && *it != '_') return;
+  }
+}
+
+bool consume_identifier(PPIter& it) {
+  if (!std::isalpha(*it) && *it != '_') return false;
+  skip_word_like(it);
+  return true;
+}
+
+void skip_number_like(PPIter& it) {
+  for (++it; it.ltend(); ++it) {
+    // might be some complicated logic with [eEpP][+-] but meh
+    // too uncommon plus next after them has to be number anyway
+    if (!std::isalnum(*it) && *it != '_' && *it != '.') return;
+  }
+}
+bool consume_number(PPIter& it) {
+  if (!std::isdigit(*it)) return false;
+  skip_number_like(it);
+  return true;
+}
+
 void skip_string_like_literal(PPIter& it, bool ppline = false) {
   const char quot = *it;
   bool escaped = false;
@@ -175,23 +200,11 @@ void skip_string_like_literal(PPIter& it, bool ppline = false) {
   }
   if (!it.ltend()) return;
   ++it;  // skip quot or last
+  if (!it.ltend()) return;
+  consume_identifier(it);
 }
 
-void skip_word_like(PPIter& it) {
-  for (++it; it.ltend(); ++it) {
-    if (!std::isalnum(*it) && *it != '_') return;
-  }
-}
-bool consume_identifier(PPIter& it) {
-  if (!std::isalpha(*it) && *it != '_') return false;
-  skip_word_like(it);
-  return true;
-}
-bool consume_number(PPIter& it) {
-  if (!std::isdigit(*it)) return false;
-  skip_word_like(it);
-  return true;
-}
+// add raw string literal
 
 std::string_view get_identifier(PPIter& it) {
   unsigned start = it.offset();
@@ -205,9 +218,9 @@ void skip_ppline_extras(PPIter& it) {
       skip_multiline_comment(it);
       continue;
     }
-    if (*it == '\\' && it.next() == '\n')
+    if (*it == '\\' && it.next() == '\n') {
       ++it;
-    else if (!isplain(*it))
+    } else if (!isplain(*it))
       return;
     ++it;
   }
@@ -236,7 +249,7 @@ void skip_ppline(PPIter& it) {
       continue;
     }
     if (std::isdigit(*it)) {
-      skip_word_like(it);
+      skip_number_like(it);
       continue;
     }
 
@@ -351,13 +364,15 @@ bool process_directive(PPIter& it) {
   return false;
 }
 
-static constexpr bool is_string_prefix(std::string_view str) {
-  const char* str_prefixes[] = {
-      "R", "L", "LR", "u8", "u8R", "u", "uR", "U", "UR",
+static bool is_string_prefix(std::string_view str) {
+  str.remove_suffix(str.back() == 'R' ? 1 : 0);
+  static const char* str_prefixes[] = {
+      "", "L", "u8", "u", "U",
   };
-  bool res = false;
-  for (auto str_prefix : str_prefixes) res |= str == str_prefix;
-  return res;
+  for (const char* str_prefix : str_prefixes) {
+    if (str == str_prefix) return true;
+  }
+  return false;
 }
 
 bool process_code(PPIter& it, std::string& out) {
@@ -391,28 +406,14 @@ bool process_code(PPIter& it, std::string& out) {
     if (std::isalpha(*it) || *it == '_') {
       line_start = false;
       auto identifier = get_identifier(it);
-      static const char* str_prefixes[] = {
-          "R", "L", "LR", "u8", "u8R", "u", "uR", "U", "UR",
-      };
-      if (it.ltlast() && (*it == '\'' || *it == '"')) {
-        bool is_str_prefix = false;
-        for (unsigned i = 0; i < sizeof(str_prefixes); ++i) {
-          if (identifier == str_prefixes[i]) {
-            is_str_prefix = true;
-            break;
-          }
-        }
-        if (is_str_prefix) {
-          skip_string_like_literal(it);
-          continue;
-        }
+      if (it.ltend() &&                   //
+          (*it == '\'' || *it == '"') &&  //
+          is_string_prefix(identifier)) {
+        skip_string_like_literal(it);
+        continue;
       }
 
       dump();
-      continue;
-    }
-    if (std::isdigit(*it)) {
-      skip_word_like(it);
       continue;
     }
 
@@ -436,6 +437,11 @@ bool process_code(PPIter& it, std::string& out) {
       // printit("\033[34m");
       // printit(it.substr(start_offset));
       // printit("\033[0m");
+      continue;
+    }
+
+    if (std::isdigit(*it)) {
+      skip_number_like(it);
       continue;
     }
 
