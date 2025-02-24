@@ -13,8 +13,6 @@ struct Position {
   unsigned column;
 };
 
-bool isplain(char c) { return c != '\n' && std::isspace(c); }
-
 class PPRawIterator {
  public:
   // Iterator traits
@@ -116,27 +114,29 @@ class Dumper {
 
 Dumper dumper;
 
-void skip_ws(PPIter& it) {
-  for (; it.ltlast(); ++it) {
-    if (std::isspace(*it)) continue;
-    if (*it != '\\' || it.next() != '\n') return;
-    ++it;
-  }
-  if (!it.ltend()) return;
-  if (std::isspace(*it)) ++it;
-}
+// dont even know if needed
+// inline void skip_ws(PPIter& it) {
+//   for (; it.ltlast(); ++it) {
+//     if (std::isspace(*it)) continue;
+//     if (*it != '\\' || it.next() != '\n') return;
+//     ++it;
+//   }
+//   if (!it.ltend()) return;
+//   if (std::isspace(*it)) ++it;
+// }
 
-void skip_plain_ws(PPIter& it) {
-  for (; it.ltlast(); ++it) {
-    if (isplain(*it)) continue;
-    if (*it != '\\' || it.next() != '\n') return;
-    ++it;
-  }
-  if (!it.ltend()) return;
-  if (isplain(*it)) ++it;
-}
+// inline bool isplain(char c) { return c != '\n' && std::isspace(c); }
+// inline void skip_plain_ws(PPIter& it) {
+//   for (; it.ltlast(); ++it) {
+//     if (isplain(*it)) continue;
+//     if (*it != '\\' || it.next() != '\n') return;
+//     ++it;
+//   }
+//   if (!it.ltend()) return;
+//   if (isplain(*it)) ++it;
+// }
 
-void skip_line(PPIter& it) {
+inline void skip_line_comment(PPIter& it) {
   for (; it.ltlast(); ++it) {
     if (*it == '\n') return;
     if (*it == '\\' && it.next() == '\n') ++it;
@@ -146,9 +146,7 @@ void skip_line(PPIter& it) {
   if (*it != '\n') ++it;
 }
 
-void skip_line_comment(PPIter& it) { skip_line(it); }
-
-void skip_multiline_comment(PPIter& it) {
+inline void skip_multiline_comment(PPIter& it) {
   ++it;  // skip '/'
   for (++it; it.ltlast(); ++it) {
     if (*it == '*' && it.next() == '/') break;
@@ -157,32 +155,32 @@ void skip_multiline_comment(PPIter& it) {
   ++it;                   // skip '/' or last
 }
 
-void skip_word_like(PPIter& it) {
+inline void skip_word_like(PPIter& it) {
   for (++it; it.ltend(); ++it) {
     if (!std::isalnum(*it) && *it != '_') return;
   }
 }
 
-bool consume_identifier(PPIter& it) {
+inline bool consume_identifier(PPIter& it) {
   if (!std::isalpha(*it) && *it != '_') return false;
   skip_word_like(it);
   return true;
 }
 
-void skip_number_like(PPIter& it) {
+inline void skip_number_like(PPIter& it) {
   for (++it; it.ltend(); ++it) {
     // might be some complicated logic with [eEpP][+-] but meh
     // too uncommon plus next after them has to be number anyway
     if (!std::isalnum(*it) && *it != '_' && *it != '.') return;
   }
 }
-bool consume_number(PPIter& it) {
+inline bool consume_number(PPIter& it) {
   if (!std::isdigit(*it)) return false;
   skip_number_like(it);
   return true;
 }
 
-void skip_string_like_literal(PPIter& it, bool ppline = false) {
+inline void skip_string_like_literal(PPIter& it, bool ppline = false) {
   const char quot = *it;
   bool escaped = false;
   for (++it; it.ltlast(); ++it) {
@@ -206,21 +204,26 @@ void skip_string_like_literal(PPIter& it, bool ppline = false) {
 
 // add raw string literal
 
-std::string_view get_identifier(PPIter& it) {
+inline std::string_view get_identifier(PPIter& it) {
   unsigned start = it.offset();
   consume_identifier(it);
   return it.substr(start);
 }
 
-void skip_ppline_extras(PPIter& it) {
+inline void skip_ppline_extras(PPIter& it) {
   while (it.ltlast()) {
+    if (*it == '\n') return;
     if (*it == '/' && it.next() == '*') {
       skip_multiline_comment(it);
       continue;
     }
+    if (*it == '/' && it.next() == '/') {
+      skip_line_comment(it);
+      return;
+    }
     if (*it == '\\' && it.next() == '\n') {
       ++it;
-    } else if (!isplain(*it))
+    } else if (!std::isspace(*it))
       return;
     ++it;
   }
@@ -228,7 +231,7 @@ void skip_ppline_extras(PPIter& it) {
   if (*it != '\n') ++it;
 }
 
-void skip_ppline(PPIter& it) {
+inline void skip_ppline(PPIter& it) {
   while (it.ltlast()) {
     if (*it == '\n') return;
     if (*it == '/' && it.next() == '*') {
@@ -256,17 +259,18 @@ void skip_ppline(PPIter& it) {
     if (*it == '\\' && it.next() == '\n') ++it;
     ++it;
   }
+  if (!it.ltend()) return;
   if (*it != '\n') ++it;
 }
 
-std::string_view get_pp_line(PPIter& it) {
+inline std::string_view get_pp_line(PPIter& it) {
   const unsigned start = it.offset();
   skip_ppline(it);
   return it.substr(start);
 }
 
 // INCLUDE PROCESSING
-void skip_include_string(PPIter& it) {
+inline void skip_include_string(PPIter& it) {
   const char quot = *it == '<' ? '>' :  //
                         (*it == '"' ? '"' : 0);
   if (!quot) return;
@@ -277,13 +281,13 @@ void skip_include_string(PPIter& it) {
   if (*it != '\n') ++it;
 }
 
-std::string_view get_include_string(PPIter& it) {
+inline std::string_view get_include_string(PPIter& it) {
   unsigned start = it.offset();
   skip_include_string(it);
   return it.substr(start);
 }
 
-bool process_include(PPIter& it) {
+inline bool process_include(PPIter& it) {
   skip_ppline_extras(it);
   auto include_string = get_include_string(it);
   skip_ppline(it);
@@ -294,7 +298,7 @@ bool process_include(PPIter& it) {
 
 // DEFINE PROCESSING
 
-bool get_macro_args(PPIter& it, MacroView& macro) {
+inline bool get_macro_args(PPIter& it, MacroView& macro) {
   macro.is_functional = *it == '(';
   if (!macro.is_functional) return true;
 
@@ -328,7 +332,7 @@ bool get_macro_args(PPIter& it, MacroView& macro) {
   return true;
 }
 
-bool process_define(PPIter& it) {
+inline bool process_define(PPIter& it) {
   do {
     skip_ppline_extras(it);
     if (!it.ltend()) return false;
@@ -347,7 +351,7 @@ bool process_define(PPIter& it) {
   return false;
 }
 
-bool process_directive(PPIter& it) {
+inline bool process_directive(PPIter& it) {
   ++it;  // skip '#'
   if (!it.ltend()) return false;
 
@@ -364,7 +368,7 @@ bool process_directive(PPIter& it) {
   return false;
 }
 
-static bool is_string_prefix(std::string_view str) {
+inline static bool is_string_prefix(std::string_view str) {
   str.remove_suffix(str.back() == 'R' ? 1 : 0);
   static const char* str_prefixes[] = {
       "", "L", "u8", "u", "U",
@@ -375,7 +379,7 @@ static bool is_string_prefix(std::string_view str) {
   return false;
 }
 
-bool process_code(PPIter& it, std::string& out) {
+inline bool process_code(PPIter& it, std::string& out) {
 #define DUMP_LOGIC(stmt) stmt
   out.clear();
   if (!it.ltend()) return true;
@@ -393,10 +397,11 @@ bool process_code(PPIter& it, std::string& out) {
       ++it;
       continue;
     }
+    const unsigned line = it.line();
 
     if (line_start && *it == '#') {
       dump();
-      const unsigned line = it.line();
+      // const unsigned line = it.line();
       process_directive(it);
       DUMP_LOGIC(out.append(it.line() - line, '\n');)
       last_dump_offset = it.offset();
@@ -419,7 +424,7 @@ bool process_code(PPIter& it, std::string& out) {
 
     if (*it == '/' && it.next() == '/') {
       dump();
-      const unsigned line = it.line();
+      // const unsigned line = it.line();
       skip_line_comment(it);
       DUMP_LOGIC(out.append(it.line() - line, '\n');)
       last_dump_offset = it.offset();
@@ -428,10 +433,10 @@ bool process_code(PPIter& it, std::string& out) {
 
     if (*it == '/' && it.next() == '*') {
       dump();
-      const unsigned start_line = it.line();
+      // const unsigned line = it.line();
       const unsigned start_offset = it.offset();
       skip_multiline_comment(it);
-      DUMP_LOGIC(out.append(it.line() - start_line, '\n');)
+      DUMP_LOGIC(out.append(it.line() - line, '\n');)
       out.append(it.offset() - std::max(it.line_offset(), start_offset), ' ');
       last_dump_offset = it.offset();
       // printit("\033[34m");
