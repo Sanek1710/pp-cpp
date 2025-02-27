@@ -137,7 +137,7 @@ Dumper dumper;
 // }
 
 inline void skip_line_comment(PPIter& it) {
-  for (; it.ltlast(); ++it) {
+  for (++it; it.ltlast(); ++it) {
     if (*it == '\n') return;
     if (*it == '\\' && it.next() == '\n') ++it;
   }
@@ -155,15 +155,14 @@ inline void skip_multiline_comment(PPIter& it) {
   ++it;                   // skip '/' or last
 }
 
-inline void skip_word_like(PPIter& it) {
+inline void skip_identifier(PPIter& it) {
   for (++it; it.ltend(); ++it) {
     if (!std::isalnum(*it) && *it != '_') return;
   }
 }
-
 inline bool consume_identifier(PPIter& it) {
   if (!std::isalpha(*it) && *it != '_') return false;
-  skip_word_like(it);
+  skip_identifier(it);
   return true;
 }
 
@@ -213,19 +212,20 @@ inline std::string_view get_identifier(PPIter& it) {
 inline void skip_ppline_extras(PPIter& it) {
   while (it.ltlast()) {
     if (*it == '\n') return;
+    if (std::isspace(*it)) {
+      ++it;
+      continue;
+    }
+    if (*it == '\\' && it.next() == '\n') {
+      ++ ++it;
+      continue;
+    }
     if (*it == '/' && it.next() == '*') {
       skip_multiline_comment(it);
       continue;
     }
-    if (*it == '/' && it.next() == '/') {
-      skip_line_comment(it);
-      return;
-    }
-    if (*it == '\\' && it.next() == '\n') {
-      ++it;
-    } else if (!std::isspace(*it))
-      return;
-    ++it;
+    if (*it == '/' && it.next() == '/') skip_line_comment(it);
+    return;
   }
   if (!it.ltend()) return;
   if (*it != '\n') ++it;
@@ -234,6 +234,15 @@ inline void skip_ppline_extras(PPIter& it) {
 inline void skip_ppline(PPIter& it) {
   while (it.ltlast()) {
     if (*it == '\n') return;
+    if (std::isalpha(*it) || *it == '_') {
+      auto identifier = get_identifier(it);
+      dumper.dump_ref(identifier);
+      continue;
+    }
+    if (std::isdigit(*it)) {
+      skip_number_like(it);
+      continue;
+    }
     if (*it == '/' && it.next() == '*') {
       skip_multiline_comment(it);
       continue;
@@ -244,15 +253,6 @@ inline void skip_ppline(PPIter& it) {
     }
     if (*it == '"' || it.next() == '\'') {
       skip_string_like_literal(it, true);
-      continue;
-    }
-    if (std::isalpha(*it) || *it == '_') {
-      auto identifier = get_identifier(it);
-      dumper.dump_ref(identifier);
-      continue;
-    }
-    if (std::isdigit(*it)) {
-      skip_number_like(it);
       continue;
     }
 
@@ -380,7 +380,7 @@ inline static bool is_string_prefix(std::string_view str) {
 }
 
 inline bool process_code(PPIter& it, std::string& out) {
-#define DUMP_LOGIC(stmt) stmt
+#define DUMP_LOGIC(stmt)  // stmt
   out.clear();
   if (!it.ltend()) return true;
 
