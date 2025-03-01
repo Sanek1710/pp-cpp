@@ -5,6 +5,7 @@
 #include <string_view>
 #include <vector>
 
+#include "ankerl/unordered_dense.h"
 #include "helper.h"
 
 struct Position {
@@ -24,6 +25,7 @@ class PPRawIterator {
   using iterator = std::string_view::iterator;
 
  private:
+ public:
   iterator begin;
   iterator end;
   iterator last;
@@ -100,6 +102,7 @@ struct MacroView {
 
 class Dumper {
  public:
+  Dumper() { set.reserve(9000); }
   void dump_include(std::string_view include) {
     // std::cerr << "#include " << include << "\n";
   }
@@ -107,9 +110,11 @@ class Dumper {
     // macro_view.print(std::cerr);
   }
   void dump_ref(std::string_view ref) {  //
+    set.insert(ref);
     // std::cerr << "> " << ref << "\n";
   }
   void dump_code() {}
+  ankerl::unordered_dense::set<std::string_view> set;
 };
 
 Dumper dumper;
@@ -209,12 +214,65 @@ inline std::string_view get_identifier(PPIter& it) {
   return it.substr(start);
 }
 
-inline void skip_ppline_extras(PPIter& it) {
+inline static bool is_string_prefix(std::string_view str) {
+  if (str.size() > 3) return false;
+  bool isRawString = str.back() == 'R';
+  if (isRawString) str.remove_suffix(1);
+  switch (str.size()) {
+    case 0:
+      return true;
+    case 1:
+      return str.front() == 'L' || str.front() == 'u' || str.front() == 'U';
+    case 2:
+      return str == "u8";
+    default:
+      return false;
+  }
+}
+
+inline bool process_directive(PPIter& it);
+
+template <bool in_directive, bool extras_only = false>
+inline void skip_code(PPIter& it) {
+  bool line_start = false;
   while (it.ltlast()) {
-    if (*it == '\n') return;
     if (std::isspace(*it)) {
+      if (*it == '\n') {
+        line_start = true;
+        if constexpr (in_directive) return;
+      }
       ++it;
       continue;
+    }
+    if constexpr (!extras_only) {
+      if constexpr (!in_directive) {
+        if (line_start && *it == '#') {
+          process_directive(it);
+          continue;
+        }
+      }
+      if (std::isalpha(*it) || *it == '_') {
+        line_start = false;
+        auto identifier = get_identifier(it);
+        if (it.ltend() &&                   //
+            (*it == '\'' || *it == '"') &&  //
+            is_string_prefix(identifier)) {
+          skip_string_like_literal(it);
+          continue;
+        }
+        // handle identifier
+        continue;
+      }
+      if (std::isdigit(*it)) {
+        line_start = false;
+        skip_number_like(it);
+        continue;
+      }
+      if (*it == '"' || it.next() == '\'') {
+        line_start = false;
+        skip_string_like_literal(it, true);
+        continue;
+      }
     }
     if (*it == '\\' && it.next() == '\n') {
       ++ ++it;
@@ -224,43 +282,28 @@ inline void skip_ppline_extras(PPIter& it) {
       skip_multiline_comment(it);
       continue;
     }
-    if (*it == '/' && it.next() == '/') skip_line_comment(it);
-    return;
+    if (*it == '/' && it.next() == '/') {
+      skip_line_comment(it);
+      continue;
+    }
+    line_start = false;
+    if constexpr (extras_only)
+      return;
+    else
+      ++it;
   }
   if (!it.ltend()) return;
   if (*it != '\n') ++it;
 }
 
 inline void skip_ppline(PPIter& it) {
-  while (it.ltlast()) {
-    if (*it == '\n') return;
-    if (std::isalpha(*it) || *it == '_') {
-      auto identifier = get_identifier(it);
-      dumper.dump_ref(identifier);
-      continue;
-    }
-    if (std::isdigit(*it)) {
-      skip_number_like(it);
-      continue;
-    }
-    if (*it == '/' && it.next() == '*') {
-      skip_multiline_comment(it);
-      continue;
-    }
-    if (*it == '/' && it.next() == '/') {
-      skip_line_comment(it);
-      return;
-    }
-    if (*it == '"' || it.next() == '\'') {
-      skip_string_like_literal(it, true);
-      continue;
-    }
-
-    if (*it == '\\' && it.next() == '\n') ++it;
-    ++it;
-  }
-  if (!it.ltend()) return;
-  if (*it != '\n') ++it;
+  return skip_code</*in_directive=*/true, /*extras_only=*/false>(it);
+}
+inline void skip_ppline_extras(PPIter& it) {
+  return skip_code</*in_directive=*/true, /*extras_only=*/true>(it);
+}
+inline void process_code(PPIter& it) {
+  return skip_code</*in_directive=*/false>(it);
 }
 
 inline std::string_view get_pp_line(PPIter& it) {
@@ -281,15 +324,11 @@ inline void skip_include_string(PPIter& it) {
   if (*it != '\n') ++it;
 }
 
-inline std::string_view get_include_string(PPIter& it) {
-  unsigned start = it.offset();
-  skip_include_string(it);
-  return it.substr(start);
-}
-
 inline bool process_include(PPIter& it) {
   skip_ppline_extras(it);
-  auto include_string = get_include_string(it);
+  const unsigned start = it.offset();
+  skip_include_string(it);
+  auto include_string = it.substr(start);
   skip_ppline(it);
   if (include_string.empty()) return false;
   dumper.dump_include(include_string);
@@ -315,10 +354,10 @@ inline bool get_macro_args(PPIter& it, MacroView& macro) {
 
     // va args?
     if (*it == '.') {
-      macro.has_va_arg = true;
       if (it.nleft() < 4) return false;
       if (*++it != '.') return false;
       if (*++it != '.') return false;
+      macro.has_va_arg = true;
       skip_ppline_extras(++it);
       break;
     }
@@ -368,110 +407,6 @@ inline bool process_directive(PPIter& it) {
   return false;
 }
 
-inline static bool is_string_prefix(std::string_view str) {
-  str.remove_suffix(str.back() == 'R' ? 1 : 0);
-  static const char* str_prefixes[] = {
-      "", "L", "u8", "u", "U",
-  };
-  for (const char* str_prefix : str_prefixes) {
-    if (str == str_prefix) return true;
-  }
-  return false;
-}
-
-inline bool process_code(PPIter& it, std::string& out) {
-#define DUMP_LOGIC(stmt)  // stmt
-  out.clear();
-  if (!it.ltend()) return true;
-
-  bool line_start = true;
-  unsigned last_dump_offset = 0;
-  auto dump = [&out, &it, &last_dump_offset]() {
-    DUMP_LOGIC(out.append(it.substr(last_dump_offset));)
-    DUMP_LOGIC(last_dump_offset = it.offset();)
-  };
-
-  while (it.ltlast()) {
-    if (std::isspace(*it)) {
-      if (*it == '\n') line_start = true;
-      ++it;
-      continue;
-    }
-    const unsigned line = it.line();
-
-    if (line_start && *it == '#') {
-      dump();
-      // const unsigned line = it.line();
-      process_directive(it);
-      DUMP_LOGIC(out.append(it.line() - line, '\n');)
-      last_dump_offset = it.offset();
-      continue;
-    }
-
-    if (std::isalpha(*it) || *it == '_') {
-      line_start = false;
-      auto identifier = get_identifier(it);
-      if (it.ltend() &&                   //
-          (*it == '\'' || *it == '"') &&  //
-          is_string_prefix(identifier)) {
-        skip_string_like_literal(it);
-        continue;
-      }
-
-      dump();
-      continue;
-    }
-
-    if (*it == '/' && it.next() == '/') {
-      dump();
-      // const unsigned line = it.line();
-      skip_line_comment(it);
-      DUMP_LOGIC(out.append(it.line() - line, '\n');)
-      last_dump_offset = it.offset();
-      continue;
-    }
-
-    if (*it == '/' && it.next() == '*') {
-      dump();
-      // const unsigned line = it.line();
-      const unsigned start_offset = it.offset();
-      skip_multiline_comment(it);
-      DUMP_LOGIC(out.append(it.line() - line, '\n');)
-      out.append(it.offset() - std::max(it.line_offset(), start_offset), ' ');
-      last_dump_offset = it.offset();
-      // printit("\033[34m");
-      // printit(it.substr(start_offset));
-      // printit("\033[0m");
-      continue;
-    }
-
-    if (std::isdigit(*it)) {
-      skip_number_like(it);
-      continue;
-    }
-
-    if (*it == '\'' || *it == '"') {
-      line_start = false;
-      const unsigned start = it.offset();
-      skip_string_like_literal(it);
-      // printit("\033[33m");
-      // printit(it.substr(start));
-      // printit("\033[0m");
-      continue;
-    }
-
-    if (*it == '\\' && it.next() == '\n') {
-      ++it;
-      continue;
-    }
-
-    line_start = false;
-    ++it;
-  }
-  dump();
-  return true;
-}
-
 int main(int argc, char* argv[]) {
   timeit;
   checkin;
@@ -484,7 +419,7 @@ int main(int argc, char* argv[]) {
   if (true) {
     timeit;
     PPIter it{src};
-    process_code(it, out);
+    process_code(it);
     printit(it.nleft());
   }
   write_file(ROOT "/out.pp.c", out);
@@ -508,7 +443,7 @@ int main(int argc, char* argv[]) {
     std::string out;
     for (int i = 0; i < 100; ++i) {
       PPIter it(src);
-      process_code(it, out);
+      process_code(it);
     }
     summer += out.size();
   }
