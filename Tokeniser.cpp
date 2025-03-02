@@ -1,7 +1,9 @@
 #include <cctype>
 #include <cstddef>
+#include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <ostream>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -17,15 +19,17 @@ using token_t = int;
 // basically enum but just to avoid casing all over the place
 namespace token {
 static constexpr token_t eof = 0;
+static constexpr token_t space = ' ';
+static constexpr token_t newline = '\n';
+
 // codes 0 - 255 reserved for actual chars
-token_t last_token = 255;
 static constexpr token_t number = 256;
 static constexpr token_t identifier = 257;
 static constexpr token_t string_literal = 258;
 static constexpr token_t line_comment = 259;
 static constexpr token_t multiline_comment = 260;
-static constexpr token_t space = 261;
-static constexpr token_t line_continuation = 262;
+static constexpr token_t line_continuation = 261;
+static constexpr token_t directive_start = 262;
 };  // namespace token
 
 struct Position {
@@ -37,8 +41,9 @@ struct Cursor {
   iterator it;
   iterator line_start_it = 0;
   unsigned nline = 0;
+  bool clear_line = false;
 
-  Cursor(iterator begin) : it(begin) {}
+  Cursor(iterator begin) : it(begin), line_start_it(it) {}
 
   void enter() {
     line_start_it = it + 1;
@@ -75,7 +80,10 @@ inline void skip_multiline_comment(Cursor& cur, iterator end) {
   if (++ ++cur.it == end) return;
   if (*cur.it == '\n') cur.enter();
   for (++cur.it; cur.it != end; ++cur.it) {
-    if (*cur.it == '/' && *std::prev(cur.it) == '*') return;
+    if (*cur.it == '/' && *std::prev(cur.it) == '*') {
+      ++cur.it;
+      return;
+    }
     if (*cur.it == '\n') cur.enter();
   }
 }
@@ -134,11 +142,16 @@ inline bool is_space(char c) {
 }
 
 template <bool in_pp_directive = false>
-token_t read_token(Cursor& cur, iterator end) {
+token_t skip_token(Cursor& cur, iterator end) {
   if (is_space(*cur.it)) {
     do {
       if (*cur.it == '\n') {
         cur.enter();
+        if (true) {
+          ++cur.it;
+          cur.clear_line = true;
+          return token::newline;
+        }
       }
     } while (++cur.it, cur.it != end && is_space(*cur.it));
     return token::space;
@@ -155,6 +168,7 @@ token_t read_token(Cursor& cur, iterator end) {
   }
 
   if (std::isalnum(*cur.it) || *cur.it == '_') {
+    cur.clear_line = false;
     if (std::isdigit(*cur.it)) {
       skip_number_like(cur, end);
       return token::number;
@@ -172,6 +186,7 @@ token_t read_token(Cursor& cur, iterator end) {
   }
 
   if (*cur.it == '\'' || *cur.it == '"') {
+    cur.clear_line = false;
     skip_string_like_literal(cur, end);
     return token::string_literal;
   }
@@ -185,6 +200,7 @@ token_t read_token(Cursor& cur, iterator end) {
       skip_multiline_comment(cur, end);
       return token::multiline_comment;
     }
+    cur.clear_line = false;
     return *cur.it++;
   }
 
@@ -192,33 +208,82 @@ token_t read_token(Cursor& cur, iterator end) {
     return *cur.it++;
   }
 
+  cur.clear_line = false;
   return *cur.it++;
 }
+
+struct Token {
+  iterator start;
+  iterator end;
+  Position pos;
+  token_t kind;
+
+  std::string_view get_text() const {
+    return {start, static_cast<size_t>(end - start)};
+  }
+
+  void print(std::ostream& os) const {
+    os << "[" << std::setw(3) << pos.line    //
+       << ":" << std::setw(2) << pos.column  //
+       << "]: `" << ctrl_str{get_text()} << "`\n";
+  }
+};
 
 inline bool is_extra(token_t token) {
   return token == token::space                 //
          || token == token::multiline_comment  //
          || token == token::line_comment       //
-         || token == token::line_continuation;
+         || token == token::line_continuation  //
+         || (token == token::newline);
+}
+
+Token read_token_skip_extras(Cursor& cur, iterator end) {
+  Token token;
+  while (cur.it != end) {
+    token.start = cur.it;
+    token.pos = cur.to_position();
+    token.kind = skip_token(cur, end);
+    token.end = cur.it;
+    if (is_extra(token.kind)) continue;
+    return token;
+  }
+  return Token{.start = cur.it, .pos = cur.to_position(), .kind = token::eof};
+}
+
+Token read_token(Cursor& cur, iterator end) {
+  if (cur.it == end)
+    return Token{.start = cur.it, .pos = cur.to_position(), .kind = token::eof};
+  Token token;
+  token.start = cur.it;
+  token.pos = cur.to_position();
+  token.kind = skip_token(cur, end);
+  token.end = cur.it;
+  return token;
 }
 
 std::string scan(Cursor& cur, iterator end) {
   std::string out;
   // out.reserve(end - cur.it);
-  while (cur.it != end) {
-    iterator start = cur.it;
-    token_t token = read_token(cur, end);
-    if (token != 0) continue;
+  size_t total;
+  while (true) {
+    Token token = read_token_skip_extras(cur, end);
+    if (token.kind == token::eof) break;
+    total += token.kind;
+    // if (token != token::multiline_comment) continue;
 
-    out += std::string_view{start, static_cast<size_t>(cur.it - start)};
-    out += "\n";
-    // std::cerr << token << " ";
+    // out += token.get_text();
+    // out += "\n";
+    // if (cur.clear_line && token.kind == '#') {
+    //   token.print(std::cout);
+    // }
   }
+  out += 'a' + total % 26;
   return out;
 }
-
+/**/
 int main(int argc, char* argv[]) {
   timeit;
+  // std::string src = read_file(ROOT "/Tokeniser.cpp");
   std::string src = read_file(ROOT "/sqliteall.c");
   std::string_view src_view{src};
 
@@ -232,6 +297,8 @@ int main(int argc, char* argv[]) {
       std::cerr << cur.nline << "\n";
     }
   }
+  // std::cerr << ctrl_str{'\n'} << "\n";
+  // return 0;
   {
     timeit;
     repeat(100) {

@@ -76,6 +76,40 @@ class TotalRunTimer {
   TImePoint start;
 };
 
+namespace details {
+
+inline int ctrl_encode(unsigned char c) {
+  if ('\t' <= c && c <= '\r') return 224 | c;
+  return c;
+}
+
+inline std::string appendUTF8(int code, std::string& out) {
+  if (code < 128) {
+    out += static_cast<char>(code);
+  } else if (code < 2048) {
+    out += static_cast<char>((code >> 6) | 192);
+    out += static_cast<char>((code & 63) | 128);
+  } else if (code < 65536) {
+    out += static_cast<char>((code >> 12) | 224);
+    out += static_cast<char>(((code >> 6) & 63) | 128);
+    out += static_cast<char>((code & 63) | 128);
+  }
+  return out;
+}
+}  // namespace details
+
+struct ctrl_str {
+  ctrl_str(std::string_view sv) : sv(sv){};
+  ctrl_str(const char& sv) : sv(&sv, 1){};
+  std::string_view sv;
+};
+inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
+  std::string out;
+  for (unsigned char c : ctrls.sv)
+    details::appendUTF8(details::ctrl_encode(c), out);
+  return os << out;
+}
+
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 #define CAT_HELPER(x, y) x##y
@@ -85,6 +119,7 @@ class TotalRunTimer {
 #define timeit stimeit(__func__)
 #define checkin std::cerr << "[here]: " << __LINE__ << "\n"
 #define printit(x) std::cerr << x << "\n"
+#define repeat(n) for (size_t _i = n; _i; --_i)
 
 #define stotaltimeit(name)                               \
   static TimeHolder CAT(_th_, __LINE__)(name, __LINE__); \
