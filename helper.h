@@ -1,5 +1,6 @@
 
 
+#include <array>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -19,28 +20,50 @@ inline void write_file(const std::string filename, std::string_view s) {
 using Clock = std::chrono::system_clock;
 using TImePoint = Clock::time_point;
 
-class RunTimer {
+class BaseTimer {
+ public:
+  BaseTimer() : start(Clock::now()) {}
+  ~BaseTimer() {}
+
+  long elapsed() const {
+    auto duration = Clock::now() - start;
+    return std::chrono::duration_cast<std::chrono::milliseconds>(duration)
+        .count();
+  }
+
+ private:
+  TImePoint start;
+};
+
+class RunTimer : BaseTimer {
   inline static unsigned depth = 0;
+  inline static std::array<RunTimer*, 10> instances;
+
+  struct Pauser : BaseTimer {
+    Pauser(RunTimer& runTimer) : runTimer(runTimer) {}
+    ~Pauser() { runTimer.paused_ms += elapsed(); }
+    RunTimer& runTimer;
+  };
 
  public:
   RunTimer(const char* name, unsigned line) : name(name), line(line) {
-    start = Clock::now();
     ++depth;
+    instances[depth] = this;
   }
   ~RunTimer() {
     --depth;
-    auto duration = Clock::now() - start;
-    auto ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
+    auto ms = elapsed() - paused_ms;
     std::cerr << std::setw(depth + 1) << "[" << std::setw(6) << ms << "] "
               << std::setw(3) << line << ": " << name << "\n";
   }
 
+  Pauser pauseLifetime() { return *this; }
+  static RunTimer& last_instance() { return *instances[depth]; }
+
  private:
   const char* name;
   const unsigned line;
-
-  TImePoint start;
+  long paused_ms = 0;
 };
 
 class TimeHolder {
@@ -115,7 +138,12 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
 #define CAT_HELPER(x, y) x##y
 #define CAT(x, y) CAT_HELPER(x, y)
 
-#define stimeit(name) const RunTimer CAT(_rt_, __LINE__)(name, __LINE__)
+#define suntimeit(line) \
+  const auto CAT(_rut_, __LINE__) { RunTimer::last_instance().pauseLifetime() }
+#define untimeit suntimeit(__func__)
+
+#define stimeit(name) \
+  const RunTimer CAT(_rt_, __LINE__) { name, __LINE__ }
 #define timeit stimeit(__func__)
 #define checkin std::cerr << "[here]: " << __LINE__ << "\n"
 #define printit(x) std::cerr << x << "\n"

@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <deque>
 #include <iostream>
 #include <iterator>
 #include <string_view>
@@ -119,293 +120,282 @@ class Dumper {
 
 Dumper dumper;
 
-// dont even know if needed
-// inline void skip_ws(PPIter& it) {
-//   for (; it.ltlast(); ++it) {
-//     if (std::isspace(*it)) continue;
-//     if (*it != '\\' || it.next() != '\n') return;
-//     ++it;
-//   }
-//   if (!it.ltend()) return;
-//   if (std::isspace(*it)) ++it;
-// }
-
-// inline bool isplain(char c) { return c != '\n' && std::isspace(c); }
-// inline void skip_plain_ws(PPIter& it) {
-//   for (; it.ltlast(); ++it) {
-//     if (isplain(*it)) continue;
-//     if (*it != '\\' || it.next() != '\n') return;
-//     ++it;
-//   }
-//   if (!it.ltend()) return;
-//   if (isplain(*it)) ++it;
-// }
-
-inline void skip_line_comment(PPIter& it) {
-  for (++it; it.ltlast(); ++it) {
-    if (*it == '\n') return;
-    if (*it == '\\' && it.next() == '\n') ++it;
+class PPMicro {
+  
+ public:
+  PPMicro(std::string_view src) : src(src), it(src) {
+    end = it.end;
+    last = it.last;
   }
-  // handle last
-  if (!it.ltend()) return;
-  if (*it != '\n') ++it;
-}
+  inline void process_code() { return skip_code</*in_directive=*/false>(); }
 
-inline void skip_multiline_comment(PPIter& it) {
-  ++it;  // skip '/'
-  for (++it; it.ltlast(); ++it) {
-    if (*it == '*' && it.next() == '/') break;
-  }
-  if (it.ltlast()) ++it;  // skip '*'
-  ++it;                   // skip '/' or last
-}
+ private:
+  std::string_view src;
+  PPIter it;
+  using iterator = std::string_view::iterator;
+  iterator end;
+  iterator last;
 
-inline void skip_identifier(PPIter& it) {
-  for (++it; it.ltend(); ++it) {
-    if (!std::isalnum(*it) && *it != '_') return;
-  }
-}
-inline bool consume_identifier(PPIter& it) {
-  if (!std::isalpha(*it) && *it != '_') return false;
-  skip_identifier(it);
-  return true;
-}
-
-inline void skip_number_like(PPIter& it) {
-  for (++it; it.ltend(); ++it) {
-    // might be some complicated logic with [eEpP][+-] but meh
-    // too uncommon plus next after them has to be number anyway
-    if (!std::isalnum(*it) && *it != '_' && *it != '.') return;
-  }
-}
-inline bool consume_number(PPIter& it) {
-  if (!std::isdigit(*it)) return false;
-  skip_number_like(it);
-  return true;
-}
-
-inline void skip_string_like_literal(PPIter& it, bool ppline = false) {
-  const char quot = *it;
-  bool escaped = false;
-  for (++it; it.ltlast(); ++it) {
-    if (ppline && *it == '\n') return;
-    if (*it == '\\' && it.next() == '\n') {
-      ++it;
-      continue;
+  inline void skip_line_comment() {
+    for (++it; it.ltlast(); ++it) {
+      if (*it == '\n') return;
+      if (*it == '\\' && it.next() == '\n') ++it;
     }
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-    if (*it == quot) break;
-    if (*it == '\\') escaped = true;
-  }
-  if (!it.ltend()) return;
-  ++it;  // skip quot or last
-  if (!it.ltend()) return;
-  consume_identifier(it);
-}
-
-// add raw string literal
-
-inline std::string_view get_identifier(PPIter& it) {
-  unsigned start = it.offset();
-  consume_identifier(it);
-  return it.substr(start);
-}
-
-inline static bool is_string_prefix(std::string_view str) {
-  if (str.size() > 3) return false;
-  bool isRawString = str.back() == 'R';
-  if (isRawString) str.remove_suffix(1);
-  switch (str.size()) {
-    case 0:
-      return true;
-    case 1:
-      return str.front() == 'L' || str.front() == 'u' || str.front() == 'U';
-    case 2:
-      return str == "u8";
-    default:
-      return false;
-  }
-}
-
-inline bool process_directive(PPIter& it);
-
-template <bool in_directive, bool extras_only = false>
-inline void skip_code(PPIter& it) {
-  bool line_start = false;
-  while (it.ltlast()) {
-    if (std::isspace(*it)) {
-      if (*it == '\n') {
-        line_start = true;
-        if constexpr (in_directive) return;
-      }
-      ++it;
-      continue;
-    }
-    if constexpr (!extras_only) {
-      if constexpr (!in_directive) {
-        if (line_start && *it == '#') {
-          process_directive(it);
-          continue;
-        }
-      }
-      if (std::isalpha(*it) || *it == '_') {
-        line_start = false;
-        auto identifier = get_identifier(it);
-        if (it.ltend() &&                   //
-            (*it == '\'' || *it == '"') &&  //
-            is_string_prefix(identifier)) {
-          skip_string_like_literal(it);
-          continue;
-        }
-        // handle identifier
-        continue;
-      }
-      if (std::isdigit(*it)) {
-        line_start = false;
-        skip_number_like(it);
-        continue;
-      }
-      if (*it == '"' || it.next() == '\'') {
-        line_start = false;
-        skip_string_like_literal(it, true);
-        continue;
-      }
-    }
-    if (*it == '\\' && it.next() == '\n') {
-      ++ ++it;
-      continue;
-    }
-    if (*it == '/' && it.next() == '*') {
-      skip_multiline_comment(it);
-      continue;
-    }
-    if (*it == '/' && it.next() == '/') {
-      skip_line_comment(it);
-      continue;
-    }
-    line_start = false;
-    if constexpr (extras_only)
-      return;
-    else
-      ++it;
-  }
-  if (!it.ltend()) return;
-  if (*it != '\n') ++it;
-}
-
-inline void skip_ppline(PPIter& it) {
-  return skip_code</*in_directive=*/true, /*extras_only=*/false>(it);
-}
-inline void skip_ppline_extras(PPIter& it) {
-  return skip_code</*in_directive=*/true, /*extras_only=*/true>(it);
-}
-inline void process_code(PPIter& it) {
-  return skip_code</*in_directive=*/false>(it);
-}
-
-inline std::string_view get_pp_line(PPIter& it) {
-  const unsigned start = it.offset();
-  skip_ppline(it);
-  return it.substr(start);
-}
-
-// INCLUDE PROCESSING
-inline void skip_include_string(PPIter& it) {
-  const char quot = *it == '<' ? '>' :  //
-                        (*it == '"' ? '"' : 0);
-  if (!quot) return;
-  for (++it; it.ltlast(); ++it) {
-    if (*it == quot || *it == '\n') break;
-    if (*it == '\\' && it.next() == '\n') ++it;
-  }
-  if (*it != '\n') ++it;
-}
-
-inline bool process_include(PPIter& it) {
-  skip_ppline_extras(it);
-  const unsigned start = it.offset();
-  skip_include_string(it);
-  auto include_string = it.substr(start);
-  skip_ppline(it);
-  if (include_string.empty()) return false;
-  dumper.dump_include(include_string);
-  return true;
-}
-
-// DEFINE PROCESSING
-
-inline bool get_macro_args(PPIter& it, MacroView& macro) {
-  macro.is_functional = *it == '(';
-  if (!macro.is_functional) return true;
-
-  for (++it; it.ltend(); ++it) {
-    skip_ppline_extras(it);
-    if (!it.ltend()) return false;
-
-    if (*it == ')') break;
-    macro.args.push_back(get_identifier(it));
-    if (!it.ltend()) return false;
-
-    skip_ppline_extras(it);
-    if (!it.ltend()) return false;
-
-    // va args?
-    if (*it == '.') {
-      if (it.nleft() < 4) return false;
-      if (*++it != '.') return false;
-      if (*++it != '.') return false;
-      macro.has_va_arg = true;
-      skip_ppline_extras(++it);
-      break;
-    }
-    if (macro.args.back().empty()) return false;
-    if (*it != ',') break;
+    // handle last
+    if (!it.ltend()) return;
+    if (*it != '\n') ++it;
   }
 
-  if (!it.ltend()) return false;
-  if (*it != ')') return false;
-  ++it;
-  return true;
-}
+  inline void skip_multiline_comment() {
+    ++it;  // skip '/'
+    for (++it; it.ltlast(); ++it) {
+      if (*it == '*' && it.next() == '/') break;
+    }
+    if (it.ltlast()) ++it;  // skip '*'
+    ++it;                   // skip '/' or last
+  }
 
-inline bool process_define(PPIter& it) {
-  do {
-    skip_ppline_extras(it);
-    if (!it.ltend()) return false;
-    MacroView macroView;
-    macroView.name = get_identifier(it);
-    if (!it.ltend()) return !macroView.name.empty();
-
-    if (macroView.name.empty()) break;
-
-    if (!get_macro_args(it, macroView)) break;
-    macroView.expansion = get_pp_line(it);
-    dumper.dump_macro(std::move(macroView));
+  inline void skip_identifier() {
+    for (++it; it.ltend(); ++it) {
+      if (!std::isalnum(*it) && *it != '_') return;
+    }
+  }
+  inline bool consume_identifier() {
+    if (!std::isalpha(*it) && *it != '_') return false;
+    skip_identifier();
     return true;
-  } while (false);
-  skip_ppline(it);
-  return false;
-}
+  }
 
-inline bool process_directive(PPIter& it) {
-  ++it;  // skip '#'
-  if (!it.ltend()) return false;
+  inline void skip_number_like() {
+    for (++it; it.ltend(); ++it) {
+      // might be some complicated logic with [eEpP][+-] but meh
+      // too uncommon plus next after them has to be number anyway
+      if (!std::isalnum(*it) && *it != '_' && *it != '.') return;
+    }
+  }
+  inline bool consume_number() {
+    if (!std::isdigit(*it)) return false;
+    skip_number_like();
+    return true;
+  }
 
-  skip_ppline_extras(it);
-  if (!it.ltend()) return false;
+  inline void skip_string_like_literal(bool ppline = false) {
+    const char quot = *it;
+    bool escaped = false;
+    for (++it; it.ltlast(); ++it) {
+      if (ppline && *it == '\n') return;
+      if (*it == '\\' && it.next() == '\n') {
+        ++it;
+        continue;
+      }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (*it == quot) break;
+      if (*it == '\\') escaped = true;
+    }
+    if (!it.ltend()) return;
+    ++it;  // skip quot or last
+    if (!it.ltend()) return;
+    consume_identifier();
+  }
 
-  std::string_view directive = get_identifier(it);
-  if (!it.ltend()) return false;
+  // add raw string literal
 
-  if (directive == "define") return process_define(it);
-  if (directive == "include") return process_include(it);
+  inline std::string_view get_identifier() {
+    unsigned start = it.offset();
+    consume_identifier();
+    return it.substr(start);
+  }
 
-  skip_ppline(it);
-  return false;
-}
+  inline static bool is_string_prefix(std::string_view str) {
+    if (str.size() > 3) return false;
+    bool isRawString = str.back() == 'R';
+    if (isRawString) str.remove_suffix(1);
+    switch (str.size()) {
+      case 0:
+        return true;
+      case 1:
+        return str.front() == 'L' || str.front() == 'u' || str.front() == 'U';
+      case 2:
+        return str == "u8";
+      default:
+        return false;
+    }
+  }
+  inline bool is_space(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+  }
+  template <bool in_directive, bool extras_only = false>
+  inline void skip_code() {
+    bool line_start = false;
+    while (it.ltlast()) {
+      if (std::isspace(*it)) {
+        if (*it == '\n') {
+          line_start = true;
+          if constexpr (in_directive) return;
+        }
+        ++it;
+        continue;
+      }
+      if constexpr (!extras_only) {
+        if constexpr (!in_directive) {
+          if (line_start && *it == '#') {
+            process_directive();
+            continue;
+          }
+        }
+        if (std::isalnum(*it) || *it == '_') {
+          line_start = false;
+          if (std::isdigit(*it)) {
+            skip_number_like();
+            continue;
+          }
+          auto identifier = get_identifier();
+          if (it.ltend() &&                   //
+              (*it == '\'' || *it == '"') &&  //
+              is_string_prefix(identifier)) {
+            skip_string_like_literal();
+            continue;
+          }
+          // handle identifier
+          continue;
+        }
+        if (*it == '"' || it.next() == '\'') {
+          line_start = false;
+          skip_string_like_literal(true);
+          continue;
+        }
+      }
+      if (*it == '\\' && it.next() == '\n') {
+        ++ ++it;
+        continue;
+      }
+      if (*it == '/' && it.next() == '*') {
+        skip_multiline_comment();
+        continue;
+      }
+      if (*it == '/' && it.next() == '/') {
+        skip_line_comment();
+        continue;
+      }
+      line_start = false;
+      if constexpr (extras_only)
+        return;
+      else
+        ++it;
+    }
+    if (!it.ltend()) return;
+    // TODO: fix not processing last el
+    if (*it != '\n') ++it;
+  }
+
+  inline void skip_ppline() {
+    return skip_code</*in_directive=*/true, /*extras_only=*/false>();
+  }
+  inline void skip_ppline_extras() {
+    return skip_code</*in_directive=*/true, /*extras_only=*/true>();
+  }
+
+  // INCLUDE PROCESSING
+  inline void skip_include_string() {
+    const char quot = *it == '<' ? '>' :  //
+                          (*it == '"' ? '"' : 0);
+    if (!quot) return;
+    for (++it; it.ltlast(); ++it) {
+      if (*it == quot || *it == '\n') break;
+      if (*it == '\\' && it.next() == '\n') ++it;
+    }
+    if (*it != '\n') ++it;
+  }
+
+  inline bool process_include() {
+    skip_ppline_extras();
+    const unsigned start = it.offset();
+    skip_include_string();
+    auto include_string = it.substr(start);
+    skip_ppline();
+    if (include_string.empty()) return false;
+    dumper.dump_include(include_string);
+    return true;
+  }
+
+  // DEFINE PROCESSING
+
+  inline bool get_macro_args(MacroView& macro) {
+    macro.is_functional = *it == '(';
+    if (!macro.is_functional) return true;
+
+    for (++it; it.ltend(); ++it) {
+      skip_ppline_extras();
+      if (!it.ltend()) return false;
+
+      if (*it == ')') break;
+      macro.args.push_back(get_identifier());
+      if (!it.ltend()) return false;
+
+      skip_ppline_extras();
+      if (!it.ltend()) return false;
+
+      // va args?
+      if (*it == '.') {
+        if (it.nleft() < 4) return false;
+        if (*++it != '.') return false;
+        if (*++it != '.') return false;
+        macro.has_va_arg = true;
+        ++it;
+        skip_ppline_extras();
+        break;
+      }
+      if (macro.args.back().empty()) return false;
+      if (*it != ',') break;
+    }
+
+    if (!it.ltend()) return false;
+    if (*it != ')') return false;
+    ++it;
+    return true;
+  }
+
+  inline bool process_define() {
+    do {
+      skip_ppline_extras();
+      if (!it.ltend()) return false;
+      MacroView macroView;
+      macroView.name = get_identifier();
+      if (!it.ltend()) return !macroView.name.empty();
+
+      if (macroView.name.empty()) break;
+      if (!get_macro_args(macroView)) break;
+
+      const unsigned start = it.offset();
+      skip_ppline();
+      macroView.expansion = it.substr(start);
+      dumper.dump_macro(std::move(macroView));
+      return true;
+    } while (false);
+    skip_ppline();
+    return false;
+  }
+
+  inline bool process_directive() {
+    ++it;  // skip '#'
+    if (!it.ltend()) return false;
+
+    skip_ppline_extras();
+    if (!it.ltend()) return false;
+
+    std::string_view directive = get_identifier();
+    if (!it.ltend()) return false;
+
+    if (directive == "define") return process_define();
+    if (directive == "include") return process_include();
+
+    skip_ppline();
+    return false;
+  }
+};
 
 int main(int argc, char* argv[]) {
   timeit;
@@ -418,9 +408,9 @@ int main(int argc, char* argv[]) {
 
   if (true) {
     timeit;
-    PPIter it{src};
-    process_code(it);
-    printit(it.nleft());
+    PPMicro ppm{src};
+    ppm.process_code();
+    // printit(it.nleft());
   }
   write_file(ROOT "/out.pp.c", out);
   // return true;
@@ -442,8 +432,8 @@ int main(int argc, char* argv[]) {
     stimeit("process_code 100 times");
     std::string out;
     for (int i = 0; i < 100; ++i) {
-      PPIter it(src);
-      process_code(it);
+      PPMicro ppm{src};
+      ppm.process_code();
     }
     summer += out.size();
   }
