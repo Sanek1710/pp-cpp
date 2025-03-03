@@ -142,7 +142,7 @@ inline bool is_space(char c) {
   return c == ' ' || c == '\t' || c == '\n' || c == '\r';
 }
 
-template <bool in_pp_directive = false>
+template <bool ppline = false>
 token_t skip_token(Cursor& cur, iterator end) {
   if (is_space(*cur.it)) {
     do {

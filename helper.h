@@ -153,3 +153,17 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   static TimeHolder CAT(_th_, __LINE__)(name, __LINE__); \
   const TotalRunTimer CAT(_trt_, __LINE__) { (CAT(_th_, __LINE__)) }
 #define totaltimeit stotaltimeit(__func__)
+
+#define deadnote(type, name)                                            \
+  class DeadNote##name {                                                \
+   public:                                                              \
+    DeadNote##name() {}                                                 \
+    ~DeadNote##name() {                                                 \
+      std::cerr << std::setw(15) << #name ": " << std::setw(15) << name \
+                << "\n";                                                \
+    }                                                                   \
+    inline static type name{};                                          \
+  };                                                                    \
+  DeadNote##name _deadNote##name {}
+
+#define getnote(name) (DeadNote##name::name)
