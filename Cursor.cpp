@@ -113,172 +113,112 @@ void Preprocessor::skip_include_string() {
   if (*cur.it != '\n') ++cur.it;
 }
 
-deadnote(int, nother);
-deadnote(int, nspace);
-deadnote(int, nword);
-deadnote(int, nidentifiers);
-deadnote(int, nnums);
-deadnote(int, nslash);
-deadnote(int, nhash);
-deadnote(int, ndot);
-deadnote(int, nstring);
-deadnote(int, nbackslash);
-deadnote(int, nchecks);
-
-deadnote(int, npunct);
-
-struct token_id {
-  // basically character mapping to enum like constants:
-  // any space -> ' ', except from '\n'
-  // any number -> '0'
-  // any identifier -> 'a'
-  // line comment -> 'c'
-  // multiline comment -> 'm'
-  // string -> '"'
-  // all the others maps to themselves
-  // potentially allows to build string of tokens
-  // and apply some pattern matching
-  // e.g.:
-  // `MACRO(arg, arg)` -> `a(a, a)`
-  // `int var = 5` -> `a a = 0`
-  // `const char* str = "string"` -> `a a* a = "`
-  static constexpr char space = ' ';
-  static constexpr char newline = '\n';
-
-  static constexpr char number = '0';
-  static constexpr char identifier = 'a';
-
-  static constexpr char line_comment = 'c';
-  static constexpr char multiline_comment = 'm';
-
-  static constexpr char string = '"';
-};
-
-template <bool pp_line>
-void Preprocessor::process_token() {
-  // ++getnote(nchecks);
+template <bool ppline>
+token_id Preprocessor::tokenise_next() {
   if (is_space(*cur.it)) { /*0*/
-    // ++getnote(nspace);
-    // register_tkind(space);
     do {
       if (*cur.it == '\n') {
         cur.enter();
         cur.clear_line = true;
-        if (pp_line) {
+        if (ppline) {
           ++cur.it;
-          return /*newline*/;
+          return token::newline;
         }
       }
     } while (++cur.it, cur.it != end && is_space(*cur.it));
-    return /* space */;
+    return token::space;
   }
 
-  // ++getnote(nchecks);
   if (std::isalnum(*cur.it) || *cur.it == '_') { /*3*/
-    // ++getnote(nword);
     cur.clear_line = false;
     if (std::isdigit(*cur.it)) {
-      // ++getnote(nnums);
-      // register_tkind(nums);
       skip_number();
-      return /* number */;
+      return token::number;
     }
-    // ++getnote(nidentifiers);
-    // register_tkind(identifiers);
     const iterator start = cur.it;
     skip_identifier();
-    size_t tokan_size = cur.it - start;
-    if (cur.it == end) return /* identifier */;
-    if (cur.it != end  //
-        && (*cur.it == '\'' || *cur.it == '"') &&
-        is_string_prefix(std::string_view{start, tokan_size})) {
-      skip_string_literal(pp_line);
-      return;
+    const size_t tokan_size = cur.it - start;
+    if (cur.it != end                           //
+        && (*cur.it == '\'' || *cur.it == '"')  //
+        && is_string_prefix(std::string_view{start, tokan_size})) {
+      skip_string_literal(ppline);
+      return token::string;
     }
-    // process_identifier
-    return;
+    return token::identifier;
   }
 
-  // ++getnote(nchecks);
   if (*cur.it == '/') { /*2*/
-    // ++getnote(nslash);
-    // register_tkind(slash);
-    if (std::next(cur.it) == end) {
-      ++cur.it;
-      return;
-    }
-    if (*std::next(cur.it) == '/') {
-      skip_line_comment();
-      // process_line_comment
-      return;
-    } else if (*std::next(cur.it) == '*') {
-      skip_multiline_comment();
-      // process_multiline_comment
-      return;
+    if (std::next(cur.it) != end) {
+      if (*std::next(cur.it) == '/') {
+        skip_line_comment();
+        return token::line_comment;
+      }
+      if (*std::next(cur.it) == '*') {
+        skip_multiline_comment();
+        return token::multiline_comment;
+      }
     }
     cur.clear_line = false;
     ++cur.it;
-    return;
+    return '/';
   }
 
-  // ++getnote(nchecks);
   if (*cur.it == '\'' || *cur.it == '"') { /*4*/
-    // ++getnote(nstring);
-    // register_tkind(string);
     cur.clear_line = false;
-    skip_string_literal(pp_line);
-    return;
+    skip_string_literal(ppline);
+    return token::string;
   }
 
-  // ++getnote(nchecks);
   if (*cur.it == '\\') { /*1*/
-    // ++getnote(nbackslash);
-    // register_tkind(backslash);
     ++cur.it;
     if (cur.it != end && *cur.it == '\n') {
       cur.enter();
       ++cur.it;
-      return /* line_continuation */;
+      return token::line_continuation;
     }
-    return /*'\\'*/;
+    return '\\';
   }
 
-  // if (*cur.it == '#') { /*5*/
-  //   ++getnote(nhash);
-  //   if (cur.clear_line) {
-  //     // process directive
-  //   }
-  //   ++cur.it;
-  //   return;
-  // }
+  if (*cur.it == '#') { /*5*/
+    ++cur.it;
+    if constexpr (ppline) {
+      if (cur.it != end && *cur.it == '#') {
+        ++cur.it;
+        return token::pp_op_cat;
+      }
+      return token::pp_op_str;
+    } else {
+      if (cur.clear_line) return token::pp_start;
+      return '#';
+    }
+  }
 
-  // if (*cur.it == '.') { /*6*/
-  //   ++getnote(ndot);
-  //   cur.clear_line = false;
-  //   ++cur.it;
-  //   if (end - cur.it >= 2  //
-  //       && *cur.it == '.' && *std::next(cur.it) == '.') {
-  //     ++ ++cur.it;
-  //     return /* ellipsis */;
-  //   }
-  //   return /* '.' */;
-  // }
+  // we are not really interested in ellipsis if its outta ppline
+  if constexpr (ppline) {
+    if (*cur.it == '.') { /*6*/
+      ++cur.it;
+      if (end - cur.it >= 2  //
+          && *cur.it == '.'  //
+          && *std::next(cur.it) == '.') {
+        ++ ++cur.it;
+        return token::ellipsis;
+      }
+      return '.';
+    }
+  }
 
+  // others
   /*7*/
-  // getnote(others).insert(*cur.it);
-  // ++getnote(nchecks);
-  // register_tkind(other);
-  // ++getnote(nother);
   ++cur.it;
-  return /* *cur.it */;
+  return *cur.it;
 }
 
 int main(int argc, char* argv[]) {
   timeit;
   checkin;
   //~8.9 Mb
-  // std::string src = read_file(ROOT "/pp.test/test.cpp");
-  std::string src = read_file(ROOT "/sqliteall.c");
+  std::string src = read_file(ROOT "/pp.test/test.cpp");
+  // std::string src = read_file(ROOT "/sqliteall.c");
   printit(src.size());
   std::string out;
 
@@ -289,7 +229,7 @@ int main(int argc, char* argv[]) {
     // printit(it.nleft());
   }
   write_file(ROOT "/out.pp.c", out);
-  // return true;
+  return true;
   size_t summer = 0;
 
   if (true) {
