@@ -87,12 +87,28 @@ struct Token {
   }
 };
 
-class Preprocessor {
+template <bool ppline>
+inline bool is_extra(token_id token) {
+  return token == token::space                 //
+         || token == token::multiline_comment  //
+         || token == token::line_comment       //
+         || token == token::line_continuation  //
+         || (!ppline && token == token::newline);
+}
+
+class Tokeniser {
  public:
-  Preprocessor(std::string_view src)
+  Tokeniser(std::string_view src)
       : src{src}, cur{src.begin()}, end{src.end()} {}
 
   ankerl::unordered_dense::set<std::string_view> identifiers;
+
+  void read_token(bool skip_extras = false) {
+    read_token_template<false>(skip_extras);
+  }
+  void read_pptoken(bool skip_extras = false) {
+    read_token_template<true>(skip_extras);
+  }
 
   void process_code() {
     while (cur.it < end) {
@@ -108,11 +124,11 @@ class Preprocessor {
         continue;
       }
       if (token.id == token::pp_start) {
-        token.print(std::cerr);
-        read_token(true);
-        token.print(std::cerr);
-        read_token(true);
-        token.print(std::cerr);
+        // token.print(std::cerr);
+        // read_token(true);
+        // token.print(std::cerr);
+        // read_token(true);
+        // token.print(std::cerr);
         // std::cerr << "#\n";
         // process ppstart
         continue;
@@ -141,15 +157,6 @@ class Preprocessor {
   token_id tokenise_next();
 
   template <bool ppline>
-  inline bool is_extra(token_id token) {
-    return token == token::space                 //
-           || token == token::multiline_comment  //
-           || token == token::line_comment       //
-           || token == token::line_continuation  //
-           || (!ppline && token == token::newline);
-  }
-
-  template <bool ppline>
   void read_token_template(bool skip_extras) {
     while (cur.it != end) {
       token.start = cur.it;
@@ -161,12 +168,7 @@ class Preprocessor {
     set_eof();
     return;
   }
-  void read_token(bool skip_extras = false) {
-    read_token_template<false>(skip_extras);
-  }
-  void read_pptoken(bool skip_extras = false) {
-    read_token_template<true>(skip_extras);
-  }
+
 
   bool consume_token(token_id id, bool skip_extras = false) {
     if (token.id != id) return false;

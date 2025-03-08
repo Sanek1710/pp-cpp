@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include <cctype>
+#include <cstddef>
 #include <functional>
 #include <ostream>
 #include <unordered_set>
@@ -14,20 +15,19 @@ using iterator = std::string_view::iterator;
 
 namespace {
 
-inline static bool is_string_prefix(std::string_view str) {
-  if (str.size() > 3) return false;
-  bool isRawString = str.back() == 'R';
-  if (isRawString) str.remove_suffix(1);
+constexpr static bool is_string_prefix(std::string_view str, bool& is_raw) {
+  str.remove_suffix(is_raw = str.back() == 'R');
   switch (str.size()) {
     case 0:
       return true;
     case 1:
-      return str.front() == 'L' || str.front() == 'u' || str.front() == 'U';
+      return str[0] == 'L' || str[0] == 'U' || str[0] == 'u';
     case 2:
-      return str == "u8";
+      return str[0] == 'u' && str[1] == '8';
     default:
-      return false;
+      break;
   }
+  return false;
 }
 
 inline bool is_space(char c) {
@@ -36,13 +36,13 @@ inline bool is_space(char c) {
 
 }  // namespace
 
-void Preprocessor::skip_identifier() {
+void Tokeniser::skip_identifier() {
   for (++cur.it; cur.it != end; ++cur.it) {
     if (!std::isalnum(*cur.it) && *cur.it != '_') return;
   }
 }
 
-void Preprocessor::skip_number() {
+void Tokeniser::skip_number() {
   for (++cur.it; cur.it != end; ++cur.it) {
     // might be some complicated logic with [eEpP][+-] but meh
     // too uncommon plus next after them has to be number anyway
@@ -50,7 +50,7 @@ void Preprocessor::skip_number() {
   }
 }
 
-void Preprocessor::skip_line_comment() {
+void Tokeniser::skip_line_comment() {
   for (++ ++cur.it; cur.it != end; ++cur.it) {
     if (*cur.it == '\n') {
       if (*std::prev(cur.it) != '\\') return;
@@ -59,7 +59,7 @@ void Preprocessor::skip_line_comment() {
   }
 }
 
-void Preprocessor::skip_multiline_comment() {
+void Tokeniser::skip_multiline_comment() {
   if (++ ++cur.it == end) return;
   if (*cur.it == '\n') cur.enter();
   for (++cur.it; cur.it != end; ++cur.it) {
@@ -71,7 +71,7 @@ void Preprocessor::skip_multiline_comment() {
   }
 }
 
-void Preprocessor::skip_string_literal(bool ppline) {
+void Tokeniser::skip_string_literal(bool ppline) {
   const char quot = *cur.it;
   bool escaped = false;
   for (++cur.it; cur.it != end; ++cur.it) {
@@ -99,7 +99,7 @@ void Preprocessor::skip_string_literal(bool ppline) {
   skip_identifier();
 }
 
-void Preprocessor::skip_include_string() {
+void Tokeniser::skip_include_string() {
   const char quot = *cur.it == '<' ? '>' :  //
                         (*cur.it == '"' ? '"' : 0);
   if (!quot) return;
@@ -114,7 +114,7 @@ void Preprocessor::skip_include_string() {
 }
 
 template <bool ppline>
-token_id Preprocessor::tokenise_next() {
+token_id Tokeniser::tokenise_next() {
   if (is_space(*cur.it)) { /*0*/
     do {
       if (*cur.it == '\n') {
@@ -138,9 +138,10 @@ token_id Preprocessor::tokenise_next() {
     const iterator start = cur.it;
     skip_identifier();
     const size_t tokan_size = cur.it - start;
+    bool is_raw = false;
     if (cur.it != end                           //
         && (*cur.it == '\'' || *cur.it == '"')  //
-        && is_string_prefix(std::string_view{start, tokan_size})) {
+        && is_string_prefix(std::string_view{start, tokan_size}, is_raw)) {
       skip_string_literal(ppline);
       return token::string;
     }
@@ -217,19 +218,19 @@ int main(int argc, char* argv[]) {
   timeit;
   checkin;
   //~8.9 Mb
-  std::string src = read_file(ROOT "/pp.test/test.cpp");
-  // std::string src = read_file(ROOT "/sqliteall.c");
+  // std::string src = read_file(ROOT "/pp.test/test.cpp");
+  std::string src = read_file(ROOT "/sqliteall.c");
   printit(src.size());
   std::string out;
 
   if (true) {
     timeit;
-    Preprocessor ppm{src};
+    Tokeniser ppm{src};
     ppm.process_code();
     // printit(it.nleft());
   }
   write_file(ROOT "/out.pp.c", out);
-  return true;
+  // return true;
   size_t summer = 0;
 
   if (true) {
@@ -238,7 +239,7 @@ int main(int argc, char* argv[]) {
     std::string out;
     repeat(10) {
       repeat(10) {
-        Preprocessor ppm{src};
+        Tokeniser ppm{src};
         ppm.process_code();
       }
       // untimeit;
