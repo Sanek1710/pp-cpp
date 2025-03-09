@@ -102,7 +102,9 @@ class TotalRunTimer {
 namespace details {
 
 inline int ctrl_encode(unsigned char c) {
-  if ('\t' <= c && c <= '\r') return 224 | c;
+  if (c == 0 ||  //
+      '\t' <= c && c <= '\r')
+    return 224 | c;
   return c;
 }
 
@@ -167,3 +169,17 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   DeadNote##name _deadNote##name {}
 
 #define getnote(name) (DeadNote##name::name)
+
+
+
+
+#define valacer(val, ntimes)   \
+  static decltype(val) prev{}; \
+  static size_t cntr = 0;      \
+  if (prev == (val))           \
+    ++cntr;                    \
+  else {                       \
+    prev = (val);              \
+    cntr = 0;                  \
+  }                            \
+  if (cntr > ntimes)

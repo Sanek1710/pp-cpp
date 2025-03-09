@@ -1,8 +1,12 @@
 #pragma once
 
+#include <cctype>
+#include <cstdint>
 #include <iomanip>
 #include <iostream>
 #include <string_view>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "ankerl/unordered_dense.h"
 #include "helper.h"
@@ -32,22 +36,23 @@ struct Cursor {
   }
 };
 
-using token_id = char;
+using token_id = short;
+// basically character mapping to enum like constants:
+// `any space -> ' ', except from '\n'`
+// `any number -> '0'`
+// `any identifier -> 'a'`
+// `line comment -> 'c'`
+// `multiline comment -> 'm'`
+// `string -> '"'`
+//
+// all the others maps to themselves
+// potentially allows to build string of tokens
+// and apply some pattern matching
+// e.g.:
+// `MACRO(arg, arg)` -> `a(a, a)`
+// `int var = 5` -> `a a = 0`
+// `const char* str = "string"` -> `a a* a = "`
 struct token {
-  // basically character mapping to enum like constants:
-  // any space -> ' ', except from '\n'
-  // any number -> '0'
-  // any identifier -> 'a'
-  // line comment -> 'c'
-  // multiline comment -> 'm'
-  // string -> '"'
-  // all the others maps to themselves
-  // potentially allows to build string of tokens
-  // and apply some pattern matching
-  // e.g.:
-  // `MACRO(arg, arg)` -> `a(a, a)`
-  // `int var = 5` -> `a a = 0`
-  // `const char* str = "string"` -> `a a* a = "`
   static constexpr token_id eof = '\0';
 
   static constexpr token_id space = ' ';
@@ -59,7 +64,9 @@ struct token {
   static constexpr token_id line_comment = 'c';
   static constexpr token_id multiline_comment = 'm';
 
-  static constexpr token_id string = '"';
+  static constexpr token_id string_like_literal = '"';
+  static constexpr token_id raw_string_literal = 'R';
+  // static constexpr token_id char_literal = '\'';
 
   static constexpr token_id pp_start = 'p';
   static constexpr token_id pp_op_str = '1';
@@ -68,6 +75,20 @@ struct token {
 
   static constexpr token_id line_continuation = 'z';
 };
+constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
+  uint32_t val = 0;
+  for (int i = 0; i < 4 && it != end; ++i, ++it) {
+    val = (val << 8) | *it;
+    if (*it == '"' || *it == '\'') return val;
+  }
+  return 0;
+}
+constexpr uint32_t mask3(std::string_view sv) {
+  return mask3(sv.begin(), sv.end());
+}
+
+constexpr auto m1 = mask3("u\"1231231213213");
+constexpr auto m2 = mask3("u\"12312sdvsdv13");
 
 struct Token {
   using iterator = std::string_view::iterator;
@@ -81,9 +102,45 @@ struct Token {
   }
 
   void print(std::ostream& os) const {
-    os << "[" << std::setw(3) << pos.line    //
-       << ":" << std::setw(2) << pos.column  //
-       << "]: `" << ctrl_str{get_text()} << "`\n";
+    std::string_view text = get_text();
+    auto clr = [text, this]() -> const char* {
+      std::unordered_set<std::string_view> keywords = {
+          "return",  "if",     "using", "while", "do",    "break",
+          "else",    "for",    "#",     "ifdef", "endif", "else",
+          "include", "define", "{",     "}",     "case",  "switch"};
+      std::unordered_set<std::string_view> keywords2 = {
+          "auto",        "bool",   "char",   "class",    "const",
+          "constexpr",   "inline", "int",    "public",   "short",
+          "static_cast", "static", "struct", "template", "this",
+          "unsigned",    "void",   "false",  "true",     "namespace",
+          "assert"};
+      std::unordered_set<std::string_view> keywords3 = {
+          "std",     "string",   "size_t", "string_view", "unordered_set",
+          "ostream", "iterator", "auto",   "uint32_t",    "vector"};
+      if (text.empty()) return "";
+      if (id == token::line_comment || id == token::multiline_comment)
+        return "\033[38;5;22m";
+      if (id == token::string_like_literal) return "\033[38;5;216m";
+      if (keywords.count(text)) return "\033[38;5;176m";
+      if (keywords2.count(text)) return "\033[38;5;75m";
+      if (keywords3.count(text)) return "\033[38;5;37m";
+      if (std::isdigit(text.front())) return "\033[38;5;193m";
+      if (text.front() == '(' || text.front() == ')') return "\033[38;5;228m";
+      if (std::ispunct(text.front())) return "\033[38;5;248m";
+      if (id == token::identifier && *end == ':') return "\033[38;5;37m";
+      if (id == token::identifier && *end == '(') return "\033[38;5;230m";
+
+      return "\033[38;5;153m";
+    };
+    static unsigned old_line = -1;
+    if (old_line != pos.line) {
+      os << "\033[38;5;240m" << std::setw(3) << pos.line + 1 << "│ ";
+      old_line = pos.line;
+    }
+    os << clr() << text << "\033[0m";
+    // os << "[" << std::setw(3) << pos.line    //
+    //    << ":" << std::setw(2) << pos.column  //
+    //    << "]: `" << clr() << ctrl_str{text} << "\033[0m`\n";
   }
 };
 
@@ -103,25 +160,40 @@ class Tokeniser {
 
   ankerl::unordered_dense::set<std::string_view> identifiers;
 
-  void read_token(bool skip_extras = false) {
-    read_token_template<false>(skip_extras);
-  }
-  void read_pptoken(bool skip_extras = false) {
-    read_token_template<true>(skip_extras);
-  }
+  // void read_token(bool skip_extras = false) {
+  //   read_token_template<false>(skip_extras);
+  // }
+  // void read_pptoken(bool skip_extras = false) {
+  //   read_token_template<true>(skip_extras);
+  // }
 
   void process_code() {
-    while (cur.it < end) {
-      read_token();
+    // static bool halt = false;
+    while (true) {
+      // if (halt) break;
+      // skip_extras<false>();
+      read_token_template<false>(false);
       // token.print(std::cerr);
+      // token.print(std::cerr);
+      // token.print(std::cerr);
+      // valacer(token.id, 100) {
+      //   token.print(std::cerr);
+      //   halt = true;
+      //   break;
+      // }
+      // token.print(std::cerr);
+
+      // if (token.pos.line > 258200) {
+      //   token.print(std::cerr);
+      // }
       if (token.id == token::eof) break;
       if (token.id == token::identifier) {
-        if (auto it = identifiers.find(token.get_text());
-            it != identifiers.end()) {
-          std::cout << token.get_text();
-        }
-        // process identifier
-        continue;
+        // if (auto it = identifiers.find(token.get_text());
+        //     it != identifiers.end()) {
+        //   std::cout << token.get_text();
+        // }
+        // // process identifier
+        // continue;
       }
       if (token.id == token::pp_start) {
         // token.print(std::cerr);
@@ -140,49 +212,150 @@ class Tokeniser {
   std::string_view src;
   Cursor cur;
   Cursor::iterator end;
-
   Token token;
 
   // skip basic tokens assuming being on their start
-  inline void skip_identifier();
-  inline void skip_number();
-  inline void skip_line_comment();
-  inline void skip_multiline_comment();
-  inline void skip_string_literal(bool ppline = false);
-
-  // skip special tokens
-  inline void skip_include_string();
+  void skip_identifier();
+  void skip_number();
+  void skip_line_comment();
+  void skip_multiline_comment();
 
   template <bool ppline>
-  token_id tokenise_next();
+  void skip_string_literal();
+
+  // consume patterns without tokenisation
+
+  // special
+  bool consume_include_string();
+  bool consume_ellipis();
+  bool consume_char(char c);
+  bool consume_identifier();
+
+  template <bool ppline>
+  void skip_ws();
+  void skip_newline();
+
+  inline void skip(size_t n = 1) {
+    cur.clear_line = false;
+    cur.it += n;
+  }
+  inline void skip_line_continuation() {
+    ++cur.it;     // '\'
+    cur.enter();  // '\n'
+    ++cur.it;
+  }
+
+  // main token processing unit
+  template <bool ppline, bool extras_only = false>
+  token_id skip_next();
+
+  template <bool ppline>
+  void skip_extras();
+
+  void skip_ppline_extras() { return skip_extras</*ppline=*/true>(); }
+
+  void skip_ppline() {
+    while (token.id != token::newline  //
+           && token.id != token::eof)
+      token = read_token</*ppline=*/true>();
+  }
+
+  template <bool ppline>
+  inline Token read_token() {
+    Token token;
+    token.start = cur.it;
+    token.pos = cur.to_position();
+    token.id = skip_next<ppline>();
+    token.end = cur.it;
+    return token;
+  }
 
   template <bool ppline>
   void read_token_template(bool skip_extras) {
-    while (cur.it != end) {
-      token.start = cur.it;
-      token.pos = cur.to_position();
-      token.id = tokenise_next<ppline>();
-      token.end = cur.it;
-      if (!(skip_extras && is_extra<ppline>(token.id))) return;
+    if (skip_extras) this->skip_extras<ppline>();
+    token = read_token<ppline>();
+  }
+
+  bool process_include() {
+    skip_ppline_extras();
+    auto start = cur.it;
+    if (!consume_include_string()) return false;
+    std::string_view include_string(start, cur.it - start);
+    skip_ppline();
+
+    // std::cerr << "#include " << include_string << "\n";
+    return true;
+  }
+
+  bool process_define() {
+    skip_ppline_extras();
+    auto start = cur.it;
+    if (!consume_identifier()) return false;
+    std::string_view name(start, cur.it - start);
+    std::vector<std::string_view> args;
+    bool is_variadic = false;
+
+    // not actual loop, just for break outs
+    while (consume_char('(')) {
+      skip_ppline_extras();
+      if (consume_char(')')) break;
+      while (true) {
+        skip_ppline_extras();
+        auto argstart = cur.it;
+        bool was_arg = consume_identifier();
+        args.emplace_back(argstart, cur.it - argstart);
+
+        skip_ppline_extras();
+        if (consume_ellipis()) {
+          is_variadic = true;
+          skip_ppline_extras();
+          if (!consume_char(')')) return false;
+          break;
+        }
+
+        if (!was_arg) return false;
+        if (consume_char(')')) break;
+        if (!consume_char(',')) return false;
+      }
+      break;
     }
-    set_eof();
-    return;
+    skip_ppline_extras();
+    auto expansion_start = cur.it;
+    skip_ppline();
+    std::string_view expansion(expansion_start, cur.it - expansion_start);
+
+    // std::cerr << "#define " << name;
+    // std::cerr << "(";
+    // if (!args.empty()) {
+    //   auto argit = args.begin();
+    //   std::cerr << *argit;
+    //   for (++argit; argit != args.end(); ++ argit) {
+    //     std::cerr << ", " << *argit;
+    //   }
+    // }
+    // std::cerr << ") " << expansion << "\n";
+    return true;
   }
 
+  token_id process_directive() {
+    do {
+      skip_ppline_extras();
+      auto start = cur.it;
+      if (!consume_identifier()) break;
+      std::string_view directive_name(start, cur.it - start);
 
-  bool consume_token(token_id id, bool skip_extras = false) {
-    if (token.id != id) return false;
-    read_token(skip_extras);
-  }
-  bool consume_pptoken(token_id id, bool skip_extras = false) {
-    if (token.id != id) return false;
-    read_token(skip_extras);
-  }
-
-  void set_eof() {
-    token.start = cur.it;
-    token.pos = cur.to_position();
-    token.id = token::eof;
-    token.end = cur.it;
+      if (directive_name == "include") {
+        if (!process_include()) break;
+        return token::pp_start;
+      }
+      if (directive_name == "define") {
+        if (!process_define()) break;
+        return token::pp_start;
+      }
+      skip_ppline();
+      return token::pp_start;
+    } while (false);
+    skip_ppline();
+    return token::pp_start;
   }
 };
