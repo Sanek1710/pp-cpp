@@ -4,18 +4,53 @@
 #include <string>
 #include <string_view>
 
-#include "MicroPP.h"
-
+#include "Cursor.h"
 #include "helper.h"
 
-#define CHECKIN std::cerr << __func__ << "\n"
 
-int main() {
-  std::string source_code = read_file("/mnt/d/Projects/pp-cpp/pp.test/test.cpp");
-  // std::cerr << source_code << "\n";
-  std::string out = MicroParser{source_code}.process();
-  // std::string out = parse_code(source_code);
-  write_file("/mnt/d/Projects/pp-cpp/pp.test/pp.test.cpp", out);
-  // std::cerr << out << "\n";
+// #define debug
+
+int main(int argc, char* argv[]) {
+  timeit;
+  checkin;
+//~8.9 Mb
+#ifdef debug
+  std::string src = read_file(ROOT "/Cursor.h");
+  src += read_file(ROOT "/helper.h");
+#else
+  std::string src = read_file(ROOT "/sqliteall.c");
+#endif
+  printit(src.size());
+  std::string out;
+
+  if (true) {
+    timeit;
+    Tokeniser ppm{src};
+    ppm.process_code();
+    // printit(it.nleft());
+  }
+  write_file(ROOT "/out.pp.c", out);
+#ifdef debug
+  return true;
+#endif
+  size_t summer = 0;
+
+  if (true) {
+    //~890 Mb benchmark
+    stimeit("process_code 100 times");
+    std::string out;
+    repeat(10) {
+      repeat(10) {
+        Tokeniser ppm{src};
+        ppm.process_code();
+      }
+      // untimeit;
+      // usleep(200000);
+    }
+    summer += out.size();
+  }
+
+  printit(out.size());
+  printit(summer);
   return 0;
 }
