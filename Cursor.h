@@ -276,86 +276,9 @@ class Tokeniser {
     token = read_token<ppline>();
   }
 
-  bool process_include() {
-    skip_ppline_extras();
-    auto start = cur.it;
-    if (!consume_include_string()) return false;
-    std::string_view include_string(start, cur.it - start);
-    skip_ppline();
+  bool process_include();
 
-    // std::cerr << "#include " << include_string << "\n";
-    return true;
-  }
+  bool process_define();
 
-  bool process_define() {
-    skip_ppline_extras();
-    auto start = cur.it;
-    if (!consume_identifier()) return false;
-    std::string_view name(start, cur.it - start);
-    std::vector<std::string_view> args;
-    bool is_variadic = false;
-
-    // not actual loop, just for break outs
-    while (consume_char('(')) {
-      skip_ppline_extras();
-      if (consume_char(')')) break;
-      while (true) {
-        skip_ppline_extras();
-        auto argstart = cur.it;
-        bool was_arg = consume_identifier();
-        args.emplace_back(argstart, cur.it - argstart);
-
-        skip_ppline_extras();
-        if (consume_ellipis()) {
-          is_variadic = true;
-          skip_ppline_extras();
-          if (!consume_char(')')) return false;
-          break;
-        }
-
-        if (!was_arg) return false;
-        if (consume_char(')')) break;
-        if (!consume_char(',')) return false;
-      }
-      break;
-    }
-    skip_ppline_extras();
-    auto expansion_start = cur.it;
-    skip_ppline();
-    std::string_view expansion(expansion_start, cur.it - expansion_start);
-
-    // std::cerr << "#define " << name;
-    // std::cerr << "(";
-    // if (!args.empty()) {
-    //   auto argit = args.begin();
-    //   std::cerr << *argit;
-    //   for (++argit; argit != args.end(); ++ argit) {
-    //     std::cerr << ", " << *argit;
-    //   }
-    // }
-    // std::cerr << ") " << expansion << "\n";
-    return true;
-  }
-
-  token_id process_directive() {
-    do {
-      skip_ppline_extras();
-      auto start = cur.it;
-      if (!consume_identifier()) break;
-      std::string_view directive_name(start, cur.it - start);
-
-      if (directive_name == "include") {
-        if (!process_include()) break;
-        return token::pp_start;
-      }
-      if (directive_name == "define") {
-        if (!process_define()) break;
-        return token::pp_start;
-      }
-      skip_ppline();
-      return token::pp_start;
-    } while (false);
-    skip_ppline();
-    return token::pp_start;
-  }
+  token_id process_directive();
 };
