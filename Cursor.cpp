@@ -90,7 +90,7 @@ bool Tokeniser::consume_ellipis() {
       || end - cur.it < 3  //
       || cur.it[1] != '.' || cur.it[2] != '.')
     return false;
-  ++ ++cur.it;
+  skip(3);
   return true;
 }
 
@@ -196,4 +196,3 @@ token_id Tokeniser::process_directive() {
   skip_ppline();
   return token::pp_error;
 }
-
