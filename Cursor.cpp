@@ -37,15 +37,15 @@ bool is_string_prefix(std::string_view str, bool& is_raw) {
 
 void Tokeniser::skip_identifier() {
   for (++cur.it; cur.it != end; ++cur.it) {
-    if (!std::isalnum(*cur.it) && *cur.it != '_') return;
+    if (!is_word_char(*cur.it)) return;
   }
 }
 
 void Tokeniser::skip_number() {
   for (++cur.it; cur.it != end; ++cur.it) {
     // might be some complicated logic with [eEpP][+-] but meh
-    // too uncommon plus next after them has to be number anyway
-    if (!std::isalnum(*cur.it) && *cur.it != '_' && *cur.it != '.') return;
+    // next char after them has to be number anyway, so idrc
+    if (!is_word_char(*cur.it) && *cur.it != '.') return;
   }
 }
 
@@ -101,7 +101,7 @@ bool Tokeniser::consume_char(char c) {
 }
 
 bool Tokeniser::consume_identifier() {
-  if (!(std::isalpha(*cur.it) || *cur.it == '_')) return false;
+  if (!is_word_start_char(*cur.it)) return false;
   skip_identifier();
   return true;
 }

@@ -11,6 +11,40 @@
 #include "ankerl/unordered_dense.h"
 #include "helper.h"
 
+// char checks
+// these work noticibly faster than std's
+// table scan masks thigs or however they work
+
+constexpr bool is_space(char c) {  //
+  return c == ' ' || '\t' <= c && c <= '\r';
+}
+
+constexpr bool is_digit(char c) {
+  switch (c) {
+    case '0' ... '9':
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+constexpr bool is_word_start_char(char c) {
+  switch (c) {
+    case 'a' ... 'z':
+    case 'A' ... 'Z':
+    case '_':
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
+constexpr bool is_word_char(char c) {
+  return is_word_start_char(c) || is_digit(c);
+}
+
 struct Position {
   unsigned line;
   unsigned column;
@@ -286,9 +320,6 @@ class Tokeniser {
 };
 
 bool is_string_prefix(std::string_view str, bool& is_raw);
-inline bool is_space(char c) {
-  return c == ' ' || c == '\t' || c == '\n' || c == '\r';
-}
 
 template <bool ppline>
 void Tokeniser::skip_string_literal() {
@@ -344,10 +375,10 @@ token_id Tokeniser::skip_next() {
     return token::space;
   }
 
-  if (std::isalnum(*cur.it) || *cur.it == '_') { /*1*/
+  if (is_word_char(*cur.it)) { /*1*/
     if constexpr (extras_only) return token::identifier;
     cur.clear_line = false;
-    if (std::isdigit(*cur.it)) {
+    if (is_digit(*cur.it)) {
       skip_number();
       return token::number;
     }
