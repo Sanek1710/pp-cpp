@@ -1,5 +1,5 @@
-"\
-"int f0;
+
+ int f0;
 //first cmnt\
 int l2; still comment
 
@@ -78,9 +78,12 @@ int foo() {
 #define Macro wo\\
 rd = 3\
 
-#define Macro2 "str\\
+#define Macro2 "str\
 "
 
 Macro1;
 Macro21;
 
+#define A(R) R"str"
+
+A(a)

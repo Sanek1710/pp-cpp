@@ -36,7 +36,7 @@ struct Cursor {
   }
 };
 
-using token_id = short;
+using token_id = char;
 // basically character mapping to enum like constants:
 // `any space -> ' ', except from '\n'`
 // `any number -> '0'`
@@ -74,6 +74,12 @@ struct token {
   static constexpr token_id ellipsis = 'e';
 
   static constexpr token_id line_continuation = 'z';
+
+  static constexpr token_id pp_define = 'D';
+  static constexpr token_id pp_include = 'I';
+  static constexpr token_id pp_undef = 'U';
+  static constexpr token_id pp_other_directive = 'O';
+  static constexpr token_id pp_error = 'E';
 };
 constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
   uint32_t val = 0;
@@ -174,7 +180,7 @@ class Tokeniser {
     while (true) {
       // if (halt) break;
       // skip_extras<false>();
-      read_token_template<false>(false);
+      read_token();
       // token.print(std::cerr);
       // token.print(std::cerr);
       // token.print(std::cerr);
@@ -194,8 +200,8 @@ class Tokeniser {
         //     it != identifiers.end()) {
         //   std::cout << token.get_text();
         // }
-        // // process identifier
-        // continue;
+        // process identifier
+        continue;
       }
       if (token.id == token::pp_start) {
         // token.print(std::cerr);
@@ -263,29 +269,19 @@ class Tokeniser {
   void skip_ppline() {
     while (token.id != token::newline  //
            && token.id != token::eof)
-      token = read_token</*ppline=*/true>();
+      read_token</*ppline=*/true>();
   }
 
-  template <bool ppline>
-  inline Token read_token() {
-    Token token;
+  template <bool ppline = false>
+  inline void read_token() {
     token.start = cur.it;
     token.pos = cur.to_position();
     token.id = skip_next<ppline>();
     token.end = cur.it;
-    return token;
-  }
-
-  template <bool ppline>
-  void read_token_template(bool skip_extras) {
-    if (skip_extras) this->skip_extras<ppline>();
-    token = read_token<ppline>();
   }
 
   bool process_include();
-
   bool process_define();
-
   token_id process_directive();
 };
 
@@ -428,3 +424,6 @@ token_id Tokeniser::skip_next() {
   if constexpr (extras_only) return *cur.it;
   return *cur.it++;
 }
+
+// template token_id Tokeniser::skip_next<true, true>();
+// template token_id Tokeniser::skip_next<false, false>();

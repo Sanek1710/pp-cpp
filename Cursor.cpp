@@ -183,15 +183,17 @@ token_id Tokeniser::process_directive() {
 
     if (directive_name == "include") {
       if (!process_include()) break;
-      return token::pp_start;
+      return token::pp_include;
     }
     if (directive_name == "define") {
       if (!process_define()) break;
-      return token::pp_start;
+      return token::pp_define;
     }
+    // pp_undef
     skip_ppline();
-    return token::pp_start;
+    return token::pp_other_directive;
   } while (false);
   skip_ppline();
-  return token::pp_start;
+  return token::pp_error;
 }
+
