@@ -117,10 +117,8 @@ bool Tokeniser::process_include() {
   skip_ppline_extras();
   auto start = cur.it;
   if (!consume_include_string()) return false;
-  std::string_view include_string(start, cur.it - start);
+  includeImage.include_str = std::string_view(start, cur.it - start);
   skip_ppline();
-
-  // std::cerr << "#include " << include_string << "\n";
   return true;
 }
 
@@ -128,23 +126,24 @@ bool Tokeniser::process_define() {
   skip_ppline_extras();
   auto start = cur.it;
   if (!consume_identifier()) return false;
-  std::string_view name(start, cur.it - start);
-  std::vector<std::string_view> args;
-  bool is_variadic = false;
+
+  defineImage.clear();
+  defineImage.name = std::string_view(start, cur.it - start);
 
   // not actual loop, just for break outs
   while (consume_char('(')) {
+    defineImage.is_functional = true;
     skip_ppline_extras();
     if (consume_char(')')) break;
     while (true) {
       skip_ppline_extras();
       auto argstart = cur.it;
       bool was_arg = consume_identifier();
-      args.emplace_back(argstart, cur.it - argstart);
+      defineImage.args.emplace_back(argstart, cur.it - argstart);
 
       skip_ppline_extras();
       if (consume_ellipis()) {
-        is_variadic = true;
+        defineImage.is_variadic = true;
         skip_ppline_extras();
         if (!consume_char(')')) return false;
         break;
@@ -157,20 +156,20 @@ bool Tokeniser::process_define() {
     break;
   }
   skip_ppline_extras();
-  auto expansion_start = cur.it;
-  skip_ppline();
-  std::string_view expansion(expansion_start, cur.it - expansion_start);
+  while (cur.it != end && *cur.it != '\n') {
+    Token exp_token = read_token<true>();
+    defineImage.expansion.push_back(exp_token.get_text());
+  }
 
-  // std::cerr << "#define " << name;
-  // std::cerr << "(";
-  // if (!args.empty()) {
-  //   auto argit = args.begin();
-  //   std::cerr << *argit;
-  //   for (++argit; argit != args.end(); ++ argit) {
-  //     std::cerr << ", " << *argit;
-  //   }
-  // }
-  // std::cerr << ") " << expansion << "\n";
+  return true;
+}
+
+bool Tokeniser::process_undef() {
+  skip_ppline_extras();
+  auto start = cur.it;
+  if (!consume_identifier()) return false;
+  undefImage.name = std::string_view(start, cur.it - start);
+  skip_ppline();
   return true;
 }
 
@@ -188,6 +187,10 @@ token_id Tokeniser::process_directive() {
     if (directive_name == "define") {
       if (!process_define()) break;
       return token::pp_define;
+    }
+    if (directive_name == "undef") {
+      if (!process_undef()) break;
+      return token::pp_undef;
     }
     // pp_undef
     skip_ppline();

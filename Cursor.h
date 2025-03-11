@@ -7,6 +7,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "ankerl/unordered_dense.h"
 #include "helper.h"
@@ -132,6 +133,7 @@ constexpr auto m2 = mask3("u\"12312sdvsdv13");
 
 struct Token {
   using iterator = std::string_view::iterator;
+
   iterator start;
   iterator end;
   Position pos;
@@ -142,45 +144,9 @@ struct Token {
   }
 
   void print(std::ostream& os) const {
-    std::string_view text = get_text();
-    auto clr = [text, this]() -> const char* {
-      std::unordered_set<std::string_view> keywords = {
-          "return",  "if",     "using", "while", "do",    "break",
-          "else",    "for",    "#",     "ifdef", "endif", "else",
-          "include", "define", "{",     "}",     "case",  "switch"};
-      std::unordered_set<std::string_view> keywords2 = {
-          "auto",        "bool",   "char",   "class",    "const",
-          "constexpr",   "inline", "int",    "public",   "short",
-          "static_cast", "static", "struct", "template", "this",
-          "unsigned",    "void",   "false",  "true",     "namespace",
-          "assert"};
-      std::unordered_set<std::string_view> keywords3 = {
-          "std",     "string",   "size_t", "string_view", "unordered_set",
-          "ostream", "iterator", "auto",   "uint32_t",    "vector"};
-      if (text.empty()) return "";
-      if (id == token::line_comment || id == token::multiline_comment)
-        return "\033[38;5;22m";
-      if (id == token::string_like_literal) return "\033[38;5;216m";
-      if (keywords.count(text)) return "\033[38;5;176m";
-      if (keywords2.count(text)) return "\033[38;5;75m";
-      if (keywords3.count(text)) return "\033[38;5;37m";
-      if (std::isdigit(text.front())) return "\033[38;5;193m";
-      if (text.front() == '(' || text.front() == ')') return "\033[38;5;228m";
-      if (std::ispunct(text.front())) return "\033[38;5;248m";
-      if (id == token::identifier && *end == ':') return "\033[38;5;37m";
-      if (id == token::identifier && *end == '(') return "\033[38;5;230m";
-
-      return "\033[38;5;153m";
-    };
-    static unsigned old_line = -1;
-    if (old_line != pos.line) {
-      os << "\033[38;5;240m" << std::setw(3) << pos.line + 1 << "│ ";
-      old_line = pos.line;
-    }
-    os << clr() << text << "\033[0m";
-    // os << "[" << std::setw(3) << pos.line    //
-    //    << ":" << std::setw(2) << pos.column  //
-    //    << "]: `" << clr() << ctrl_str{text} << "\033[0m`\n";
+    os << "[" << std::setw(3) << pos.line    //
+       << ":" << std::setw(2) << pos.column  //
+       << "]: `" << ctrl_str{get_text()} << "`\n";
   }
 };
 
@@ -197,64 +163,57 @@ class Tokeniser {
   using iterator = std::string_view::iterator;
 
  public:
+  // try:
+  struct TokenGroup {
+    std::vector<Token> tokens;
+  };
+  struct DefineTokenGroup : TokenGroup {
+    short expansion_offset = 0;
+    bool is_variadic = false;
+    bool is_functional = false;
+  };
+  struct IncludeTokenGroup : TokenGroup {};
+
+  struct IncludeImage {
+    std::string_view include_str;
+  } includeImage;
+
+  struct DefineImage {
+    std::string_view name;
+    std::vector<std::string_view> args;
+    std::vector<std::string_view> expansion;
+    bool is_variadic = false;
+    bool is_functional = false;
+
+    void clear() {
+      args.clear();
+      expansion.clear();
+      is_variadic = false;
+      is_functional = false;
+    }
+  } defineImage;
+
+  struct UndefImage {
+    std::string_view name;
+  } undefImage;
+
   Tokeniser(std::string_view src)
       : src{src}, cur{src.begin()}, end{src.end()} {}
 
-  ankerl::unordered_dense::set<std::string_view> identifiers;
-
-  // void read_token(bool skip_extras = false) {
-  //   read_token_template<false>(skip_extras);
-  // }
-  // void read_pptoken(bool skip_extras = false) {
-  //   read_token_template<true>(skip_extras);
-  // }
-
-  void process_code() {
-    // static bool halt = false;
-    while (true) {
-      // if (halt) break;
-      // skip_extras<false>();
-      read_token();
-      // token.print(std::cerr);
-      // token.print(std::cerr);
-      // token.print(std::cerr);
-      // valacer(token.id, 100) {
-      //   token.print(std::cerr);
-      //   halt = true;
-      //   break;
-      // }
-      // token.print(std::cerr);
-
-      // if (token.pos.line > 258200) {
-      //   token.print(std::cerr);
-      // }
-      if (token.id == token::eof) break;
-      if (token.id == token::identifier) {
-        // if (auto it = identifiers.find(token.get_text());
-        //     it != identifiers.end()) {
-        //   std::cout << token.get_text();
-        // }
-        // process identifier
-        continue;
-      }
-      if (token.id == token::pp_start) {
-        // token.print(std::cerr);
-        // read_token(true);
-        // token.print(std::cerr);
-        // read_token(true);
-        // token.print(std::cerr);
-        // std::cerr << "#\n";
-        // process ppstart
-        continue;
-      }
-    }
+  template <bool ppline = false>
+  inline Token read_token() {
+    Token token;
+    token.start = cur.it;
+    token.pos = cur.to_position();
+    token.id = skip_next<ppline>();
+    token.end = cur.it;
+    return token;
   }
 
  private:
   std::string_view src;
   Cursor cur;
   Cursor::iterator end;
-  Token token;
 
   // skip basic tokens assuming being on their start
   void skip_identifier();
@@ -300,22 +259,15 @@ class Tokeniser {
 
   void skip_ppline_extras() { return skip_extras</*ppline=*/true>(); }
 
+  // used to skip preprocessor lines
   void skip_ppline() {
-    while (token.id != token::newline  //
-           && token.id != token::eof)
-      read_token</*ppline=*/true>();
-  }
-
-  template <bool ppline = false>
-  inline void read_token() {
-    token.start = cur.it;
-    token.pos = cur.to_position();
-    token.id = skip_next<ppline>();
-    token.end = cur.it;
+    while (cur.it != end && *cur.it != '\n') skip_next<true>();
   }
 
   bool process_include();
   bool process_define();
+  bool process_undef();
+
   token_id process_directive();
 };
 
