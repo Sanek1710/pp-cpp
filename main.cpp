@@ -15,7 +15,7 @@ void process_code(std::string_view src) {
   Tokeniser tokeniser{src};
   // static bool halt = false;
 
-  // TokenPrinter printer{std::cerr};
+  TokenPrinter printer{std::cerr};
 
   std::vector<Tokeniser::DefineImage> defines;
   std::vector<Tokeniser::IncludeImage> includes;
@@ -25,16 +25,17 @@ void process_code(std::string_view src) {
     // if (halt) break;
     // skip_extras<false>();
     Token token = tokeniser.read_token();
+    // printer.print(token, src);
 
-    if (token.id == token::eof) break;
-    if (token.id == token::pp_include) {
+    if (token.id == Token::eof) break;
+    if (token.id == Token::pp_include) {
       includes.push_back(tokeniser.includeImage);
       continue;
       std::cerr << "#include " << tokeniser.includeImage.include_str;
       std::cerr << "\n\n";
       continue;
     }
-    if (token.id == token::pp_define) {
+    if (token.id == Token::pp_define) {
       defines.push_back(tokeniser.defineImage);
       continue;
       std::cerr << "#define " << tokeniser.defineImage.name;
@@ -53,7 +54,7 @@ void process_code(std::string_view src) {
       std::cerr << "\n\n";
       continue;
     }
-    if (token.id == token::pp_undef) {
+    if (token.id == Token::pp_undef) {
       undefs.push_back(tokeniser.undefImage);
       continue;
       std::cerr << "#undef " << tokeniser.undefImage.name;

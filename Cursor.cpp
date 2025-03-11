@@ -158,7 +158,7 @@ bool Tokeniser::process_define() {
   skip_ppline_extras();
   while (cur.it != end && *cur.it != '\n') {
     Token exp_token = read_token<true>();
-    defineImage.expansion.push_back(exp_token.get_text());
+    defineImage.expansion.push_back(exp_token.get_text(src));
   }
 
   return true;
@@ -182,20 +182,20 @@ token_id Tokeniser::process_directive() {
 
     if (directive_name == "include") {
       if (!process_include()) break;
-      return token::pp_include;
+      return Token::pp_include;
     }
     if (directive_name == "define") {
       if (!process_define()) break;
-      return token::pp_define;
+      return Token::pp_define;
     }
     if (directive_name == "undef") {
       if (!process_undef()) break;
-      return token::pp_undef;
+      return Token::pp_undef;
     }
     // pp_undef
     skip_ppline();
-    return token::pp_other_directive;
+    return Token::pp_other_directive;
   } while (false);
   skip_ppline();
-  return token::pp_error;
+  return Token::pp_error;
 }
