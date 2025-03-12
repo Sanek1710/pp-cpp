@@ -59,7 +59,7 @@ define arr 5
 
  /**/#/**/define/**/REAL_MACRO()  /* this is expansion*/ int a\
 ;int b;/*definitely sss*/char* sss="\
-some
+some\
 string";\
 m;
 

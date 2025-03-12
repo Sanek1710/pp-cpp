@@ -64,7 +64,7 @@ struct Cursor {
   iterator it;
   iterator line_start_it = 0;
   unsigned nline = 0;
-  bool clear_line = false;
+  bool clear_line = true;
 
   Cursor(iterator begin) : it(begin), line_start_it(it) {}
 
@@ -139,7 +139,7 @@ struct Token {
   static constexpr token_id pp_error = 'E';
 };
 
-template <bool ppline>
+template <bool ppline = false>
 inline bool is_extra(token_id token) {
   return token == Token::space                 //
          || token == Token::multiline_comment  //

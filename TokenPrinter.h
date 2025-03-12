@@ -4,7 +4,6 @@
 
 #include "Cursor.h"
 
-
 constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
   uint32_t val = 0;
   for (int i = 0; i < 4 && it != end; ++i, ++it) {
@@ -22,7 +21,8 @@ constexpr auto m2 = mask3("u\"12312sdvsdv13");
 
 class TokenPrinter {
  public:
-  TokenPrinter(std::ostream& os) : os(os) {}
+  TokenPrinter(std::ostream& os, bool print_lines = false)
+      : os(os), print_lines(print_lines) {}
 
   inline void print(Token token, std::string_view src) {
     std::string_view text = token.get_text(src);
@@ -60,13 +60,17 @@ class TokenPrinter {
     };
     if (last_line != token.range.start_pos.line) {
       last_line = token.range.start_pos.line;
-      os << "\033[38;5;240m" << std::setw(3) << (token.range.start_pos.line + 1)
-         << "│ ";
+      if (print_lines)
+        os << "\033[38;5;240m" << std::setw(3)
+           << (token.range.start_pos.line + 1) << "│ ";
     }
     os << clr() << text << "\033[0m";
   }
 
+  std::ostream& getos() const { return os; }
+
  private:
   unsigned last_line = -1;
+  bool print_lines = false;
   std::ostream& os;
 };
