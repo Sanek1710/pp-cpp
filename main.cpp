@@ -51,6 +51,7 @@ void process_code(std::string_view src) {
 
     if (token.id == Token::eof) break;
     if (token.id == Token::pp_include) {
+      continue;
       includes.push_back(tokeniser.includeImage);
       continue;
       std::cerr << "#include " << tokeniser.includeImage.include_str;
@@ -58,6 +59,7 @@ void process_code(std::string_view src) {
       continue;
     }
     if (token.id == Token::pp_define) {
+      continue;
       defines.push_back(tokeniser.defineImage);
       defnames.emplace(tokeniser.defineImage.name);
       // std::cout << tokeniser.defineImage.name << "\n";
@@ -73,12 +75,13 @@ void process_code(std::string_view src) {
       }
       std::cerr << ") ";
       for (auto exp : tokeniser.defineImage.expansion) {
-        std::cerr << exp;
+        std::cerr << exp.get_text(src);
       }
       std::cerr << "\n\n";
       continue;
     }
     if (token.id == Token::pp_undef) {
+      continue;
       undefs.push_back(tokeniser.undefImage);
       defnames.erase(tokeniser.defineImage.name);
       continue;
@@ -88,6 +91,7 @@ void process_code(std::string_view src) {
     }
 
     if (token.id == Token::identifier) {
+      continue;
       auto identifier_text = token.get_text(src);
       // if (!defnames.contains(identifier_text)) continue;
       tokens.clear();
@@ -111,7 +115,6 @@ void process_code(std::string_view src) {
         else if (token.id == ')')
           --balance;
         else if (token.id == ',' && balance == 1) {
-          
         }
         if (!balance) break;
       }
@@ -123,12 +126,10 @@ void process_code(std::string_view src) {
       continue;
     }
   }
-  static bool printed = false;
-  if (!printed) {
+  for never {
     std::cerr << "includes: " << includes.size() << "\n";
     std::cerr << "defines : " << defines.size() << "\n";
     std::cerr << "undefs  : " << undefs.size() << "\n";
-    printed = true;
   }
 }
 

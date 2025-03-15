@@ -49,6 +49,7 @@ class RunTimer : BaseTimer {
   RunTimer(const char* name, unsigned line) : name(name), line(line) {
     ++depth;
     instances[depth] = this;
+    std::cerr << "> " << std::setw(3) << line << ": " << name << "\n";
   }
   ~RunTimer() {
     --depth;
@@ -170,9 +171,6 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
 
 #define getnote(name) (DeadNote##name::name)
 
-
-
-
 #define valacer(val, ntimes)   \
   static decltype(val) prev{}; \
   static size_t cntr = 0;      \
@@ -183,3 +181,7 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
     cntr = 0;                  \
   }                            \
   if (cntr > ntimes)
+
+#define once (static bool _done = false; !_done; _done = true)
+#define never (; false;)
+#define ever (;;)
