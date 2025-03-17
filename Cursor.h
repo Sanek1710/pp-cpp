@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <iomanip>
 #include <iostream>
+#include <ostream>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <unordered_set>
@@ -47,13 +49,18 @@ constexpr inline bool is_word_char(char c) {
 }
 
 struct Position {
-  uint32_t line;
-  uint32_t column;
+  uint32_t line = 0;
+  uint32_t column = 0;
 };
+inline std::ostream& operator<<(std::ostream& os, const Position& pos) {
+  return os << "[" << std::setw(3) << pos.line    //
+            << ":" << std::setw(2) << pos.column  //
+            << "]";
+}
 
 struct Range {
-  uint32_t start;
-  uint32_t end;
+  uint32_t start = 0;
+  uint32_t end = 0;
   Position start_pos;
   Position end_pos;
 };
@@ -105,9 +112,7 @@ struct Token {
   }
 
   inline void print(std::string_view src, std::ostream& os) const {
-    os << "[" << std::setw(3) << range.start_pos.line    //
-       << ":" << std::setw(2) << range.start_pos.column  //
-       << "]: `" << ctrl_str{get_text(src)} << "`\n";
+    os << id << range.start_pos << ": `" << ctrl_str{get_text(src)} << "`\n";
   }
 
   // basically character mapping to enum like constants:
@@ -150,6 +155,7 @@ struct Token {
 
   static constexpr token_id pp_define = 'D';
   static constexpr token_id pp_include = 'I';
+  static constexpr token_id pp_include_string = 'i';
   static constexpr token_id pp_undef = 'U';
   static constexpr token_id pp_other_directive = 'O';
   static constexpr token_id pp_error = 'E';
@@ -181,12 +187,12 @@ class Tokeniser {
   struct IncludeTokenGroup : TokenGroup {};
 
   struct IncludeImage {
-    std::string_view include_str;
+    Token include_str;
   } includeImage;
 
   struct DefineImage {
-    std::string_view name;
-    std::vector<std::string_view> args;
+    Token name;
+    std::vector<Token> args;
     std::vector<Token> expansion;
     bool is_variadic = false;
     bool is_functional = false;
@@ -197,10 +203,28 @@ class Tokeniser {
       is_variadic = false;
       is_functional = false;
     }
+
+    void print(std::ostream& os, std::string_view src) const {
+      std::cerr << "#define " << name.get_text(src);
+      std::cerr << "(";
+      if (!args.empty()) {
+        auto argit = args.begin();
+        std::cerr << argit->get_text(src);
+        for (++argit; argit != args.end(); ++argit) {
+          std::cerr << ", " << argit->get_text(src);
+        }
+      }
+      std::cerr << ") ";
+      for (auto exp : expansion) {
+        std::cerr << exp.get_text(src);
+      }
+      std::cerr << "\n\n";
+    }
+
   } defineImage;
 
   struct UndefImage {
-    std::string_view name;
+    Token name;
   } undefImage;
 
   Tokeniser(std::string_view src)  //
@@ -349,6 +373,19 @@ class Tokeniser {
     skip_identifier();
     return true;
   }
+  inline bool consume_identifier_token(Token& token) {
+    token.range.start = cur.it - src.begin();
+    token.range.start_pos = cur.to_position();
+    token.id = Token::identifier;
+    bool consumed = false;
+    if (is_word_start_char(*cur.it)) {
+      skip_identifier();
+      consumed = true;
+    }
+    token.range.end = cur.it - src.begin();
+    token.range.end_pos = cur.to_position();
+    return consumed;
+  }
 
   inline void skip_ws() {
     ++cur.it;
@@ -401,6 +438,7 @@ class Tokeniser {
     if (*cur.it == '\n') {
       if constexpr (extras_only && ppline) return Token::newline;
       skip_newline();
+      cur.clear_line = true;
       return Token::newline;
     }
     if (is_space(*cur.it)) { /*0*/
@@ -492,19 +530,18 @@ class Tokeniser {
 
   inline bool process_include() {
     skip_ppline_extras();
-    auto start = cur.it;
+    includeImage.include_str.range.start = cur.it - src.begin();
+    includeImage.include_str.range.start_pos = cur.to_position();
     if (!consume_include_string()) return false;
-    includeImage.include_str = std::string_view(start, cur.it - start);
+    includeImage.include_str.range.end = cur.it - src.begin();
+    includeImage.include_str.range.end_pos = cur.to_position();
     skip_ppline();
     return true;
   }
   inline bool process_define() {
     skip_ppline_extras();
-    auto start = cur.it;
-    if (!consume_identifier()) return false;
-
     defineImage.clear();
-    defineImage.name = std::string_view(start, cur.it - start);
+    if (!consume_identifier_token(defineImage.name)) return false;
 
     // not actual loop, just for break outs
     while (consume_char('(')) {
@@ -513,11 +550,10 @@ class Tokeniser {
       if (consume_char(')')) break;
       while (true) {
         skip_ppline_extras();
-        auto argstart = cur.it;
-        bool was_arg = consume_identifier();
-        defineImage.args.emplace_back(argstart, cur.it - argstart);
+        const bool was_arg =
+            consume_identifier_token(defineImage.args.emplace_back());
+        if (was_arg) skip_ppline_extras();
 
-        skip_ppline_extras();
         if (consume_ellipis()) {
           defineImage.is_variadic = true;
           skip_ppline_extras();
@@ -541,8 +577,7 @@ class Tokeniser {
   inline bool process_undef() {
     skip_ppline_extras();
     auto start = cur.it;
-    if (!consume_identifier()) return false;
-    undefImage.name = std::string_view(start, cur.it - start);
+    if (!consume_identifier_token(undefImage.name)) return false;
     skip_ppline();
     return true;
   }

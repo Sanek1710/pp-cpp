@@ -40,14 +40,14 @@ struct TestData {
 
   TestData(uint32_t seed = 12345) : rng(seed) {}
 
-  std::vector<std::pair<MacroName, MacroExpansion>> generateMacros(
+  std::vector<std::pair<MacroName, MacroStamp>> generateMacros(
       size_t count) {
-    std::vector<std::pair<MacroName, MacroExpansion>> result;
+    std::vector<std::pair<MacroName, MacroStamp>> result;
     result.reserve(count);
 
     for (size_t i = 0; i < count; ++i) {
       MacroName name = "MACRO_" + std::to_string(rng() % 1000000);
-      MacroExpansion exp{std::string(content_len(rng), 'x')};
+      MacroStamp exp{std::string(content_len(rng), 'x')};
       result.emplace_back(name, exp);
     }
     return result;

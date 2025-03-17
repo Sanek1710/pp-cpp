@@ -182,6 +182,14 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   }                            \
   if (cntr > ntimes)
 
-#define once (static bool _done = false; !_done; _done = true)
-#define never (; false;)
-#define ever (;;)
+#define once for (static bool _done = false; !_done; _done = true)
+#define never for (; false;)
+
+#define WOW(...) \
+  do it now __VA_ARGS__
+#define CATTER(ab) #ab##cd
+#define CATTER2(ab) L#ab
+#define CATTER3(la...) __VA_ARGS__ la $$
+
+
+

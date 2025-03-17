@@ -21,19 +21,19 @@ template <typename Key, typename Value>
 using Map = ankerl::unordered_dense::map<Key, Value>;
 
 // Simple macro expansion for testing
-struct MacroExpansion {
+struct MacroStamp {
   std::string content;
 };
 
 struct Macros {
   MacroName name;
-  MacroExpansion expansion;
+  MacroStamp expansion;
 };
 
 struct MacroDefinition {
   FileID fileId;
   Version version;
-  MacroExpansion expansion;
+  MacroStamp expansion;
 };
 template <>
 inline size_t memory(const MacroDefinition& def) {
@@ -56,7 +56,7 @@ class MacroStorage {
   static constexpr Version originalVersion = 0;
 
  public:
-  using FileMacrosList = std::vector<std::pair<MacroName, MacroExpansion>>;
+  using FileMacrosList = std::vector<std::pair<MacroName, MacroStamp>>;
 
   void updateFileMacros(FileID fileId, const FileMacrosList& newMacros) {
     Version currentVersion = updateFileVersion(fileId);
@@ -78,7 +78,7 @@ class MacroStorage {
 
   void deleteFileMacros(FileID fileId) { updateFileVersion(fileId); }
 
-  const MacroExpansion* findMacro(const MacroName& name,
+  const MacroStamp* findMacro(const MacroName& name,
                                   const Set<FileID>& includeIds) const {
     auto macroIt = macros.find(name);
     if (macroIt == macros.end()) return nullptr;
