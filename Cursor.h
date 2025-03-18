@@ -1,18 +1,10 @@
 #pragma once
 
-#include <cctype>
-#include <cstdint>
-#include <iomanip>
-#include <iostream>
-#include <ostream>
-#include <string>
-#include <string_view>
-#include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
-#include "ankerl/unordered_dense.h"
-#include "helper.h"
+#include "Position.h"
+#include "Token.h"
+#include "TokenGroup.h"
 
 // char checks
 // these work noticibly faster than std's
@@ -47,23 +39,6 @@ constexpr inline bool is_word_start_char(char c) {
 constexpr inline bool is_word_char(char c) {
   return is_word_start_char(c) || is_digit(c);
 }
-
-struct Position {
-  uint32_t line = 0;
-  uint32_t column = 0;
-};
-inline std::ostream& operator<<(std::ostream& os, const Position& pos) {
-  return os << "[" << std::setw(3) << pos.line    //
-            << ":" << std::setw(2) << pos.column  //
-            << "]";
-}
-
-struct Range {
-  uint32_t start = 0;
-  uint32_t end = 0;
-  Position start_pos;
-  Position end_pos;
-};
 
 inline bool is_string_prefix(std::string_view str, bool& is_raw) {
   str.remove_suffix(is_raw = str.back() == 'R');
@@ -101,131 +76,15 @@ struct Cursor {
   }
 };
 
-using token_id = char;
-
-struct Token {
-  Range range;
-  token_id id;
-
-  inline std::string_view get_text(std::string_view src) const {
-    return src.substr(range.start, range.end - range.start);
-  }
-
-  inline void print(std::string_view src, std::ostream& os) const {
-    os << id << range.start_pos << ": `" << ctrl_str{get_text(src)} << "`\n";
-  }
-
-  // basically character mapping to enum like constants:
-  // `any space -> ' ', except from '\n'`
-  // `any number -> '0'`
-  // `any identifier -> 'a'`
-  // `line comment -> 'c'`
-  // `multiline comment -> 'm'`
-  // `string -> '"'`
-  //
-  // all the others maps to themselves
-  // potentially allows to build string of tokens
-  // and apply some pattern matching
-  // e.g.:
-  // `MACRO(arg, arg)` -> `a(a, a)`
-  // `int var = 5` -> `a a = 0`
-  // `const char* str = "string"` -> `a a* a = "`
-
-  static constexpr token_id eof = '\0';
-
-  static constexpr token_id space = ' ';
-  static constexpr token_id newline = '\n';
-
-  static constexpr token_id number = '0';
-  static constexpr token_id identifier = 'a';
-
-  static constexpr token_id line_comment = 'c';
-  static constexpr token_id multiline_comment = 'm';
-
-  static constexpr token_id string_like_literal = '"';
-  static constexpr token_id raw_string_literal = 'R';
-  // static constexpr token_id char_literal = '\'';
-
-  static constexpr token_id pp_start = 'p';
-  static constexpr token_id pp_op_str = '1';
-  static constexpr token_id pp_op_cat = '2';
-  static constexpr token_id ellipsis = 'e';
-
-  static constexpr token_id line_continuation = 'z';
-
-  static constexpr token_id pp_define = 'D';
-  static constexpr token_id pp_include = 'I';
-  static constexpr token_id pp_include_string = 'i';
-  static constexpr token_id pp_undef = 'U';
-  static constexpr token_id pp_other_directive = 'O';
-  static constexpr token_id pp_error = 'E';
-};
-
-template <bool ppline = false>
-inline bool is_extra(token_id token) {
-  return token == Token::space                 //
-         || token == Token::multiline_comment  //
-         || token == Token::line_comment       //
-         || token == Token::line_continuation  //
-         || (!ppline && token == Token::newline);
-}
-
 class Tokeniser {
   using iterator = std::string_view::iterator;
 
  public:
   static constexpr uint32_t max_src_size = ~uint32_t{};
   // try:
-  struct TokenGroup {
-    std::vector<Token> tokens;
-  };
-  struct DefineTokenGroup : TokenGroup {
-    short expansion_offset = 0;
-    bool is_variadic = false;
-    bool is_functional = false;
-  };
-  struct IncludeTokenGroup : TokenGroup {};
-
-  struct IncludeImage {
-    Token include_str;
-  } includeImage;
-
-  struct DefineImage {
-    Token name;
-    std::vector<Token> args;
-    std::vector<Token> expansion;
-    bool is_variadic = false;
-    bool is_functional = false;
-
-    inline void clear() {
-      args.clear();
-      expansion.clear();
-      is_variadic = false;
-      is_functional = false;
-    }
-
-    void print(std::ostream& os, std::string_view src) const {
-      std::cerr << "#define " << name.get_text(src);
-      std::cerr << "(";
-      if (!args.empty()) {
-        auto argit = args.begin();
-        std::cerr << argit->get_text(src);
-        for (++argit; argit != args.end(); ++argit) {
-          std::cerr << ", " << argit->get_text(src);
-        }
-      }
-      std::cerr << ") ";
-      for (auto exp : expansion) {
-        std::cerr << exp.get_text(src);
-      }
-      std::cerr << "\n\n";
-    }
-
-  } defineImage;
-
-  struct UndefImage {
-    Token name;
-  } undefImage;
+  DefineImage defineImage;
+  IncludeImage& includeImage = defineImage;
+  UndefImage& undefImage = defineImage;
 
   Tokeniser(std::string_view src)  //
       : src{src}, cur{src.begin()}, end{src.end()} {
@@ -530,11 +389,11 @@ class Tokeniser {
 
   inline bool process_include() {
     skip_ppline_extras();
-    includeImage.include_str.range.start = cur.it - src.begin();
-    includeImage.include_str.range.start_pos = cur.to_position();
+    includeImage.name.range.start = cur.it - src.begin();
+    includeImage.name.range.start_pos = cur.to_position();
     if (!consume_include_string()) return false;
-    includeImage.include_str.range.end = cur.it - src.begin();
-    includeImage.include_str.range.end_pos = cur.to_position();
+    includeImage.name.range.end = cur.it - src.begin();
+    includeImage.name.range.end_pos = cur.to_position();
     skip_ppline();
     return true;
   }
@@ -545,17 +404,18 @@ class Tokeniser {
 
     // not actual loop, just for break outs
     while (consume_char('(')) {
-      defineImage.is_functional = true;
+      defineImage.info.is_functional = true;
       skip_ppline_extras();
       if (consume_char(')')) break;
       while (true) {
         skip_ppline_extras();
-        const bool was_arg =
-            consume_identifier_token(defineImage.args.emplace_back());
+        Token& last = defineImage.tokens.emplace_back();
+        ++defineImage.info.nargs;
+        const bool was_arg = consume_identifier_token(last);
         if (was_arg) skip_ppline_extras();
 
         if (consume_ellipis()) {
-          defineImage.is_variadic = true;
+          defineImage.info.is_variadic = true;
           skip_ppline_extras();
           if (!consume_char(')')) return false;
           break;
@@ -569,7 +429,7 @@ class Tokeniser {
     }
     skip_ppline_extras();
     while (cur.it != end && *cur.it != '\n') {
-      defineImage.expansion.push_back(read_pptoken());
+      defineImage.tokens.push_back(read_pptoken());
     }
 
     return true;
@@ -608,124 +468,3 @@ class Tokeniser {
     return Token::pp_error;
   }
 };
-
-// template token_id Tokeniser::skip_next<true, true>();
-// template token_id Tokeniser::skip_next<false, false>();
-
-// template token_id Tokeniser::skip_next<true, true>();
-// template token_id Tokeniser::skip_next<false, false>();
-
-// main token processing unit
-// inline token_id Tokeniser::skip_nexttt() {
-//   if (cur.it == end) return Token::eof;
-//   if (is_space(*cur.it)) { /*0*/
-//     if (*cur.it == '\n') return Token::newline;
-//     skip_ws<true>();
-//     return Token::space;
-//   }
-
-//   if (is_word_char(*cur.it)) return Token::identifier;
-
-//   if (*cur.it == '/') { /*2*/
-//     const auto next_it = std::next(cur.it);
-//     if (next_it != end) {
-//       if (*next_it == '/') {
-//         skip_line_comment();
-//         return Token::line_comment;
-//       }
-//       if (*next_it == '*') {
-//         skip_multiline_comment();
-//         return Token::multiline_comment;
-//       }
-//     }
-//     return '/';
-//   }
-
-//   if (*cur.it == '\'' || *cur.it == '"') { /*3*/
-//     return Token::string_like_literal;
-//   }
-
-//   if (*cur.it == '\\') { /*4*/
-//     const auto next_it = std::next(cur.it);
-//     if (next_it != end && *next_it == '\n') {
-//       skip_line_continuation();
-//       return Token::line_continuation;
-//     }
-//     return '\\';
-//   }
-//   /*7*/
-//   return *cur.it;
-// }
-
-// inline token_id Tokeniser::skip_nextff() {
-//   if (cur.it == end) return Token::eof;
-//   if (is_space(*cur.it)) { /*0*/
-//     skip_ws<false>();
-//     return Token::space;
-//   }
-
-//   if (is_word_char(*cur.it)) { /*1*/
-//     cur.clear_line = false;
-//     if (is_digit(*cur.it)) {
-//       skip_number();
-//       return Token::number;
-//     }
-//     const iterator start = cur.it;
-//     skip_identifier();
-//     const size_t token_size = cur.it - start;
-//     bool is_raw = false;
-//     if (cur.it != end                           //
-//         && (*cur.it == '\'' || *cur.it == '"')  //
-//         && is_string_prefix(std::string_view{start, token_size}, is_raw)) {
-//       if (!is_raw) {
-//         skip_string_literal<false>();
-//         return Token::string_like_literal;
-//       } else if (*cur.it == '\"') {
-//         skip_string_literal<false>();
-//         return Token::raw_string_literal;
-//       }
-//     }
-//     return Token::identifier;
-//   }
-
-//   if (*cur.it == '/') { /*2*/
-//     const auto next_it = std::next(cur.it);
-//     if (next_it != end) {
-//       if (*next_it == '/') {
-//         skip_line_comment();
-//         return Token::line_comment;
-//       }
-//       if (*next_it == '*') {
-//         skip_multiline_comment();
-//         return Token::multiline_comment;
-//       }
-//     }
-//     cur.clear_line = false;
-//     skip();
-//     return '/';
-//   }
-
-//   if (*cur.it == '\'' || *cur.it == '"') { /*3*/
-//     cur.clear_line = false;
-//     skip_string_literal<false>();
-//     return Token::string_like_literal;
-//   }
-
-//   if (*cur.it == '\\') { /*4*/
-//     const auto next_it = std::next(cur.it);
-//     if (next_it != end && *next_it == '\n') {
-//       skip_line_continuation();
-//       return Token::line_continuation;
-//     }
-//     skip();
-//     return '\\';
-//   }
-
-//   if (cur.clear_line && *cur.it == '#') { /*5*/
-//     ++cur.it;
-//     return process_directive();
-//   }
-
-//   /*7*/
-//   return *cur.it++;
-// }

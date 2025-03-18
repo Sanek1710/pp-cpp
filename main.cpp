@@ -11,150 +11,20 @@
 #include <vector>
 
 #include "Cursor.h"
+#include "PositionMap.h"
 #include "TokenPrinter.h"
-#include "ankerl/unordered_dense.h"
 #include "helper.h"
+#include "util.h"
+#include "Macro.h"
 
 // #define debug
 
-struct fasthash {
-  size_t operator()(const std::string_view& sv) const {
-    // return std::hash<std::string_view>{}(sv);
-    return sv.size() < 8
-               ? std::hash<std::string_view>{}(sv)
-               : ((*reinterpret_cast<const uint64_t*>(sv.data()) << 4) |
-                  *reinterpret_cast<const uint64_t*>(sv.end() - 8) | sv.size());
-    //  : ((*reinterpret_cast<const uint64_t*>(sv.begin()) << 4) |
-    //     *reinterpret_cast<const uint64_t*>(sv.rend().base() - 8));
-  }
-};
-
-struct string_hash {
-  using is_transparent = void;  // enable heterogeneous overloads
-  using is_avalanching = void;  // mark class as high quality avalanching hash
-
-  [[nodiscard]] auto operator()(std::string_view str) const noexcept
-      -> uint64_t {
-    return ankerl::unordered_dense::hash<std::string_view>{}(str);
-  }
-};
-template <typename Value>
-using StringMap = ankerl::unordered_dense::map<std::string, Value, string_hash,
-                                               std::equal_to<>>;
-using StringSet =
-    ankerl::unordered_dense::set<std::string, string_hash, std::equal_to<>>;
-
-StringSet defnames;
 StringMap<std::string> macromap;
-
-struct MacroStamp {
-  MacroStamp(std::string_view content) {
-    auto it = content.begin();
-    is_functional = *it != ' ';
-    is_variadic = *it == 'v';
-    auto res = std::from_chars(++it, content.end(), n_args);
-    expansion = std::string_view(res.ptr, content.end() - res.ptr);
-  }
-
-  std::string_view expansion;
-  unsigned n_args = 0;
-  bool is_functional = false;
-  bool is_variadic = false;
-};
-
-std::string compile_macro_expansion(const Tokeniser::DefineImage& macroImage,
-                                    std::string_view src) {
-  std::string out;
-  if (macroImage.is_functional) {
-    out += macroImage.is_variadic ? 'v' : 'f';
-    out += std::to_string(macroImage.args.size());
-  }
-  out += ' ';
-  auto prefix_size = out.size();
-
-  bool was_arg = false;
-  char nxt_arg_appl = ' ';
-  for (const Token& tok : macroImage.expansion) {
-    char arg_appl = nxt_arg_appl;
-    nxt_arg_appl = ' ';
-
-    if (tok.id == Token::pp_op_cat) {
-      if (was_arg && out.back() == ' ') out.back() = '#';
-      nxt_arg_appl = '#';
-      continue;
-    }
-    was_arg = false;
-
-    if (tok.id == Token::pp_op_str) {
-      if (out.back() != ' ') out += ' ';
-      nxt_arg_appl = 's';
-      continue;
-    }
-
-    if (is_extra(tok.id)) {
-      if (out.back() != ' ') out += ' ';
-      continue;
-    }
-    const auto text = tok.get_text(src);
-
-    if (macroImage.is_functional && tok.id == Token::identifier) {
-      const auto& args = macroImage.args;
-
-      auto argIt = std::find_if(args.begin(), args.end(),
-                                [src, text](const Token& arg_tok) {
-                                  return arg_tok.get_text(src) == text;
-                                });
-      if (macroImage.is_variadic && text == "__VA_ARGS__") {
-        if (!args.back().get_text(src).empty()) {
-          out += text;
-          continue;
-        }
-        argIt = args.end() - 1;
-      }
-      if (argIt != args.end()) {
-        out += '$';
-        out += std::to_string(argIt - args.begin());
-        out += arg_appl;
-        was_arg = arg_appl != 's';
-        if (!was_arg) out += ' ';
-        continue;
-      }
-      out += text;
-      continue;
-    }
-
-    for (char c : text) {
-      if (c == '$') out += '$';
-      out += c;
-    }
-  }
-  while (out.size() > prefix_size && out.back() == ' ') out.pop_back();
-  return out;
-}
-
-
 
 struct Macro {
   std::string name;
   std::string expansion;
 };
-
-inline constexpr bool operator==(const Position& pos1, const Position& pos2) {
-  return pos1.line == pos2.line && pos1.column == pos2.column;
-}
-inline constexpr bool operator!=(const Position& pos1, const Position& pos2) {
-  return !(pos1 == pos2);
-}
-
-struct PosHash {
-  static_assert(sizeof(Position) == sizeof(size_t));
-
-  inline size_t operator()(const Position& pos) const {
-    return *reinterpret_cast<const size_t*>(&pos);
-  }
-};
-
-using PositionMap = ankerl::unordered_dense::map<Position, Position, PosHash>;
 
 struct CodeDumper {
  public:
@@ -282,9 +152,9 @@ void process_code(std::string_view src) {
   // halt = true;
   TokenPrinter printer{std::cerr, true};
 
-  std::vector<Tokeniser::DefineImage> defines;
+  std::vector<DefineImage> defines;
   std::vector<std::string> includes;
-  std::vector<Tokeniser::UndefImage> undefs;
+  std::vector<UndefImage> undefs;
 
   Token token;
 
@@ -297,20 +167,24 @@ void process_code(std::string_view src) {
 
     if (token.id == Token::eof) break;
     if (token.id == Token::pp_include) {
-      includes.emplace_back(tokeniser.includeImage.include_str.get_text(src));
+      continue;
+      includes.emplace_back(tokeniser.includeImage.name.get_text(src));
       continue;
     }
     if (token.id == Token::pp_define) {
+      continue;
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
     if (token.id == Token::pp_undef) {
+      continue;
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
     if (token.id == Token::identifier) {
+      continue;
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
@@ -319,7 +193,7 @@ void process_code(std::string_view src) {
       }
 
       MacroStamp macroStamp{macroIt->second};
-      if (!macroStamp.is_functional) {
+      if (!macroStamp.info.is_functional) {
         codeDumper.align_dump(macroStamp.expansion, token.range.start_pos);
         continue;
       }
@@ -358,13 +232,13 @@ void process_code(std::string_view src) {
       continue;
     }
 
-    codeDumper.align_dump(token, src);
+    // codeDumper.align_dump(token, src);
   }
   never {
     for (const auto& [name, exp] : macromap) {
-      std::cerr << MacroStamp{exp}.is_functional << "\n";
-      std::cerr << MacroStamp{exp}.is_variadic << "\n";
-      std::cerr << MacroStamp{exp}.n_args << "\n";
+      std::cerr << MacroStamp{exp}.info.is_functional << "\n";
+      std::cerr << MacroStamp{exp}.info.is_variadic << "\n";
+      std::cerr << MacroStamp{exp}.info.nargs << "\n";
       std::cerr << name << ": " << exp << "\n\n";
     }
     std::cerr << "macromap: " << macromap.size() << "\n";
@@ -378,16 +252,11 @@ void process_code(std::string_view src) {
 int main(int argc, char* argv[]) {
   timeit;
   checkin;
-  defnames.emplace("if");
-  defnames.emplace("for");
-  defnames.emplace("while");
-  defnames.emplace("switch");
-  defnames.emplace("constexpr");
 //~8.9 Mb
 #ifdef debug
-  std::string src = read_file(ROOT "/pp.in.cpp");
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
 #else
-  std::string src = read_file(ROOT "/sqliteall.c");
+  std::string src = read_file(ROOT "pp.test/sqliteall.c");
 #endif
   printit(src.size());
   std::string out;
@@ -397,7 +266,7 @@ int main(int argc, char* argv[]) {
     process_code(src);
     // printit(it.nleft());
   }
-  write_file(ROOT "/out.pp.c", out);
+  write_file(ROOT "pp.test/out.pp.c", out);
 #ifdef debug
   return true;
 #endif

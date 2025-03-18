@@ -53,8 +53,8 @@ struct TestData {
     return result;
   }
 
-  Set<FileID> generateIncludes(size_t count) {
-    Set<FileID> includes;
+  dense::set<FileID> generateIncludes(size_t count) {
+    dense::set<FileID> includes;
     includes.reserve(count);
     for (size_t i = 0; i < count; ++i) {
       includes.insert(file_dist(rng));

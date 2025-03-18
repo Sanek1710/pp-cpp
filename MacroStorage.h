@@ -8,17 +8,11 @@
 #include <vector>
 
 #include "memstat.h"
-#include "third-party/unordered_dense/include/ankerl/unordered_dense.h"
+#include "util.h"
 
 using FileID = unsigned;
 using MacroName = std::string;
 using Version = unsigned;  // 2^32 seconds ~130 years
-
-template <typename Key>
-using Set = ankerl::unordered_dense::set<Key>;
-
-template <typename Key, typename Value>
-using Map = ankerl::unordered_dense::map<Key, Value>;
 
 // Simple macro expansion for testing
 struct MacroStamp {
@@ -44,7 +38,7 @@ inline size_t memory(const MacroDefinition& def) {
 }
 
 template <typename Key, typename Value>
-inline size_t memory(const Map<Key, Value>& mp) {
+inline size_t memory(const dense::map<Key, Value>& mp) {
   size_t nbytes = mp.bucket_count() * (sizeof(size_t) + sizeof(size_t));
   for (const auto& p : mp) {
     nbytes += memory(p);
@@ -79,7 +73,7 @@ class MacroStorage {
   void deleteFileMacros(FileID fileId) { updateFileVersion(fileId); }
 
   const MacroStamp* findMacro(const MacroName& name,
-                                  const Set<FileID>& includeIds) const {
+                              const dense::set<FileID>& includeIds) const {
     auto macroIt = macros.find(name);
     if (macroIt == macros.end()) return nullptr;
 
@@ -113,9 +107,9 @@ class MacroStorage {
 
  private:
   // optionally split onto Functional and Object macros
-  Map<MacroName, std::vector<MacroDefinition>> macros;
+  dense::map<MacroName, std::vector<MacroDefinition>> macros;
   // only updated/deleted files
-  Map<FileID, Version> fileVersions;
+  dense::map<FileID, Version> fileVersions;
 
   Version getFileVersion(FileID fileId) const {
     if (auto fileVersIt = fileVersions.find(fileId);
@@ -127,7 +121,7 @@ class MacroStorage {
   Version updateFileVersion(FileID fileId) { return ++fileVersions[fileId]; }
 
   void cleanupOldMacroses(std::vector<MacroDefinition>& defs, FileID fileId,
-                       Version currentVersion) {
+                          Version currentVersion) {
     defs.erase(
         std::remove_if(defs.begin(), defs.end(),
                        [fileId, currentVersion](const MacroDefinition& def) {

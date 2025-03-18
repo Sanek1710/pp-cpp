@@ -149,7 +149,7 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   const RunTimer CAT(_rt_, __LINE__) { name, __LINE__ }
 #define timeit stimeit(__func__)
 #define checkin std::cerr << "[here]: " << __LINE__ << "\n"
-#define printit(x) std::cerr << x << "\n"
+#define printit(x) std::cerr << #x ": " << x << "\n"
 #define repeat(n) for (size_t _i = n; _i; --_i)
 
 #define stotaltimeit(name)                               \

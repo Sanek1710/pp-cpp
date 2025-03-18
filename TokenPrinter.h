@@ -1,23 +1,26 @@
 #pragma once
 
+#include <iomanip>
 #include <ostream>
+#include <string_view>
+#include <unordered_set>
 
-#include "Cursor.h"
+#include "Token.h"
 
-constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
-  uint32_t val = 0;
-  for (int i = 0; i < 4 && it != end; ++i, ++it) {
-    val = (val << 8) | *it;
-    if (*it == '"' || *it == '\'') return val;
-  }
-  return 0;
-}
-constexpr uint32_t mask3(std::string_view sv) {
-  return mask3(sv.begin(), sv.end());
-}
+// constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
+//   uint32_t val = 0;
+//   for (int i = 0; i < 4 && it != end; ++i, ++it) {
+//     val = (val << 8) | *it;
+//     if (*it == '"' || *it == '\'') return val;
+//   }
+//   return 0;
+// }
+// constexpr uint32_t mask3(std::string_view sv) {
+//   return mask3(sv.begin(), sv.end());
+// }
 
-constexpr auto m1 = mask3("u\"1231231213213");
-constexpr auto m2 = mask3("u\"12312sdvsdv13");
+// constexpr auto m1 = mask3("u\"1231231213213");
+// constexpr auto m2 = mask3("u\"12312sdvsdv13");
 
 class TokenPrinter {
  public:
@@ -74,3 +77,4 @@ class TokenPrinter {
   bool print_lines = false;
   std::ostream& os;
 };
+
