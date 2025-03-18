@@ -16,7 +16,7 @@
 #include "helper.h"
 #include "util.h"
 #include "Macro.h"
-
+#include "CodeDumper.h"
 // #define debug
 
 StringMap<std::string> macromap;
@@ -26,92 +26,94 @@ struct Macro {
   std::string expansion;
 };
 
-struct CodeDumper {
- public:
-  CodeDumper(size_t reserve_size = 0) { out.reserve(reserve_size); }
+// struct CodeDumper {
+//  public:
+//   CodeDumper(size_t reserve_size = 0) { out.reserve(reserve_size); }
 
-  inline void dump(const Token& token, std::string_view src) {
-    const auto& pos = token.range.start_pos;
-    if (pos != last_pos) posmap[last_pos] = pos;
+//   inline void dump(const Token& token, std::string_view src) {
+//     const auto& pos = token.range.start_pos;
+//     if (pos != last_pos) posmap[last_pos] = pos;
 
-    out += token.get_text(src);
-    const auto dline = token.range.end_pos.line - token.range.start_pos.line;
-    last_pos.line += dline;
-    if (dline == 0) {
-      last_pos.column +=
-          token.range.end_pos.column - token.range.start_pos.column;
-    } else {
-      last_pos.column = token.range.end_pos.column;
-    }
-  }
+//     out += token.get_text(src);
+//     const auto dline = token.range.end_pos.line - token.range.start_pos.line;
+//     last_pos.line += dline;
+//     if (dline == 0) {
+//       last_pos.column +=
+//           token.range.end_pos.column - token.range.start_pos.column;
+//     } else {
+//       last_pos.column = token.range.end_pos.column;
+//     }
+//   }
 
-  inline void align_dump(const Token& token, std::string_view src) {
-    const auto& pos = token.range.start_pos;
-    if (!align_to(pos)) posmap[last_pos] = pos;
+//   inline void align_dump(const Token& token, std::string_view src) {
+//     const auto& pos = token.range.start_pos;
+//     if (!align_to(pos)) posmap[last_pos] = pos;
 
-    out += token.get_text(src);
-    const auto dline = token.range.end_pos.line - token.range.start_pos.line;
-    last_pos.line += dline;
-    if (dline == 0) {
-      last_pos.column +=
-          token.range.end_pos.column - token.range.start_pos.column;
-    } else {
-      last_pos.column = token.range.end_pos.column;
-    }
-  }
+//     out += token.get_text(src);
+//     const auto dline = token.range.end_pos.line - token.range.start_pos.line;
+//     last_pos.line += dline;
+//     if (dline == 0) {
+//       last_pos.column +=
+//           token.range.end_pos.column - token.range.start_pos.column;
+//     } else {
+//       last_pos.column = token.range.end_pos.column;
+//     }
+//   }
 
-  inline void dump(std::string_view code, Position pos) {
-    if (pos != last_pos) posmap[last_pos] = pos;
-    insert(code);
-  }
+//   inline void dump(std::string_view code, Position pos) {
+//     if (pos != last_pos) posmap[last_pos] = pos;
+//     insert(code);
+//   }
 
-  void align_dump(std::string_view code, Position pos) {
-    if (!align_to(pos)) posmap[last_pos] = pos;
-    insert(code);
-  }
+//   void align_dump(std::string_view code, Position pos) {
+//     if (!align_to(pos)) posmap[last_pos] = pos;
+//     insert(code);
+//   }
 
-  //  private:
-  Position last_pos;
-  std::string out;
-  PositionMap posmap;
+//   //  private:
+//   Position last_pos;
+//   std::string out;
+//   PositionMap posmap;
 
-  inline bool align_to(Position pos) {
-    if (last_pos.line == pos.line) {
-      if (last_pos.column == pos.column) return true;
-      if (last_pos.column > pos.column) return false;
-      out.append(pos.column - last_pos.column, ' ');
-      last_pos.column = pos.column;
-      return true;
-    }
-    if (last_pos.line < pos.line) {
-      out.append(pos.line - last_pos.line, '\n');
-      out.append(pos.column, ' ');
-      last_pos = pos;
-      return true;
-    }
-    return false;
-  }
+//   inline bool align_to(Position pos) {
+//     if (last_pos.line == pos.line) {
+//       if (last_pos.column == pos.column) return true;
+//       if (last_pos.column > pos.column) return false;
+//       out.append(pos.column - last_pos.column, ' ');
+//       last_pos.column = pos.column;
+//       return true;
+//     }
+//     if (last_pos.line < pos.line) {
+//       out.append(pos.line - last_pos.line, '\n');
+//       out.append(pos.column, ' ');
+//       last_pos = pos;
+//       return true;
+//     }
+//     return false;
+//   }
 
-  inline void insert(std::string_view code) {
-    for (char c : code) {
-      ++last_pos.column;
-      if (c == '\n') {
-        ++last_pos.line;
-        last_pos.column = 0;
-      }
-      out += c;
-    }
-  }
-  inline void insert(size_t n, char c) {
-    if (c == '\n') {
-      last_pos.line += n;
-      last_pos.column = 0;
-    } else {
-      last_pos.column += n;
-    }
-    out.append(n, c);
-  }
-};
+//   inline void insert(std::string_view code) {
+//     for (char c : code) {
+//       ++last_pos.column;
+//       if (c == '\n') {
+//         ++last_pos.line;
+//         last_pos.column = 0;
+//       }
+//       out += c;
+//     }
+//   }
+//   inline void insert(size_t n, char c) {
+//     if (c == '\n') {
+//       last_pos.line += n;
+//       last_pos.column = 0;
+//     } else {
+//       last_pos.column += n;
+//     }
+//     out.append(n, c);
+//   }
+// };
+
+
 
 struct RetrievalQueue {
   RetrievalQueue(Tokeniser& tokeniser) : tokeniser(tokeniser) {}
@@ -167,24 +169,24 @@ void process_code(std::string_view src) {
 
     if (token.id == Token::eof) break;
     if (token.id == Token::pp_include) {
-      continue;
+      // continue;
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
       continue;
     }
     if (token.id == Token::pp_define) {
-      continue;
+      // continue;
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
     if (token.id == Token::pp_undef) {
-      continue;
+      // continue;
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
     if (token.id == Token::identifier) {
-      continue;
+      // continue;
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
@@ -232,7 +234,7 @@ void process_code(std::string_view src) {
       continue;
     }
 
-    // codeDumper.align_dump(token, src);
+    codeDumper.align_dump(token, src);
   }
   never {
     for (const auto& [name, exp] : macromap) {
