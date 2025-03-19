@@ -189,7 +189,5 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   do it now __VA_ARGS__
 #define CATTER(ab) #ab##cd
 #define CATTER2(ab) L#ab
-#define CATTER3(la...) __VA_ARGS__ la $$
-
 
 

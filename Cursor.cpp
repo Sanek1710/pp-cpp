@@ -13,6 +13,11 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
             << "]";
 }
 
+std::ostream& operator<<(std::ostream& os, const Range& range){
+  return os << range.start_pos << " - " << range.end_pos;
+}
+
+
 void DefineImage::print(std::ostream& os, std::string_view src) const {
   std::cerr << "#define " << name.get_text(src);
   std::cerr << "(";

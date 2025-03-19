@@ -15,14 +15,13 @@ struct Token {
   }
 
   void print(std::string_view src, std::ostream& os) const;
-
   // basically character mapping to enum like constants:
-  // `any space -> ' ', except from '\n'`
-  // `any number -> '0'`
-  // `any identifier -> 'a'`
-  // `line comment -> 'c'`
+  // `any space         -> ' ', except from '\n'`
+  // `any number        -> '0'`
+  // `any identifier    -> 'a'`
+  // `line comment      -> 'c'`
   // `multiline comment -> 'm'`
-  // `string -> '"'`
+  // `string            -> '"'`
   //
   // all the others maps to themselves
   // potentially allows to build string of tokens

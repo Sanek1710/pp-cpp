@@ -16,3 +16,4 @@ struct Range {
 };
 
 std::ostream& operator<<(std::ostream& os, const Position& pos);
+std::ostream& operator<<(std::ostream& os, const Range& range);
