@@ -6,6 +6,8 @@
 #include <iomanip>
 #include <iostream>
 
+using namespace std::chrono_literals;
+
 inline std::string read_file(const std::string filename) {
   std::ifstream ifs{filename};
   return std::string{std::istreambuf_iterator<char>{ifs},
@@ -17,7 +19,7 @@ inline void write_file(const std::string filename, std::string_view s) {
   ofs.write(s.data(), s.size());
 }
 
-using Clock = std::chrono::system_clock;
+using Clock = std::chrono::high_resolution_clock;
 using TImePoint = Clock::time_point;
 
 class BaseTimer {
@@ -69,11 +71,14 @@ class RunTimer : BaseTimer {
 
 class TimeHolder {
  public:
-  long ms = 0;
+  Clock::duration duration = 0ms;
+
   TimeHolder(const char* name, unsigned line) : name(name), line(line) {}
   ~TimeHolder() {
-    std::cerr << "#[" << std::setw(6) << ms << "] " << std::setw(3) << line
-              << ": " << name << "\n";
+    auto ns =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+    std::cerr << "#[" << std::setw(6) << (ns / 1'000'000) << "] "
+              << std::setw(3) << line << ": " << name << "\n";
   }
 
  private:
@@ -90,9 +95,7 @@ class TotalRunTimer {
   }
   ~TotalRunTimer() {
     auto duration = Clock::now() - start;
-    auto ms =
-        std::chrono::duration_cast<std::chrono::milliseconds>(duration).count();
-    timeHolder.ms += ms;
+    timeHolder.duration += duration;
   }
 
  private:
@@ -190,4 +193,19 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
 #define CATTER(ab) #ab##cd
 #define CATTER2(ab) L#ab
 
-
+#define testit(name, ...)                        \
+  class LifetimeTest##name {                     \
+   public:                                       \
+    LifetimeTest##name() {                       \
+      runwrapper();                              \
+      __VA_OPT__(exit(0));                       \
+    }                                            \
+    void runwrapper() {                          \
+      std::cerr << ("test::" #name) << " \\\n";  \
+      run();                                     \
+      std::cerr << ("test::" #name) << " /\n\n"; \
+    }                                            \
+    void run();                                  \
+  };                                             \
+  const static LifetimeTest##name _lttst##name;  \
+  inline void LifetimeTest##name::run()

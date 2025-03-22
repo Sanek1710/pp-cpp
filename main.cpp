@@ -67,50 +67,80 @@ std::string process_code(std::string_view src) {
   std::vector<std::string> includes;
   std::vector<UndefImage> undefs;
 
-  Token token;
-
   std::vector<size_t> arg_start_ids;
+
+  Token last_token;
+  last_token.id = Token::code_chunk;
+
+  bool do_dump = false;
+
+  Token token;
+#define swap_dump_glued()                             \
+  do {                                                \
+    if (last_token.range.end == token.range.start) {  \
+      last_token.range.end = token.range.end;         \
+      last_token.range.end_pos = token.range.end_pos; \
+    } else {                                          \
+      codeDumper.align_dump(last_token);              \
+      last_token.range = token.range;                 \
+    }                                                 \
+  } while (false)
+
+#define skip_dump_glued()                             \
+  do {                                                \
+    codeDumper.align_dump(last_token);                \
+    last_token.range.start = token.range.end;         \
+    last_token.range.end = token.range.end;           \
+    last_token.range.end_pos = token.range.end_pos;   \
+    last_token.range.start_pos = token.range.end_pos; \
+  } while (false);
+
+#define swap_dump_raw() codeDumper.align_dump(token);
+#define skip_dump_raw()
+
+#define swap_dump() swap_dump_glued()
+#define skip_dump() skip_dump_glued()
+
+
   while (true) {
     // skip_extras<false>();
     token = rq.read();
+
     // codeDumper.out += token.get_text(src);
     // printer.print(token, src);
-    
+
     if (token.id == Token::eof) break;
-    if (token.id == Token::newline) continue;
-    if (is_extra(token.id)) {
-      codeDumper.putch(' ');
-      continue;
-    }
 
     if (token.id == Token::pp_include) {
-      // continue;
+      continue;
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
+
       continue;
     }
     if (token.id == Token::pp_define) {
-      // continue;
+      continue;
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
     if (token.id == Token::pp_undef) {
-      // continue;
+      continue;
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == Token::identifier && false) {
+    if (token.id == Token::identifier) {
       // continue;
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
-        codeDumper.align_dump(token);
+        swap_dump();
         continue;
       }
 
       MacroStamp macroStamp{macroIt->second};
       if (!macroStamp.info.is_functional) {
+        skip_dump();
         codeDumper.align_dump(macroStamp.expansion, token.range.start_pos);
         continue;
       }
@@ -123,7 +153,7 @@ std::string process_code(std::string_view src) {
 
       // invalid macro call, just dump identifier
       if (ltok_id != '(') {
-        codeDumper.align_dump(token);
+        swap_dump();
         continue;
       }
       // at '('
@@ -140,7 +170,7 @@ std::string process_code(std::string_view src) {
         if (!balance) break;
       }
 
-      codeDumper.align_dump(token);
+      swap_dump();
       // printer.getos() << "call: ";
       // for (auto& token : tokens) {
       //   printer.print(token, src);
@@ -149,7 +179,13 @@ std::string process_code(std::string_view src) {
       continue;
     }
 
-    codeDumper.align_dump(token);
+    if (token.id == Token::newline) continue;
+    if (token.id == Token::space) {
+      skip_dump();
+      codeDumper.putch(' ');
+      continue;
+    }
+    swap_dump();
   }
   never {
     for (const auto& [name, exp] : macromap) {

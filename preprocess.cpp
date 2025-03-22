@@ -6,6 +6,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -16,6 +17,7 @@
 #include "Cursor.h"
 #include "Macro.h"
 #include "PositionMap.h"
+#include "TokenGroup.h"
 #include "TokenPrinter.h"
 #include "helper.h"
 #include "util.h"
@@ -203,9 +205,10 @@ struct vector1 {
   T val;
 };
 
-// vector1<Token> tokens;
-std::vector<Token> tokens;
+vector1<Token> tokens;
+// std::vector<Token> tokens;
 StringSet macronames;
+StringMap<std::string> macroMap;
 
 void process_code(std::string_view src) {
   tokens.clear();
@@ -213,22 +216,27 @@ void process_code(std::string_view src) {
   Tokeniser tkz{src};
   while (tokens.emplace_back(tkz.read_token()).id != Token::eof) {
     switch (tokens.back().id) {
-      case Token::pp_include:
+      case Token::pp_include: {
+        // totaltimeit;
         continue;
+      }
       case Token::pp_define: {
+        // totaltimeit;
         const auto macro_name = tkz.defineImage.name.get_text(src);
-        macronames.insert(macro_name);
+        // macronames.insert(macro_name);
+        macroMap.emplace(macro_name,
+                         compile_macro_expansion(tkz.defineImage, src));
         continue;
       }
       case Token::pp_undef: {
-        macronames.erase(tkz.undefImage.name.get_text(src));
+        // totaltimeit;
+        macroMap.erase(tkz.undefImage.name.get_text(src));
         continue;
       }
       case Token::identifier: {
         const auto macro_name = tokens.back().get_text(src);
-        auto macroIt = macronames.find(macro_name);
-        if (macroIt == macronames.end()) break;  // from switch
-
+        auto macroIt = macroMap.find(macro_name);
+        if (macroIt == macroMap.end()) break;  // from switch
         continue;
       }
       default:
@@ -294,3 +302,83 @@ int main_cli(int argc, char* argv[]) {
 
   return 0;
 }
+
+testit(compile_macro_expansion) {
+  // return;
+  std::string src = read_file("/mnt/d/Projects/pp-cpp/pp.test/pp.in.cpp");
+
+  StringMap<std::string> expected =  //
+      {
+          {"TWO_WORDS", "f0 aa bb"},                 //
+          {"STR_AFTER_TOKEN", "f1 aa $0s"},          //
+          {"NAMED_VA", "v1 some($0 )"},              //
+          {"UNNAMED_VA", "v1 some($0 )"},            //
+          {"INCNAMED_VA", "v1 some(__VA_ARGS__)"},   //
+          {"INCUNNAMED_VA", "v1 some(named)"},       //
+          {"CNSTINBOOL", " constexpr inline bool"},  //
+          {"farg", "f1 farg($0 )"},                  //
+          {"f", "f0 f()"},                           //
+          {"abeta", "f1 alpha$0_gamma"},             //
+          {"SELF1", "f2 ($0 , $1 )"},                //
+          {"CAT1", "f2 $0_$1_"},                     //
+          {"STR1", "f1 $0s"},                        //
+          {"STR1", "f1 $0s"},                        //
+          {"CATSTR1", "f2 $0 $1s"},                  //
+          {"CATSTR2", "f2 $0_$1s"},                  //
+          {"CATSTR3", "f2 $0_$1s"},                  //
+          {"CATSTR4", "f2 $0s$1s"},                  //
+          {"CATSTR5", "f2 $0_$1_"},                  //
+      };
+
+  Tokeniser tkz{src};
+  Token token = tkz.read_token();
+  size_t nfailed = 0;
+  while (token.id != Token::eof) {
+    if (token.id == Token::pp_define) {
+      std::string_view name = tkz.defineImage.name.get_text(src);
+      std::string act = compile_macro_expansion(tkz.defineImage, src);
+      tkz.defineImage.print(std::cerr, src);
+      std::cerr << "\n";
+
+      if (expected.contains(name)) {
+        auto exp = expected.at(name);
+        if (act == exp) {
+          std::cerr << "\033[32m[pass]\033[0m  act: `" << act << "`\n";
+          std::cerr << "\033[32m      \033[0m  exp: `" << exp << "`\n";
+        } else {
+          ++nfailed;
+          std::cerr << "\033[31m[fail]\033[0m  act: `" << act << "`\n";
+          std::cerr << "\033[31m      \033[0m  exp: `" << exp << "`\n";
+        }
+      } else {
+        std::cerr << "  act: `" << act << "`\n";
+      }
+      std::cerr << "\n";
+    }
+    token = tkz.read_token();
+  }
+  if (nfailed) {
+    std::cerr << "\033[31m[failed:]\033[0m: " << nfailed << "\n";
+  }
+
+  // exit(0);
+}
+
+// testit(compile_macro_expansion_v2) {
+//   std::string src = R"(
+//     #define CAT(x, y)  x##y
+//     #define STR(x)  #x
+//     #define CATSTR(x, y) #x ## # y
+//   )";
+
+//   Tokeniser tkz{src};
+//   Token token = tkz.read_token();
+//   while (token.id != Token::eof) {
+//     if (token.id == Token::pp_define) {
+//       std::cerr << std::setw(10) << tkz.defineImage.name.get_text(src) << ":
+//       "; std::cerr << compile_macro_expansion_v2(tkz.defineImage, src) <<
+//       "\n";
+//     }
+//     token = tkz.read_token();
+//   }
+// }

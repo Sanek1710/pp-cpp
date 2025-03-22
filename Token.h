@@ -1,14 +1,17 @@
 #pragma once
 
+#include <cstddef>
+#include <cstdint>
 #include <ostream>
 
 #include "Position.h"
 
 using token_id = char;
-
 struct Token {
-  Range range;
   token_id id;
+  token_id category;
+  // uint16_t _alignment;
+  Range range;
 
   inline std::string_view get_text(std::string_view src) const {
     return src.substr(range.start, range.end - range.start);
@@ -59,6 +62,8 @@ struct Token {
   static constexpr token_id pp_undef = 'U';
   static constexpr token_id pp_other_directive = 'O';
   static constexpr token_id pp_error = 'E';
+
+  static constexpr token_id code_chunk = 'C';
 };
 
 template <bool ppline = false>

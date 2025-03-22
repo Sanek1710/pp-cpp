@@ -13,26 +13,28 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
             << "]";
 }
 
-std::ostream& operator<<(std::ostream& os, const Range& range){
+std::ostream& operator<<(std::ostream& os, const Range& range) {
   return os << range.start_pos << " - " << range.end_pos;
 }
 
-
 void DefineImage::print(std::ostream& os, std::string_view src) const {
-  std::cerr << "#define " << name.get_text(src);
-  std::cerr << "(";
-  // if (!args.empty()) {
-  //   auto argit = args.begin();
-  //   std::cerr << argit->get_text(src);
-  //   for (++argit; argit != args.end(); ++argit) {
-  //     std::cerr << ", " << argit->get_text(src);
-  //   }
-  // }
-  std::cerr << ") ";
-  // for (auto exp : expansion) {
-  //   std::cerr << exp.get_text(src);
-  // }
-  std::cerr << "\n\n";
+  os << "#define " << name.get_text(src);
+  if (info.is_functional) {
+    os << "(";
+    if (info.nargs) {
+      auto argit = args_begin();
+      os << argit->get_text(src);
+      for (++argit; argit != args_end(); ++argit) {
+        os << ", " << argit->get_text(src);
+      }
+    }
+    if (info.is_variadic) os << "...";
+    os << ")";
+  }
+  os << " ";
+  for (auto expIt = expansion_begin(); expIt != expansion_end(); ++expIt) {
+    os << expIt->get_text(src);
+  }
 }
 
 void Token::print(std::string_view src, std::ostream& os) const {
