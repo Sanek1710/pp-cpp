@@ -42,7 +42,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
     OpStr,
     Arg,
     Other
-  } active_token;
+  } active_token = ActiveToken::Other;
 
   auto it = macro.expansion_begin();
   const auto end = macro.expansion_end();

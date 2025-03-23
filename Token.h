@@ -5,11 +5,43 @@
 #include <ostream>
 
 #include "Position.h"
+#include "helper.h"
 
-using token_id = char;
+namespace tkgroup {
+// one single char as is
+static constexpr char raw = 0;
+// spaces comments etc
+static constexpr char extra = 1;
+// represent 1 and more character
+static constexpr char grouped = 2;
+// preprocessor line specific tokens
+static constexpr char ppline = 4;
+}  // namespace tkgroup
+
+struct token_id {
+  char id;
+  char category;
+
+  inline constexpr bool operator==(const token_id& other) const {
+    return id == other.id && category == other.category;
+  }
+  inline constexpr bool operator!=(const token_id& other) const {
+    return !(*this == other);
+  }
+  inline constexpr bool operator==(const char& other_id) const {
+    return id == other_id && category == 0;
+  }
+  inline constexpr bool operator!=(const char& other_id) const {
+    return !(*this == other_id);
+  }
+
+  constexpr operator int() const {
+    return (static_cast<int>(category) << 8U) | id;
+  }
+};
+
 struct Token {
   token_id id;
-  token_id category;
   // uint16_t _alignment;
   Range range;
 
@@ -34,43 +66,39 @@ struct Token {
   // `int var = 5` -> `a a = 0`
   // `const char* str = "string"` -> `a a* a = "`
 
-  static constexpr token_id eof = '\0';
+  static constexpr token_id eof{'\0', tkgroup::raw};
 
-  static constexpr token_id space = ' ';
-  static constexpr token_id newline = '\n';
+  static constexpr token_id space{' ', tkgroup::extra};
+  static constexpr token_id newline{'\n', tkgroup::extra};
 
-  static constexpr token_id number = '0';
-  static constexpr token_id identifier = 'a';
+  static constexpr token_id number{'0', tkgroup::grouped};
+  static constexpr token_id identifier{'a', tkgroup::grouped};
 
-  static constexpr token_id line_comment = 'c';
-  static constexpr token_id multiline_comment = 'm';
+  static constexpr token_id line_comment{'c', tkgroup::extra};
+  static constexpr token_id multiline_comment{'m', tkgroup::extra};
 
-  static constexpr token_id string_like_literal = '"';
-  static constexpr token_id raw_string_literal = 'R';
-  // static constexpr token_id char_literal = '\'';
+  static constexpr token_id string_like_literal{'"', tkgroup::grouped};
+  static constexpr token_id raw_string_literal{'R', tkgroup::grouped};
+  // static constexpr token_id char_literal{'\'', 0};
 
-  static constexpr token_id pp_start = 'p';
-  static constexpr token_id pp_op_str = '1';
-  static constexpr token_id pp_op_cat = '2';
-  static constexpr token_id ellipsis = 'e';
+  static constexpr token_id ellipsis{'e', tkgroup::grouped};
 
-  static constexpr token_id line_continuation = 'z';
+  static constexpr token_id line_continuation{'z', tkgroup::extra};
 
-  static constexpr token_id pp_define = 'D';
-  static constexpr token_id pp_include = 'I';
-  static constexpr token_id pp_include_string = 'i';
-  static constexpr token_id pp_undef = 'U';
-  static constexpr token_id pp_other_directive = 'O';
-  static constexpr token_id pp_error = 'E';
+  static constexpr token_id pp_start{'p', tkgroup::ppline};
+  static constexpr token_id pp_op_str{'1', tkgroup::ppline};
+  static constexpr token_id pp_op_cat{'2', tkgroup::ppline};
 
-  static constexpr token_id code_chunk = 'C';
+  static constexpr token_id pp_define{'D', tkgroup::ppline};
+  static constexpr token_id pp_include{'I', tkgroup::ppline};
+  static constexpr token_id pp_include_string{'i', tkgroup::ppline};
+  static constexpr token_id pp_undef{'U', tkgroup::ppline};
+  static constexpr token_id pp_other_directive{'O', tkgroup::ppline};
+  static constexpr token_id pp_error{'E', tkgroup::ppline};
+
+  static constexpr token_id code_chunk{'C', tkgroup::grouped};
 };
 
-template <bool ppline = false>
 inline bool is_extra(token_id token) {
-  return token == Token::space                 //
-         || token == Token::multiline_comment  //
-         || token == Token::line_comment       //
-         || token == Token::line_continuation  //
-         || (!ppline && token == Token::newline);
+  return token.category == tkgroup::extra;
 }

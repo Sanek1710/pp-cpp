@@ -38,5 +38,5 @@ void DefineImage::print(std::ostream& os, std::string_view src) const {
 }
 
 void Token::print(std::string_view src, std::ostream& os) const {
-  os << id << range.start_pos << ": `" << ctrl_str{get_text(src)} << "`\n";
+  os << id.id << range.start_pos << ": `" << ctrl_str{get_text(src)} << "`\n";
 }

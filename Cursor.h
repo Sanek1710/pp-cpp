@@ -349,10 +349,10 @@ class Tokeniser {
           return Token::multiline_comment;
         }
       }
-      if constexpr (extras_only) return '/';
+      if constexpr (extras_only) return {'/', tkgroup::raw};
       cur.clear_line = false;
       skip();
-      return '/';
+      return {'/', tkgroup::raw};
     }
 
     if (*cur.it == '\\') { /*4*/
@@ -361,25 +361,29 @@ class Tokeniser {
         skip_line_continuation();
         return Token::line_continuation;
       }
-      if constexpr (extras_only) return '\\';
+      if constexpr (extras_only) return {'\\', tkgroup::raw};
       skip();
-      return '\\';
+      return {'\\', tkgroup::raw};
     }
 
     /*7*/
-    if constexpr (extras_only) return *cur.it;
-    return *cur.it++;
+    if constexpr (extras_only) return {*cur.it, tkgroup::raw};
+    return {*cur.it++, tkgroup::raw};
   }
 
   template <bool ppline>
   inline void skip_extras() {
-    while (is_extra<ppline>(  //
-        skip_common<ppline, /*extras_only*/ true>()))
-      ;
+    while (true) {
+      token_id kind = skip_common<false, /*extras_only*/ true>();
+      if (!is_extra(kind)) break;
+    }
   }
 
-  inline void skip_ppline_extras() {  //
-    return skip_extras</*ppline=*/true>();
+  inline void skip_ppline_extras() {
+    while (true) {
+      token_id kind = skip_common<true, /*extras_only*/ true>();
+      if (kind.id == '\n' || !is_extra(kind)) break;
+    }
   }
 
   // used to skip preprocessor lines
