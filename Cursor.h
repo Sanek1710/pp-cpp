@@ -100,7 +100,7 @@ class Tokeniser {
     Token token;
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
-    token.id = skip_next();
+    token.tag = skip_next();
 #ifndef INLINEPPROC
     if (!ppline && token.id == tag::pp_start) {
       token.id = process_directive();
@@ -117,7 +117,7 @@ class Tokeniser {
     Token token;
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
-    token.id = skip_ppnext();
+    token.tag = skip_ppnext();
 #ifndef INLINEPPROC
     if (!ppline && token.id == tag::pp_start) {
       token.id = process_directive();
@@ -235,7 +235,7 @@ class Tokeniser {
   inline bool consume_identifier_token(Token& token) {
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
-    token.id = tag::identifier;
+    token.tag = tag::identifier;
     bool consumed = false;
     if (is_word_start_char(*cur.it)) {
       skip_identifier();

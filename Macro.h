@@ -43,14 +43,14 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
     const Token& tok = *it;
 
     // skip extras mark as need space
-    if (tag::is_extra(tok.id)) {
+    if (tag::is_extra(tok.tag)) {
       if (last_tag != tag::pp_op_cat  //
           && last_tag != tag::pp_op_str)
         need_space = true;
       continue;
     }
 
-    if (tok.id == tag::pp_op_cat) {
+    if (tok.tag == tag::pp_op_cat) {
       if (last_tag == tag::arg) {
         if (out.back() == ' ') out.back() = '_';
       }
@@ -59,7 +59,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
       continue;
     }
 
-    if (tok.id == tag::pp_op_str) {
+    if (tok.tag == tag::pp_op_str) {
       if (last_tag != tag::pp_op_cat) need_space = true;
       last_tag = tag::pp_op_str;
       continue;
@@ -69,7 +69,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
     need_space = false;
 
     // what if arg
-    if (macro.info.is_functional && tok.id == tag::identifier) {
+    if (macro.info.is_functional && tok.tag == tag::identifier) {
       const auto text = tok.get_text(src);
 
       // check arg
@@ -103,7 +103,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
       if (c == '$') out += '$';
       out += c;
     }
-    last_tag = tok.id;
+    last_tag = tok.tag;
   }
 
   // Clean up trailing space

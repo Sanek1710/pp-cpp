@@ -99,7 +99,7 @@ static constexpr Tag other               = group('O', Kind::aux);
 }  // namespace tag
 
 struct Token {
-  Tag id;
+  Tag tag;
   // uint16_t _alignment;
   Range range;
 

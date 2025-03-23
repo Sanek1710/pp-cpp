@@ -25,7 +25,6 @@
 #include "helper.h"
 #include "util.h"
 
-
 // Global maps for macro processing
 StringSet defnames;
 StringMap<std::string> macromap;
@@ -130,25 +129,25 @@ void process_code_full(std::string_view src) {
   while (true) {
     token = rq.read();
 
-    if (token.id == tag::eof) break;
+    if (token.tag == tag::eof) break;
 
-    if (token.id == tag::pp_include) {
+    if (token.tag == tag::pp_include) {
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == tag::pp_define) {
+    if (token.tag == tag::pp_define) {
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
 
-    if (token.id == tag::pp_undef) {
+    if (token.tag == tag::pp_undef) {
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == tag::identifier) {
+    if (token.tag == tag::identifier) {
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
@@ -163,9 +162,9 @@ void process_code_full(std::string_view src) {
       }
 
       // Handle functional macro
-      Tag ltok_id = rq.shadow_read().id;
+      Tag ltok_id = rq.shadow_read().tag;
       while (tag::is_extra(ltok_id)) {
-        ltok_id = rq.shadow_read().id;
+        ltok_id = rq.shadow_read().tag;
       }
 
       if (ltok_id != tag::raw('(')) {
@@ -176,7 +175,7 @@ void process_code_full(std::string_view src) {
       arg_start_ids.clear();
       unsigned balance = 1;
       while (ltok_id != tag::eof) {
-        ltok_id = rq.shadow_read().id;
+        ltok_id = rq.shadow_read().tag;
         if (ltok_id == tag::raw('('))
           ++balance;
         else if (ltok_id == tag::raw(')'))
@@ -218,8 +217,8 @@ void process_code(std::string_view src) {
   tokens.clear();
   size_t h = 0;
   Tokeniser tkz{src};
-  while (tokens.emplace_back(tkz.read_token()).id != tag::eof) {
-    switch (tokens.back().id) {
+  while (tokens.emplace_back(tkz.read_token()).tag != tag::eof) {
+    switch (tokens.back().tag) {
       case tag::pp_include: {
         // totaltimeit;
         continue;
@@ -341,8 +340,8 @@ testit(compile_macro_expansion) {
   Tokeniser tkz{src};
   Token token = tkz.read_token();
   size_t nfailed = 0;
-  while (token.id != tag::eof) {
-    if (token.id == tag::pp_define) {
+  while (token.tag != tag::eof) {
+    if (token.tag == tag::pp_define) {
       std::string_view name = tkz.defineImage.name.get_text(src);
       std::string act = compile_macro_expansion(tkz.defineImage, src);
       tkz.defineImage.print(std::cerr, src);

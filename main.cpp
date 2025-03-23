@@ -71,7 +71,7 @@ std::string process_code(std::string_view src) {
   std::vector<size_t> arg_start_ids;
 
   Token last_token;
-  last_token.id = tag::code;
+  last_token.tag = tag::code;
 
   bool do_dump = false;
 
@@ -109,27 +109,27 @@ std::string process_code(std::string_view src) {
     // codeDumper.out += token.get_text(src);
     // printer.print(token, src);
 
-    if (token.id == tag::eof) break;
+    if (token.tag == tag::eof) break;
 
-    if (token.id == tag::pp_include) {
+    if (token.tag == tag::pp_include) {
       continue;
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
 
       continue;
     }
-    if (token.id == tag::pp_define) {
+    if (token.tag == tag::pp_define) {
       continue;
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
-    if (token.id == tag::pp_undef) {
+    if (token.tag == tag::pp_undef) {
       continue;
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == tag::identifier) {
+    if (token.tag == tag::identifier) {
       // continue;
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
@@ -146,9 +146,9 @@ std::string process_code(std::string_view src) {
       }
 
       // shadow: IDENTIFIER
-      Tag ltok_id = rq.shadow_read().id;
+      Tag ltok_id = rq.shadow_read().tag;
       while (tag::is_extra(ltok_id)) {
-        ltok_id = rq.shadow_read().id;
+        ltok_id = rq.shadow_read().tag;
       }
 
       // invalid macro call, just dump identifier
@@ -160,7 +160,7 @@ std::string process_code(std::string_view src) {
       arg_start_ids.clear();
       unsigned balance = 1;
       while (ltok_id != tag::eof) {
-        ltok_id = rq.shadow_read().id;
+        ltok_id = rq.shadow_read().tag;
         if (ltok_id == tag::raw('('))
           ++balance;
         else if (ltok_id == tag::raw(')'))
@@ -179,8 +179,8 @@ std::string process_code(std::string_view src) {
       continue;
     }
 
-    if (token.id == tag::newline) continue;
-    if (token.id == tag::space) {
+    if (token.tag == tag::newline) continue;
+    if (token.tag == tag::space) {
       skip_dump();
       codeDumper.putch(' ');
       continue;
