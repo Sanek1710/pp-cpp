@@ -1,3 +1,5 @@
+#include <unistd.h>
+
 #include <algorithm>
 #include <bitset>
 #include <charconv>
@@ -17,10 +19,12 @@
 #include "Cursor.h"
 #include "Macro.h"
 #include "PositionMap.h"
+#include "Token.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
 #include "helper.h"
 #include "util.h"
+
 
 // Global maps for macro processing
 StringSet defnames;
@@ -126,25 +130,25 @@ void process_code_full(std::string_view src) {
   while (true) {
     token = rq.read();
 
-    if (token.id == Token::eof) break;
+    if (token.id == tag::eof) break;
 
-    if (token.id == Token::pp_include) {
+    if (token.id == tag::pp_include) {
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == Token::pp_define) {
+    if (token.id == tag::pp_define) {
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
 
-    if (token.id == Token::pp_undef) {
+    if (token.id == tag::pp_undef) {
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == Token::identifier) {
+    if (token.id == tag::identifier) {
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
@@ -159,25 +163,25 @@ void process_code_full(std::string_view src) {
       }
 
       // Handle functional macro
-      token_id ltok_id = rq.shadow_read().id;
-      while (is_extra(ltok_id)) {
+      Tag ltok_id = rq.shadow_read().id;
+      while (tag::is_extra(ltok_id)) {
         ltok_id = rq.shadow_read().id;
       }
 
-      if (ltok_id != '(') {
+      if (ltok_id != tag::raw('(')) {
         codeDumper.align_dump(token, src);
         continue;
       }
 
       arg_start_ids.clear();
       unsigned balance = 1;
-      while (ltok_id != Token::eof) {
+      while (ltok_id != tag::eof) {
         ltok_id = rq.shadow_read().id;
-        if (ltok_id == '(')
+        if (ltok_id == tag::raw('('))
           ++balance;
-        else if (ltok_id == ')')
+        else if (ltok_id == tag::raw(')'))
           --balance;
-        else if (ltok_id == ',' && balance == 1) {
+        else if (ltok_id == tag::raw(',') && balance == 1) {
           // Handle argument separation
         }
         if (!balance) break;
@@ -214,13 +218,13 @@ void process_code(std::string_view src) {
   tokens.clear();
   size_t h = 0;
   Tokeniser tkz{src};
-  while (tokens.emplace_back(tkz.read_token()).id != Token::eof) {
+  while (tokens.emplace_back(tkz.read_token()).id != tag::eof) {
     switch (tokens.back().id) {
-      case Token::pp_include: {
+      case tag::pp_include: {
         // totaltimeit;
         continue;
       }
-      case Token::pp_define: {
+      case tag::pp_define: {
         // totaltimeit;
         const auto macro_name = tkz.defineImage.name.get_text(src);
         // macronames.insert(macro_name);
@@ -228,12 +232,12 @@ void process_code(std::string_view src) {
                          compile_macro_expansion(tkz.defineImage, src));
         continue;
       }
-      case Token::pp_undef: {
+      case tag::pp_undef: {
         // totaltimeit;
         macroMap.erase(tkz.undefImage.name.get_text(src));
         continue;
       }
-      case Token::identifier: {
+      case tag::identifier: {
         const auto macro_name = tokens.back().get_text(src);
         auto macroIt = macroMap.find(macro_name);
         if (macroIt == macroMap.end()) break;  // from switch
@@ -246,7 +250,7 @@ void process_code(std::string_view src) {
 
   int nidentifiers = 0;
   // for (const auto& tok : tokens) {
-  //   if (tok.id == Token::identifier) {
+  //   if (tok.id == tag::identifier) {
   //     const auto macro_name = tok.get_text(src);
   //     auto macroIt = macronames.find(macro_name);
   //     // if (macroIt == macronames.end()) continue;
@@ -267,7 +271,11 @@ void process_code(std::string_view src) {
 int perf_test() {
   std::string src = read_file(ROOT "pp.test/sqliteall.c");
   timeit;
-  repeat(100) { process_code(src); }
+  repeat(5) {
+    repeat(20) { process_code(src); }
+    untimeit;
+    usleep(500'000);
+  }
   printit(account);
   return 0;
 }
@@ -333,8 +341,8 @@ testit(compile_macro_expansion) {
   Tokeniser tkz{src};
   Token token = tkz.read_token();
   size_t nfailed = 0;
-  while (token.id != Token::eof) {
-    if (token.id == Token::pp_define) {
+  while (token.id != tag::eof) {
+    if (token.id == tag::pp_define) {
       std::string_view name = tkz.defineImage.name.get_text(src);
       std::string act = compile_macro_expansion(tkz.defineImage, src);
       tkz.defineImage.print(std::cerr, src);
@@ -373,8 +381,8 @@ testit(compile_macro_expansion) {
 
 //   Tokeniser tkz{src};
 //   Token token = tkz.read_token();
-//   while (token.id != Token::eof) {
-//     if (token.id == Token::pp_define) {
+//   while (token.id != tag::eof) {
+//     if (token.id == tag::pp_define) {
 //       std::cerr << std::setw(10) << tkz.defineImage.name.get_text(src) << ":
 //       "; std::cerr << compile_macro_expansion_v2(tkz.defineImage, src) <<
 //       "\n";

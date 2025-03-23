@@ -14,6 +14,8 @@
 
 #define abeta(beta) alpha    ##   beta    ##    gamma
 
+#define EMPTY
+#define EMPTYF()
 #define SELF1(x, y)  (x, y)
 #define SELF2(x, y)  x, y
 #define CAT1(x, y)  x##y

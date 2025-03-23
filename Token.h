@@ -7,41 +7,99 @@
 #include "Position.h"
 #include "helper.h"
 
-namespace tkgroup {
-// one single char as is
-static constexpr char raw = 0;
-// spaces comments etc
-static constexpr char extra = 1;
-// represent 1 and more character
-static constexpr char grouped = 2;
-// preprocessor line specific tokens
-static constexpr char ppline = 4;
-}  // namespace tkgroup
+using Tag = uint16_t;
 
-struct token_id {
-  char id;
-  char category;
+namespace tag {
 
-  inline constexpr bool operator==(const token_id& other) const {
-    return id == other.id && category == other.category;
-  }
-  inline constexpr bool operator!=(const token_id& other) const {
-    return !(*this == other);
-  }
-  inline constexpr bool operator==(const char& other_id) const {
-    return id == other_id && category == 0;
-  }
-  inline constexpr bool operator!=(const char& other_id) const {
-    return !(*this == other_id);
-  }
-
-  constexpr operator int() const {
-    return (static_cast<int>(category) << 8U) | id;
-  }
+enum class Kind : uint8_t {
+  // one single char as is
+  raw = 0,
+  // spaces comments etc
+  extra = 1,
+  // represent 1 and more character
+  grouped = 2,
+  // preprocessor line specific tokens
+  ppline = 4,
+  // auxionry tokens for custom kinds
+  aux = 8,
 };
 
+inline static constexpr Tag group(char id, Kind category) {
+  return (static_cast<Tag>(category) << 8U)  //
+         | static_cast<Tag>(static_cast<uint8_t>(id));
+}
+inline static constexpr Tag raw(char id) { return group(id, Kind::raw); }
+inline static constexpr Tag aux(char id) { return group(id, Kind::aux); }
+
+inline static constexpr Kind kindof(Tag tag) {
+  return static_cast<Kind>(tag >> 8U);
+}
+
+inline static constexpr bool is_extra(Tag tag) {
+  return kindof(tag) == Kind::extra;
+}
+inline static constexpr bool is_raw(Tag tag) {
+  return kindof(tag) == Kind::raw;
+}
+
+// basically character mapping to enum like constants:
+// `any space         -> ' ', except from '\n'`
+// `any number        -> '0'`
+// `any identifier    -> 'a'`
+// `line comment      -> 'c'`
+// `multiline comment -> 'm'`
+// `string            -> '"'`
+//
+// all the others maps to themselves
+// potentially allows to build string of tokens
+// and apply some pattern matching
+// e.g.:
+// `MACRO(arg, arg)` -> `a(a, a)`
+// `int var = 5` -> `a a = 0`
+// `const char* str = "string"` -> `a a* a = "`
+
+// clang-format off
+static constexpr Tag eof                 = group('\0', Kind::raw);
+
+static constexpr Tag space               = group(' ', Kind::extra);
+static constexpr Tag newline             = group('\n', Kind::extra);
+
+static constexpr Tag number              = group('0', Kind::grouped);
+static constexpr Tag identifier          = group('a', Kind::grouped);
+
+static constexpr Tag line_comment        = group('c', Kind::extra);
+static constexpr Tag multiline_comment   = group('m', Kind::extra);
+
+static constexpr Tag string_like_literal = group('"', Kind::grouped);
+static constexpr Tag raw_string_literal  = group('R', Kind::grouped);
+static constexpr Tag char_literal        = group('\'', Kind::grouped);
+
+static constexpr Tag ellipsis            = group('e', Kind::grouped);
+
+static constexpr Tag line_continuation   = group('z', Kind::extra);
+
+static constexpr Tag pp_start            = group('p', Kind::ppline);
+static constexpr Tag pp_op_str           = group('1', Kind::ppline);
+static constexpr Tag pp_op_cat           = group('2', Kind::ppline);
+
+static constexpr Tag pp_define           = group('D', Kind::ppline);
+static constexpr Tag pp_include          = group('I', Kind::ppline);
+static constexpr Tag pp_include_string   = group('i', Kind::ppline);
+static constexpr Tag pp_undef            = group('U', Kind::ppline);
+static constexpr Tag pp_other_directive  = group('O', Kind::ppline);
+static constexpr Tag pp_error            = group('E', Kind::ppline);
+
+// aux tokens
+static constexpr Tag code                = group('C', Kind::aux);
+static constexpr Tag arg                 = group('A', Kind::aux);
+static constexpr Tag other               = group('O', Kind::aux);
+
+// clang-format on
+
+}  // namespace tag
+
 struct Token {
-  token_id id;
+  Tag id;
   // uint16_t _alignment;
   Range range;
 
@@ -50,55 +108,4 @@ struct Token {
   }
 
   void print(std::string_view src, std::ostream& os) const;
-  // basically character mapping to enum like constants:
-  // `any space         -> ' ', except from '\n'`
-  // `any number        -> '0'`
-  // `any identifier    -> 'a'`
-  // `line comment      -> 'c'`
-  // `multiline comment -> 'm'`
-  // `string            -> '"'`
-  //
-  // all the others maps to themselves
-  // potentially allows to build string of tokens
-  // and apply some pattern matching
-  // e.g.:
-  // `MACRO(arg, arg)` -> `a(a, a)`
-  // `int var = 5` -> `a a = 0`
-  // `const char* str = "string"` -> `a a* a = "`
-
-  static constexpr token_id eof{'\0', tkgroup::raw};
-
-  static constexpr token_id space{' ', tkgroup::extra};
-  static constexpr token_id newline{'\n', tkgroup::extra};
-
-  static constexpr token_id number{'0', tkgroup::grouped};
-  static constexpr token_id identifier{'a', tkgroup::grouped};
-
-  static constexpr token_id line_comment{'c', tkgroup::extra};
-  static constexpr token_id multiline_comment{'m', tkgroup::extra};
-
-  static constexpr token_id string_like_literal{'"', tkgroup::grouped};
-  static constexpr token_id raw_string_literal{'R', tkgroup::grouped};
-  // static constexpr token_id char_literal{'\'', 0};
-
-  static constexpr token_id ellipsis{'e', tkgroup::grouped};
-
-  static constexpr token_id line_continuation{'z', tkgroup::extra};
-
-  static constexpr token_id pp_start{'p', tkgroup::ppline};
-  static constexpr token_id pp_op_str{'1', tkgroup::ppline};
-  static constexpr token_id pp_op_cat{'2', tkgroup::ppline};
-
-  static constexpr token_id pp_define{'D', tkgroup::ppline};
-  static constexpr token_id pp_include{'I', tkgroup::ppline};
-  static constexpr token_id pp_include_string{'i', tkgroup::ppline};
-  static constexpr token_id pp_undef{'U', tkgroup::ppline};
-  static constexpr token_id pp_other_directive{'O', tkgroup::ppline};
-  static constexpr token_id pp_error{'E', tkgroup::ppline};
-
-  static constexpr token_id code_chunk{'C', tkgroup::grouped};
 };
-
-inline bool is_extra(token_id token) {
-  return token.category == tkgroup::extra;
-}

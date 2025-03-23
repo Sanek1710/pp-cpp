@@ -102,7 +102,7 @@ class Tokeniser {
     token.range.start_pos = cur.to_position();
     token.id = skip_next();
 #ifndef INLINEPPROC
-    if (!ppline && token.id == Token::pp_start) {
+    if (!ppline && token.id == tag::pp_start) {
       token.id = process_directive();
     }
 #endif
@@ -119,7 +119,7 @@ class Tokeniser {
     token.range.start_pos = cur.to_position();
     token.id = skip_ppnext();
 #ifndef INLINEPPROC
-    if (!ppline && token.id == Token::pp_start) {
+    if (!ppline && token.id == tag::pp_start) {
       token.id = process_directive();
     }
 #endif
@@ -235,7 +235,7 @@ class Tokeniser {
   inline bool consume_identifier_token(Token& token) {
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
-    token.id = Token::identifier;
+    token.id = tag::identifier;
     bool consumed = false;
     if (is_word_start_char(*cur.it)) {
       skip_identifier();
@@ -270,7 +270,7 @@ class Tokeniser {
     ++cur.it;
   }
 
-  inline token_id skip_next() {
+  inline Tag skip_next() {
     if (cur.clear_line && *cur.it == '#') { /*5*/
       ++cur.it;
       return process_directive();
@@ -278,39 +278,39 @@ class Tokeniser {
     return skip_common<false>();
   }
 
-  inline token_id skip_ppnext() {
+  inline Tag skip_ppnext() {
     if (*cur.it == '#') { /*5*/
       ++cur.it;
       if (cur.it != end && *cur.it == '#') {
         ++cur.it;
-        return Token::pp_op_cat;
+        return tag::pp_op_cat;
       }
-      return Token::pp_op_str;
+      return tag::pp_op_str;
     }
     return skip_common<true>();
   }
 
   // main token processing unit
   template <bool ppline, bool extras_only = false>
-  inline token_id skip_common() {
-    if (cur.it == end) return Token::eof;
+  inline Tag skip_common() {
+    if (cur.it == end) return tag::eof;
     if (*cur.it == '\n') {
-      if constexpr (extras_only && ppline) return Token::newline;
+      if constexpr (extras_only && ppline) return tag::newline;
       skip_newline();
       cur.clear_line = true;
-      return Token::newline;
+      return tag::newline;
     }
     if (is_space(*cur.it)) { /*0*/
       skip_ws();
-      return Token::space;
+      return tag::space;
     }
 
     if (is_word_char(*cur.it)) { /*1*/
-      if constexpr (extras_only) return Token::identifier;
+      if constexpr (extras_only) return tag::identifier;
       cur.clear_line = false;
       if (is_digit(*cur.it)) {
         skip_number();
-        return Token::number;
+        return tag::number;
       }
       const iterator start = cur.it;
       skip_identifier();
@@ -321,20 +321,20 @@ class Tokeniser {
           && is_string_prefix(std::string_view{start, token_size}, is_raw)) {
         if (!is_raw) {
           skip_string_literal(ppline);
-          return Token::string_like_literal;
+          return tag::string_like_literal;
         } else if (*cur.it == '\"') {
           skip_string_literal(ppline);
-          return Token::raw_string_literal;
+          return tag::raw_string_literal;
         }
       }
-      return Token::identifier;
+      return tag::identifier;
     }
 
     if (*cur.it == '\'' || *cur.it == '"') { /*3*/
-      if constexpr (extras_only) return Token::string_like_literal;
+      if constexpr (extras_only) return tag::string_like_literal;
       cur.clear_line = false;
       skip_string_literal(ppline);
-      return Token::string_like_literal;
+      return tag::string_like_literal;
     }
 
     if (*cur.it == '/') { /*2*/
@@ -342,47 +342,47 @@ class Tokeniser {
       if (next_it != end) {
         if (*next_it == '/') {
           skip_line_comment();
-          return Token::line_comment;
+          return tag::line_comment;
         }
         if (*next_it == '*') {
           skip_multiline_comment();
-          return Token::multiline_comment;
+          return tag::multiline_comment;
         }
       }
-      if constexpr (extras_only) return {'/', tkgroup::raw};
+      if constexpr (extras_only) return tag::raw('/');
       cur.clear_line = false;
       skip();
-      return {'/', tkgroup::raw};
+      return tag::raw('/');
     }
 
     if (*cur.it == '\\') { /*4*/
       const auto next_it = std::next(cur.it);
       if (next_it != end && *next_it == '\n') {
         skip_line_continuation();
-        return Token::line_continuation;
+        return tag::line_continuation;
       }
-      if constexpr (extras_only) return {'\\', tkgroup::raw};
+      if constexpr (extras_only) return tag::raw('\\');
       skip();
-      return {'\\', tkgroup::raw};
+      return tag::raw('\\');
     }
 
     /*7*/
-    if constexpr (extras_only) return {*cur.it, tkgroup::raw};
-    return {*cur.it++, tkgroup::raw};
+    if constexpr (extras_only) return tag::raw(*cur.it);
+    return tag::raw(*cur.it++);
   }
 
   template <bool ppline>
   inline void skip_extras() {
     while (true) {
-      token_id kind = skip_common<false, /*extras_only*/ true>();
-      if (!is_extra(kind)) break;
+      Tag kind = skip_common<false, /*extras_only*/ true>();
+      if (!tag::is_extra(kind)) break;
     }
   }
 
   inline void skip_ppline_extras() {
     while (true) {
-      token_id kind = skip_common<true, /*extras_only*/ true>();
-      if (kind.id == '\n' || !is_extra(kind)) break;
+      Tag kind = skip_common<true, /*extras_only*/ true>();
+      if (kind == tag::newline || !tag::is_extra(kind)) break;
     }
   }
 
@@ -445,7 +445,7 @@ class Tokeniser {
     skip_ppline();
     return true;
   }
-  inline token_id process_directive() {
+  inline Tag process_directive() {
     do {
       skip_ppline_extras();
       auto start = cur.it;
@@ -454,21 +454,21 @@ class Tokeniser {
 
       if (directive_name == "include") {
         if (!process_include()) break;
-        return Token::pp_include;
+        return tag::pp_include;
       }
       if (directive_name == "define") {
         if (!process_define()) break;
-        return Token::pp_define;
+        return tag::pp_define;
       }
       if (directive_name == "undef") {
         if (!process_undef()) break;
-        return Token::pp_undef;
+        return tag::pp_undef;
       }
       // pp_undef
       skip_ppline();
-      return Token::pp_other_directive;
+      return tag::pp_other_directive;
     } while (false);
     skip_ppline();
-    return Token::pp_error;
+    return tag::pp_error;
   }
 };

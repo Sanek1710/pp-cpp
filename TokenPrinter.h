@@ -44,19 +44,19 @@ class TokenPrinter {
           "std",     "string",   "size_t", "string_view", "unordered_set",
           "ostream", "iterator", "auto",   "uint32_t",    "vector"};
       if (text.empty()) return "";
-      if (token.id == Token::line_comment ||
-          token.id == Token::multiline_comment)
+      if (token.id == tag::line_comment ||
+          token.id == tag::multiline_comment)
         return "\033[38;5;22m";
-      if (token.id == Token::string_like_literal) return "\033[38;5;216m";
+      if (token.id == tag::string_like_literal) return "\033[38;5;216m";
       if (keywords.count(text)) return "\033[38;5;176m";
       if (keywords2.count(text)) return "\033[38;5;75m";
       if (keywords3.count(text)) return "\033[38;5;37m";
       if (std::isdigit(text.front())) return "\033[38;5;193m";
       if (text.front() == '(' || text.front() == ')') return "\033[38;5;228m";
       if (std::ispunct(text.front())) return "\033[38;5;248m";
-      if (token.id == Token::identifier && src[token.range.end] == ':')
+      if (token.id == tag::identifier && src[token.range.end] == ':')
         return "\033[38;5;37m";
-      if (token.id == Token::identifier && src[token.range.end] == '(')
+      if (token.id == tag::identifier && src[token.range.end] == '(')
         return "\033[38;5;230m";
 
       return "\033[38;5;153m";

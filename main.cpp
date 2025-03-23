@@ -14,6 +14,7 @@
 #include "Cursor.h"
 #include "Macro.h"
 #include "PositionMap.h"
+#include "Token.h"
 #include "TokenPrinter.h"
 #include "helper.h"
 #include "util.h"
@@ -70,7 +71,7 @@ std::string process_code(std::string_view src) {
   std::vector<size_t> arg_start_ids;
 
   Token last_token;
-  last_token.id = Token::code_chunk;
+  last_token.id = tag::code;
 
   bool do_dump = false;
 
@@ -101,7 +102,6 @@ std::string process_code(std::string_view src) {
 #define swap_dump() swap_dump_glued()
 #define skip_dump() skip_dump_glued()
 
-
   while (true) {
     // skip_extras<false>();
     token = rq.read();
@@ -109,27 +109,27 @@ std::string process_code(std::string_view src) {
     // codeDumper.out += token.get_text(src);
     // printer.print(token, src);
 
-    if (token.id == Token::eof) break;
+    if (token.id == tag::eof) break;
 
-    if (token.id == Token::pp_include) {
+    if (token.id == tag::pp_include) {
       continue;
       includes.emplace_back(tokeniser.includeImage.name.get_text(src));
 
       continue;
     }
-    if (token.id == Token::pp_define) {
+    if (token.id == tag::pp_define) {
       continue;
       macromap.emplace(tokeniser.defineImage.name.get_text(src),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
-    if (token.id == Token::pp_undef) {
+    if (token.id == tag::pp_undef) {
       continue;
       macromap.erase(tokeniser.defineImage.name.get_text(src));
       continue;
     }
 
-    if (token.id == Token::identifier) {
+    if (token.id == tag::identifier) {
       // continue;
       auto identifier_text = token.get_text(src);
       auto macroIt = macromap.find(identifier_text);
@@ -146,26 +146,26 @@ std::string process_code(std::string_view src) {
       }
 
       // shadow: IDENTIFIER
-      token_id ltok_id = rq.shadow_read().id;
-      while (is_extra(ltok_id)) {
+      Tag ltok_id = rq.shadow_read().id;
+      while (tag::is_extra(ltok_id)) {
         ltok_id = rq.shadow_read().id;
       }
 
       // invalid macro call, just dump identifier
-      if (ltok_id != '(') {
+      if (ltok_id != tag::raw('(')) {
         swap_dump();
         continue;
       }
       // at '('
       arg_start_ids.clear();
       unsigned balance = 1;
-      while (ltok_id != Token::eof) {
+      while (ltok_id != tag::eof) {
         ltok_id = rq.shadow_read().id;
-        if (ltok_id == '(')
+        if (ltok_id == tag::raw('('))
           ++balance;
-        else if (ltok_id == ')')
+        else if (ltok_id == tag::raw(')'))
           --balance;
-        else if (ltok_id == ',' && balance == 1) {
+        else if (ltok_id == tag::raw(',') && balance == 1) {
         }
         if (!balance) break;
       }
@@ -179,8 +179,8 @@ std::string process_code(std::string_view src) {
       continue;
     }
 
-    if (token.id == Token::newline) continue;
-    if (token.id == Token::space) {
+    if (token.id == tag::newline) continue;
+    if (token.id == tag::space) {
       skip_dump();
       codeDumper.putch(' ');
       continue;

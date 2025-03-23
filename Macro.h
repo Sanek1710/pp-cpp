@@ -32,51 +32,44 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
     out += macro.info.is_variadic ? 'v' : 'f';
     out += std::to_string(macro.info.nargs);
   }
-  auto out_it = out.end();
-  out += '|';
-  *out_it = ' ';
+  out += ' ';
 
   bool need_space = false;
-  enum class ActiveToken : char {  //
-    OpCat,
-    OpStr,
-    Arg,
-    Other
-  } active_token = ActiveToken::Other;
+  Tag last_tag = tag::other;
 
   auto it = macro.expansion_begin();
   const auto end = macro.expansion_end();
   for (; it != end; ++it) {
     const Token& tok = *it;
 
-    // Skip whitespace/comments
-    if (is_extra(tok.id)) {
-      if (active_token != ActiveToken::OpCat  //
-          && active_token != ActiveToken::OpStr)
+    // skip extras mark as need space
+    if (tag::is_extra(tok.id)) {
+      if (last_tag != tag::pp_op_cat  //
+          && last_tag != tag::pp_op_str)
         need_space = true;
       continue;
     }
 
-    if (tok.id == Token::pp_op_cat) {
-      if (active_token == ActiveToken::Arg) {
+    if (tok.id == tag::pp_op_cat) {
+      if (last_tag == tag::arg) {
         if (out.back() == ' ') out.back() = '_';
       }
       need_space = false;
-      active_token = ActiveToken::OpCat;
+      last_tag = tag::pp_op_cat;
       continue;
     }
 
-    if (tok.id == Token::pp_op_str) {
-      if (active_token != ActiveToken::OpCat) need_space = true;
-      active_token = ActiveToken::OpStr;
+    if (tok.id == tag::pp_op_str) {
+      if (last_tag != tag::pp_op_cat) need_space = true;
+      last_tag = tag::pp_op_str;
       continue;
     }
 
     if (need_space && out.back() != ' ') out += ' ';
     need_space = false;
 
-    // Handle arguments
-    if (macro.info.is_functional && tok.id == Token::identifier) {
+    // what if arg
+    if (macro.info.is_functional && tok.id == tag::identifier) {
       const auto text = tok.get_text(src);
 
       // check arg
@@ -94,14 +87,14 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
       if (arg_it != macro.args_end()) {
         out += '$';
         out += std::to_string(arg_it - macro.args_begin());
-        if (active_token == ActiveToken::OpStr) {
+        if (last_tag == tag::pp_op_str) {
           out += 's';
-        } else if (active_token == ActiveToken::OpCat) {
+        } else if (last_tag == tag::pp_op_cat) {
           out += '_';
         } else {
           out += ' ';
         }
-        active_token = ActiveToken::Arg;
+        last_tag = tag::arg;
         continue;
       }
     }
@@ -110,7 +103,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
       if (c == '$') out += '$';
       out += c;
     }
-    active_token = ActiveToken::Other;
+    last_tag = tok.id;
   }
 
   // Clean up trailing space
