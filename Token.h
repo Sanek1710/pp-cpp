@@ -63,31 +63,28 @@ static constexpr Tag eof                 = group('\0', Kind::raw);
 
 static constexpr Tag space               = group(' ', Kind::extra);
 static constexpr Tag newline             = group('\n', Kind::extra);
+static constexpr Tag line_comment        = group('c', Kind::extra);
+static constexpr Tag multiline_comment   = group('m', Kind::extra);
+static constexpr Tag line_continuation   = group('z', Kind::extra);
 
 static constexpr Tag number              = group('0', Kind::grouped);
 static constexpr Tag identifier          = group('a', Kind::grouped);
-
-static constexpr Tag line_comment        = group('c', Kind::extra);
-static constexpr Tag multiline_comment   = group('m', Kind::extra);
-
 static constexpr Tag string_like_literal = group('"', Kind::grouped);
 static constexpr Tag raw_string_literal  = group('R', Kind::grouped);
 static constexpr Tag char_literal        = group('\'', Kind::grouped);
-
 static constexpr Tag ellipsis            = group('e', Kind::grouped);
 
-static constexpr Tag line_continuation   = group('z', Kind::extra);
-
-static constexpr Tag pp_start            = group('p', Kind::ppline);
 static constexpr Tag pp_op_str           = group('1', Kind::ppline);
 static constexpr Tag pp_op_cat           = group('2', Kind::ppline);
 
+static constexpr Tag pp_start            = group('p', Kind::ppline);
 static constexpr Tag pp_define           = group('D', Kind::ppline);
 static constexpr Tag pp_include          = group('I', Kind::ppline);
-static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 static constexpr Tag pp_undef            = group('U', Kind::ppline);
 static constexpr Tag pp_other_directive  = group('O', Kind::ppline);
 static constexpr Tag pp_error            = group('E', Kind::ppline);
+
+static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 
 // aux tokens
 static constexpr Tag code                = group('C', Kind::aux);
@@ -103,7 +100,7 @@ struct Token {
   // uint16_t _alignment;
   Range range;
 
-  inline std::string_view get_text(std::string_view src) const {
+  inline constexpr std::string_view get_text(std::string_view src) const {
     return src.substr(range.start, range.end - range.start);
   }
 

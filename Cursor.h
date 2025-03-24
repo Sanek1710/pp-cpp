@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string_view>
 #include <vector>
 
 #include "Position.h"
@@ -129,6 +130,8 @@ class Tokeniser {
     token.range.end_pos = cur.to_position();
     return token;
   }
+
+  std::string_view get_src() const { return src; }
 
  private:
   std::string_view src;

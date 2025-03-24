@@ -20,4 +20,3 @@ target_link_libraries(main cursor)
 
 add_executable(preprocess preprocess.cpp)
 target_link_libraries(preprocess cursor)
-

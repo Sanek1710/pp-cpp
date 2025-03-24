@@ -8,6 +8,15 @@
 
 using FileID = unsigned;
 
+struct Marker {
+  enum {
+    as_is = '_',
+    stringify = 's',
+    spacing = ' ',
+    nothing = '.',
+  };
+};
+
 // Helper struct to parse macro information
 struct MacroStamp {
   MacroStamp(std::string_view content) {
@@ -18,11 +27,15 @@ struct MacroStamp {
     expansion = std::string_view(res.ptr, content.end() - res.ptr);
   }
 
+  bool is_valid_call(unsigned short nargs_input) {
+    return info.is_variadic ? info.nargs - 1 <= nargs_input
+                            : info.nargs == nargs_input;
+  }
+
   std::string_view expansion;
   MacroInfo info;
 };
 
-// Compile macro definition into a pattern with argument processing markers
 inline std::string compile_macro_expansion(const DefineImage& macro,
                                            std::string_view src) {
   std::string out;

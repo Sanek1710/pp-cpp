@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <deque>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -208,20 +209,127 @@ struct vector1 {
   T val;
 };
 
-vector1<Token> tokens;
 // std::vector<Token> tokens;
 StringSet macronames;
 StringMap<std::string> macroMap;
+std::vector<Token> tokens{1};
+
+// for the time being i dont wanna do afterscan
+// but once one decides to do it:
+// - replace vector with deque
+// - invoke afterscan as funcion finalise
+// - expand token groups on place in deque
+// that is likely the best way
+// maybe not
+Token expand_macro(Tokeniser& tkz, MacroStamp macroStamp,
+                   std::deque<Token>& out) {
+  std::string_view src = tkz.get_src();
+
+  Token token = tkz.read_token();
+  if (!macroStamp.info.is_functional) {
+    // just add expansion and return
+    // for now i just return next token as that is what expected
+    return token;
+  }
+  // here we skipping all extras, without writing them anywhere
+  // if one need them for some reason, one should implement smarter dump logic
+  // good luck
+  while (tag::is_extra(token.tag)) token = tkz.read_token();
+  if (token.tag != tag::raw('(')) return token;
+
+  std::vector<size_t> arg_rages;
+  arg_rages.push_back(out.size());
+
+  int balance = 0;
+  bool successfullness = false;
+  while (token.tag != tag::eof) {
+    if (tag::is_extra(token.tag)) {
+      token = tkz.read_token();
+      continue;
+    }
+    switch (token.tag) {
+      case tag::raw('('): {
+        ++balance;
+        break;
+      }
+      case tag::raw(')'): {
+        --balance;
+        if (!balance) {
+          // remember end position for arg
+          arg_rages.push_back(out.size());
+          // apply macro
+          // or dump saved tokens if cant expand
+          // or (3rd thing i forgot)
+          // TODONOW: write when remember
+          out.push_back(token);
+          // setup for loop exit:
+          successfullness = true;
+          token.tag = tag::eof;
+          continue;  // in fact break from while loop
+        }
+        break;
+      }
+      case tag::raw(','): {
+        if (balance == 1) arg_rages.push_back(out.size());
+        break;
+      }
+
+      case tag::identifier: {
+        const auto macro_name = token.get_text(src);
+        auto macroIt = macroMap.find(macro_name);
+        if (macroIt == macroMap.end()) break;
+
+        out.push_back(token);
+        // token = expand_macro(tkz, MacroStamp{macroIt->second}, out);
+        token = tkz.read_token();
+
+        // out[0].print(tkz.get_src(), std::cerr);
+        // token.print(tkz.get_src(), std::cerr);
+        // exit(0);
+        continue;
+      }
+    }
+    out.push_back(token);
+    token = tkz.read_token();
+  }
+
+  // cant expand
+  const size_t nargs_input = arg_rages.size() - 1;
+  if (!successfullness || macroStamp.is_valid_call(nargs_input)) {
+    // maybe find better match if such exists?
+    // dump all the deque
+    // but actually seems like just leave it as is and return next token
+    return tkz.read_token();
+  }
+
+  // to this point we have whole bunch of expansion relevant tokens
+  // also marked argument ranges
+
+  // also argument count
+
+  // what do we do with it?
+
+  return tkz.read_token();
+}
 
 void process_code(std::string_view src) {
-  tokens.clear();
   size_t h = 0;
   Tokeniser tkz{src};
-  while (tokens.emplace_back(tkz.read_token()).tag != tag::eof) {
-    switch (tokens.back().tag) {
+  tokens.resize(1);
+
+#define dump(token, tokens)                            \
+  if (tokens.back().range.end == token.range.start) {  \
+    tokens.back().range.end = token.range.end;         \
+    tokens.back().range.end_pos = token.range.end_pos; \
+  } else {                                             \
+    tokens.push_back(token);                           \
+  }
+  Token token = tkz.read_token();
+  while (token.tag != tag::eof) {
+    switch (token.tag) {
       case tag::pp_include: {
         // totaltimeit;
-        continue;
+        break;
       }
       case tag::pp_define: {
         // totaltimeit;
@@ -229,39 +337,40 @@ void process_code(std::string_view src) {
         // macronames.insert(macro_name);
         macroMap.emplace(macro_name,
                          compile_macro_expansion(tkz.defineImage, src));
-        continue;
+        break;
       }
       case tag::pp_undef: {
         // totaltimeit;
         macroMap.erase(tkz.undefImage.name.get_text(src));
-        continue;
+        break;
       }
       case tag::identifier: {
-        const auto macro_name = tokens.back().get_text(src);
+        const auto macro_name = token.get_text(src);
         auto macroIt = macroMap.find(macro_name);
         if (macroIt == macroMap.end()) break;  // from switch
+
+        std::deque<Token> expansion{1, token};
+        token = expand_macro(tkz, MacroStamp{macroIt->second}, expansion);
+        // expand macro
+        for (auto tok : expansion) {
+          tok.print(src, std::cerr);
+        }
+        std::cerr << "\n";
+        dump(token, tokens);
         continue;
       }
       default:
+        // dumb dump
+        dump(token, tokens);
         break;  // from switch
     }
+    token = tkz.read_token();
   };
-
-  int nidentifiers = 0;
-  // for (const auto& tok : tokens) {
-  //   if (tok.id == tag::identifier) {
-  //     const auto macro_name = tok.get_text(src);
-  //     auto macroIt = macronames.find(macro_name);
-  //     // if (macroIt == macronames.end()) continue;
-  //     ++nidentifiers;
-  //   }
-  // }
 
   once {
     // printit(macronames.size());
     account += tokens.size();
-    account += nidentifiers;
-    printit(nidentifiers);
+    printit(tokens.size());
     // std::cerr << std::hex << h;
     // printit(h);
   };
@@ -282,12 +391,12 @@ int perf_test() {
 int user_test() {
   std::string src = read_file(ROOT "pp.test/pp.in.cpp");
   timeit;
-  repeat(100) { process_code(src); }
+  process_code(src);
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  perf_test();
+  // perf_test();
   user_test();
 }
 
