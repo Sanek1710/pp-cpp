@@ -152,7 +152,7 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   const RunTimer CAT(_rt_, __LINE__) { name, __LINE__ }
 #define timeit stimeit(__func__)
 #define checkin std::cerr << "[here]: " << __LINE__ << "\n"
-#define printit(x) std::cerr << #x ": " << x << "\n"
+#define printit(x) std::cerr << #x ": " << (x) << "\n"
 #define repeat(n) for (size_t _i = n; _i; --_i)
 
 #define stotaltimeit(name)                               \
@@ -209,3 +209,39 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   };                                             \
   const static LifetimeTest##name _lttst##name;  \
   inline void LifetimeTest##name::run()
+
+class NotIgnoreAdder {
+ public:
+  ~NotIgnoreAdder() { std::cerr << "\n\e[90mignore: " << val << "\e[0m\n"; }
+  inline void operator+=(int other) const { val += other; }
+  mutable int val = 0;
+} inline const notignore;
+
+
+#ifndef INDENT_OS_H_
+#define INDENT_OS_H_
+
+#include <iostream>
+
+class indentos : public std::streambuf {
+  std::streambuf* rdbuf;
+  bool newline = false;
+  std::ostream& os;
+  inline static const std::string_view indent = "  ";
+
+ protected:
+  virtual int overflow(int ch) {
+    if (newline && ch != '\n') rdbuf->sputn(indent.data(), indent.size());
+    newline = ch == '\n';
+    return rdbuf->sputc(ch);
+  }
+
+ public:
+  explicit indentos(std::ostream& os, bool newline = false)
+      : rdbuf(os.rdbuf()), newline(newline), os(os) {
+    os.rdbuf(this);
+  }
+  virtual ~indentos() { os.rdbuf(rdbuf); }
+};
+
+#endif

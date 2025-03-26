@@ -97,7 +97,7 @@ static constexpr Tag other               = group('O', Kind::aux);
 
 struct Token {
   Tag tag;
-  // uint16_t _alignment;
+  uint16_t external_index;
   Range range;
 
   inline constexpr std::string_view get_text(std::string_view src) const {

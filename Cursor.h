@@ -102,11 +102,6 @@ class Tokeniser {
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
     token.tag = skip_next();
-#ifndef INLINEPPROC
-    if (!ppline && token.id == tag::pp_start) {
-      token.id = process_directive();
-    }
-#endif
     // TODO: maybe peek next and cat with previous
     // if we see line_continuation here
     token.range.end = cur.it - src.begin();
@@ -119,11 +114,6 @@ class Tokeniser {
     token.range.start = cur.it - src.begin();
     token.range.start_pos = cur.to_position();
     token.tag = skip_ppnext();
-#ifndef INLINEPPROC
-    if (!ppline && token.id == tag::pp_start) {
-      token.id = process_directive();
-    }
-#endif
     // TODO: maybe peek next and cat with previous
     // if we see line_continuation here
     token.range.end = cur.it - src.begin();
@@ -133,7 +123,9 @@ class Tokeniser {
 
   std::string_view get_src() const { return src; }
 
- private:
+  inline bool eof() const { return cur.it == end; }
+
+ protected:
   std::string_view src;
   Cursor cur;
   Cursor::iterator end;
@@ -274,6 +266,7 @@ class Tokeniser {
   }
 
   inline Tag skip_next() {
+    if (cur.it == end) return tag::eof;
     if (cur.clear_line && *cur.it == '#') { /*5*/
       ++cur.it;
       return process_directive();
@@ -282,6 +275,7 @@ class Tokeniser {
   }
 
   inline Tag skip_ppnext() {
+    if (cur.it == end) return tag::eof;
     if (*cur.it == '#') { /*5*/
       ++cur.it;
       if (cur.it != end && *cur.it == '#') {
@@ -296,7 +290,6 @@ class Tokeniser {
   // main token processing unit
   template <bool ppline, bool extras_only = false>
   inline Tag skip_common() {
-    if (cur.it == end) return tag::eof;
     if (*cur.it == '\n') {
       if constexpr (extras_only && ppline) return tag::newline;
       skip_newline();
@@ -376,14 +369,14 @@ class Tokeniser {
 
   template <bool ppline>
   inline void skip_extras() {
-    while (true) {
+    while (cur.it != end) {
       Tag kind = skip_common<false, /*extras_only*/ true>();
       if (!tag::is_extra(kind)) break;
     }
   }
 
   inline void skip_ppline_extras() {
-    while (true) {
+    while (cur.it != end) {
       Tag kind = skip_common<true, /*extras_only*/ true>();
       if (kind == tag::newline || !tag::is_extra(kind)) break;
     }
