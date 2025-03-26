@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <string_view>
 
 #include "Token.h"
 #include "TokenGroup.h"
@@ -21,10 +22,13 @@ struct Marker {
 struct MacroStamp {
   MacroStamp(std::string_view content) {
     auto it = content.begin();
-    info.is_functional = *it != ' ';
     info.is_variadic = *it == 'v';
-    auto res = std::from_chars(++it, content.end(), info.nargs);
-    expansion = std::string_view(res.ptr, content.end() - res.ptr);
+    info.is_functional = *it != ' ';
+    if (info.is_functional) {
+      it = std::from_chars(++it, content.end(), info.nargs).ptr;
+    }
+    ++it;
+    expansion = std::string_view(it, content.end() - it);
   }
 
   bool is_valid_call(unsigned short nargs_input) {

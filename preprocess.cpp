@@ -62,24 +62,25 @@ class MacroExpansionTokeniser : private Tokeniser {
 // Global maps for macro processing
 class Preprocessor {
  public:
-  StringSet defnames;
-  StringMap<std::string> macromap;
+  // StringSet defnames;
+  // StringMap<std::string> macromap;
 
   // std::vector<Token> tokens;
-  StringSet macronames;
+  // StringSet macronames;
   StringMap<std::string> macroMap;
-  std::vector<Token> tokens{1};
 
   std::vector<StrToken> out;
   std::vector<StrToken> buffer;
+  std::vector<size_t> arg_rages;
   std::string str_buffer;
-  // for the time being i dont wanna do afterscan
-  // but once one decides to do it:
-  // - replace vector with deque
-  // - invoke afterscan as funcion finalise
-  // - expand token groups on place in deque
-  // that is likely the best way
-  // maybe not
+  std::vector<std::string_view> macro_stack;
+  // for the time being i actually dont wanna do afterscan
+  // but once i decided to do it:
+  // - replace vector with deque - acrually dont
+  // - invoke afterscan as funcion finalise - yes
+  // - expand token groups on place in deque - ???
+  // that is likely the best way - it is
+  // maybe not - no maybees
   Token expand_macro(Position expand_pos, Tokeniser& tkz,
                      MacroStamp macroStamp) {
     const unsigned expand_idx = out.size() - 1;
@@ -100,7 +101,6 @@ class Preprocessor {
     while (tag::is_extra(token.tag)) token = tkz.read_token();
     if (token.tag != tag::raw('(')) return token;
 
-    std::vector<size_t> arg_rages;
     const unsigned arg_range_origin_idx = arg_rages.size();
     arg_rages.push_back(out.size());
 
@@ -124,12 +124,8 @@ class Preprocessor {
         case tag::raw(')'): {
           --balance;
           if (balance != balance_origin) break;
-          // remember end position for arg
+          // remember end position for last arg
           arg_rages.push_back(out.size());
-          // apply macro
-          // or dump saved tokens if cant expand
-          // or (3rd thing i forgot)
-          // TODONOW: write when remember
           out.emplace_back(token, src);
           // setup for loop exit:
           successfullness = true;
@@ -146,11 +142,15 @@ class Preprocessor {
           const auto macro_name = token.get_text(src);
           auto macroIt = macroMap.find(macro_name);
           if (macroIt == macroMap.end()) break;
+          if (std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
+              macro_stack.end())
+            break;
 
           out.emplace_back(token, src);
+          macro_stack.push_back(macro_name);
           token = expand_macro(token.range.start_pos, tkz,
                                MacroStamp{macroIt->second});
-          token = tkz.read_token();
+          macro_stack.pop_back();
           continue;
         }
 
@@ -161,8 +161,7 @@ class Preprocessor {
       token = tkz.read_token();
     }
 
-    const auto arg_range_origin = arg_rages.begin() + arg_range_origin_idx;
-    const size_t nargs_input = arg_rages.end() - 1 - arg_range_origin;
+    const size_t nargs_input = arg_rages.size() - 1 - arg_range_origin_idx;
     if (successfullness && macroStamp.is_valid_call(nargs_input)) {
       // to this point we have whole bunch of expansion relevant tokens
       // also marked argument ranges
@@ -171,6 +170,7 @@ class Preprocessor {
 
       // we expand it into buffer
 
+      const auto arg_range_origin = arg_rages.begin() + arg_range_origin_idx;
       MacroExpansionTokeniser macro_tkz{macroStamp.expansion};
       while (!macro_tkz.eof()) {
         token = macro_tkz.read_token();
@@ -187,6 +187,7 @@ class Preprocessor {
         tok_pos.column += expand_pos.column;
         buffer.emplace_back(tok_pos, token.get_text(macroStamp.expansion));
       }
+
       // buffer.emplace_back(expand_pos, macroStamp.expansion);
 
       // then expand back to output on place of previous tokens
@@ -194,6 +195,8 @@ class Preprocessor {
       out.insert(out.end(), buffer.begin(), buffer.end());
       buffer.clear();
     }
+    arg_rages.erase(arg_rages.begin() + arg_range_origin_idx,  //
+                    arg_rages.end());
     // if cant expand
     // maybe find better match if such exists?
     // dump all the deque
@@ -202,19 +205,12 @@ class Preprocessor {
     return tkz.read_token();
   }
 
-  void process_code(std::string_view src) {
+  const auto& process_code(std::string_view src) {
     out.clear();
     size_t h = 0;
     Tokeniser tkz = Tokeniser{src};
-    tokens.resize(1);
+    Token lastExpansionToken;
 
-#define dump(token, tokens)                            \
-  if (tokens.back().range.end == token.range.start) {  \
-    tokens.back().range.end = token.range.end;         \
-    tokens.back().range.end_pos = token.range.end_pos; \
-  } else {                                             \
-    tokens.push_back(token);                           \
-  }
     Token token = tkz.read_token();
     while (token.tag != tag::eof) {
       switch (token.tag) {
@@ -225,7 +221,8 @@ class Preprocessor {
         case tag::pp_define: {
           // totaltimeit;
           const auto macro_name = tkz.defineImage.name.get_text(src);
-          // macronames.insert(macro_name);
+          // printit(macro_name);
+          // printit(compile_macro_expansion(tkz.defineImage, src));
           macroMap.emplace(macro_name,
                            compile_macro_expansion(tkz.defineImage, src));
           break;
@@ -240,29 +237,29 @@ class Preprocessor {
           auto macroIt = macroMap.find(macro_name);
           if (macroIt == macroMap.end()) break;  // from switch
 
-          out.clear();
+          // out.clear();
           out.emplace_back(token, src);
+          macro_stack.push_back(macro_name);
           token = expand_macro(token.range.start_pos, tkz,
                                MacroStamp{macroIt->second});
-          // for (const auto out_tok : out) {
-          //   out_tok.print(std::cerr);
-          // }
-          // std::cerr << "\n";
-          dump(token, tokens);
+          macro_stack.pop_back();
           continue;
         }
         default:
-          // dumb dump
-          dump(token, tokens);
+          out.emplace_back(token, src);
           break;  // from switch
       }
       token = tkz.read_token();
     };
 
     once {
-      notignore += tokens.size();
-      printit(tokens.size());
+      notignore += out.size();
+      printit(out.size());
+      lastExpansionToken.print(src, std::cerr);
+      auto exp = macroMap.at("CTIMEOPT_VAL");
+      printit(exp);
     };
+    return out;
   }
 };
 
@@ -281,10 +278,14 @@ int perf_test() {
 }
 
 int user_test() {
-  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+  // std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+  std::string src = read_file(ROOT "pp.test/short.cpp");
   timeit;
   Preprocessor pre;
-  pre.process_code(src);
+  for (const auto out_tok : pre.process_code(src)) {
+    out_tok.print(std::cerr);
+  }
+
   return 0;
 }
 

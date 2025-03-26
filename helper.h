@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cctype>
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -112,7 +113,35 @@ inline int ctrl_encode(unsigned char c) {
   return c;
 }
 
-inline std::string appendUTF8(int code, std::string& out) {
+inline auto& appendCtrlEncode(int code, std::string& out) {
+  if (!std::iscntrl(code)) {
+    out += code;
+    return out;
+  }
+
+  switch (code) {
+    case '\0':
+      return out += "\\0";
+    case '\a':
+      return out += "\\a";
+    case '\b':
+      return out += "\\b";
+    case '\t':
+      return out += "\\t";
+    case '\n':
+      return out += "\\n";
+    case '\v':
+      return out += "\\v";
+    case '\f':
+      return out += "\\f";
+    case '\r':
+      return out += "\\r";
+    default:
+      return out += "\\.";
+  }
+}
+
+inline void appendUTF8(int code, std::string& out) {
   if (code < 128) {
     out += static_cast<char>(code);
   } else if (code < 2048) {
@@ -123,19 +152,21 @@ inline std::string appendUTF8(int code, std::string& out) {
     out += static_cast<char>(((code >> 6) & 63) | 128);
     out += static_cast<char>((code & 63) | 128);
   }
-  return out;
 }
 }  // namespace details
 
 struct ctrl_str {
   ctrl_str(std::string_view sv) : sv(sv){};
-  ctrl_str(const char& sv) : sv(&sv, 1){};
+  ctrl_str(char c) : letter(c), sv(&letter, 1){};
   std::string_view sv;
+  char letter;
 };
 inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
   std::string out;
-  for (unsigned char c : ctrls.sv)
-    details::appendUTF8(details::ctrl_encode(c), out);
+  for (unsigned char c : ctrls.sv) {
+    // details::appendUTF8(details::ctrl_encode(c), out);
+    details::appendCtrlEncode(c, out);
+  }
   return os << out;
 }
 
@@ -216,7 +247,6 @@ class NotIgnoreAdder {
   inline void operator+=(int other) const { val += other; }
   mutable int val = 0;
 } inline const notignore;
-
 
 #ifndef INDENT_OS_H_
 #define INDENT_OS_H_

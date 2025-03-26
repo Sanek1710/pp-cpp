@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "StringToken.h"
+#include "Token.h"
 #include "helper.h"
 
 using iterator = std::string_view::iterator;
@@ -39,15 +40,40 @@ void DefineImage::print(std::ostream& os, std::string_view src) const {
   }
 }
 
-void Token::print(std::string_view src, std::ostream& os) const {
+namespace {
+void print_tag(std::ostream& os, Tag tag) {
+  char kind_c = [tag]() {
+    switch (tag::kindof(tag)) {
+      case tag::Kind::raw:
+        return 'r';
+      case tag::Kind::extra:
+        return 'e';
+      case tag::Kind::grouped:
+        return 'g';
+      case tag::Kind::ppline:
+        return 'p';
+      case tag::Kind::aux:
+        return 'a';
+      default:
+        return ' ';
+        break;
+    }
+  }();
   std::stringstream ss;
-  ss << std::setw(4) << std::hex << std::setfill('.') << tag;
-  os << 't' << ss.str() << range.start_pos << ": -> `"
-     << ctrl_str{get_text(src)} << "`\n";
+  ss << std::setw(2) << kind_c  //
+     << std::setw(2) << ctrl_str{static_cast<char>(tag & 0xFF)};
+  os << ss.str();
+}
+}  // namespace
+
+void Token::print(std::string_view src, std::ostream& os) const {
+  os << 'y';
+  print_tag(os, tag);
+  os << range.start_pos << ": -> `" << ctrl_str{get_text(src)} << "`\n";
 }
 
 void StrToken::print(std::ostream& os) const {
-  std::stringstream ss;
-  ss << std::setw(4) << std::hex << std::setfill('.') << tag;
-  os << 'T' << ss.str() << pos << ": `" << ctrl_str{text} << "`\n";
+  os << 'T';
+  print_tag(os, tag);
+  os << pos << ": `" << ctrl_str{text} << "`\n";
 }
