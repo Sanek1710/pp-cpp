@@ -1,45 +1,15 @@
 #pragma once
 
+#include <cctype>
+#include <locale>
 #include <string_view>
 #include <vector>
 
 #include "Position.h"
 #include "Token.h"
 #include "TokenGroup.h"
-
-// char checks
-// these work noticibly faster than std's
-// table scan masks thigs or however they work
-
-constexpr inline bool is_space(char c) {  //
-  return c == ' ' || '\t' <= c && c <= '\r';
-}
-
-constexpr inline bool is_digit(char c) {
-  switch (c) {
-    case '0' ... '9':
-      return true;
-    default:
-      break;
-  }
-  return false;
-}
-
-constexpr inline bool is_word_start_char(char c) {
-  switch (c) {
-    case 'a' ... 'z':
-    case 'A' ... 'Z':
-    case '_':
-      return true;
-    default:
-      break;
-  }
-  return false;
-}
-
-constexpr inline bool is_word_char(char c) {
-  return is_word_start_char(c) || is_digit(c);
-}
+#include "chars.h"
+#include "helper.h"
 
 inline bool is_string_prefix(std::string_view str, bool& is_raw) {
   str.remove_suffix(is_raw = str.back() == 'R');
@@ -144,7 +114,7 @@ class Tokeniser {
     for (++cur.it; cur.it != end; ++cur.it) {
       // might be some complicated logic with [eEpP][+-] but meh
       // next char after them has to be number anyway, so idrc
-      if (!is_word_char(*cur.it) && *cur.it != '.') return;
+      if (!is_num_char(*cur.it)) return;
     }
   }
 
