@@ -224,21 +224,42 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
 #define CATTER(ab) #ab##cd
 #define CATTER2(ab) L#ab
 
-#define testit(name, ...)                        \
-  class LifetimeTest##name {                     \
-   public:                                       \
-    LifetimeTest##name() {                       \
-      runwrapper();                              \
-      __VA_OPT__(exit(0));                       \
-    }                                            \
-    void runwrapper() {                          \
-      std::cerr << ("test::" #name) << " \\\n";  \
-      run();                                     \
-      std::cerr << ("test::" #name) << " /\n\n"; \
-    }                                            \
-    void run();                                  \
-  };                                             \
-  const static LifetimeTest##name _lttst##name;  \
+#define check_print(act, exp)                                         \
+  do {                                                                \
+    if ((act) == (exp)) {                                             \
+      std::cerr << "\033[32m[pass]\033[0m  act: `" << (act) << "`\n"; \
+      std::cerr << "\033[32m      \033[0m  exp: `" << (exp) << "`\n"; \
+    } else {                                                          \
+      ++nfailed;                                                      \
+      std::cerr << "\033[31m[fail]\033[0m  act: `" << (act) << "`\n"; \
+      std::cerr << "\033[31m      \033[0m  exp: `" << (exp) << "`\n"; \
+    }                                                                 \
+  } while (false);
+
+#define uncheck_print(act)                                          \
+  do {                                                              \
+    std::cerr << "\033[33m[skip]\033[0m  act: `" << (act) << "`\n"; \
+  } while (false);
+
+#define testit(name, ...)                                             \
+  class LifetimeTest##name {                                          \
+   public:                                                            \
+    LifetimeTest##name() {                                            \
+      runwrapper();                                                   \
+      __VA_OPT__(exit(0));                                            \
+    }                                                                 \
+    void runwrapper() {                                               \
+      std::cerr << ("test::" #name) << " \\\n";                       \
+      run();                                                          \
+      std::cerr << ("test::" #name) << " /\n\n";                      \
+      if (nfailed) {                                                  \
+        std::cerr << "\033[31m[failed:]\033[0m: " << nfailed << "\n"; \
+      }                                                               \
+    }                                                                 \
+    size_t nfailed = 0;                                               \
+    void run();                                                       \
+  };                                                                  \
+  const static LifetimeTest##name _lttst##name;                       \
   inline void LifetimeTest##name::run()
 
 class NotIgnoreAdder {

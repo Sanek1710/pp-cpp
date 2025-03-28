@@ -97,9 +97,17 @@ static constexpr Tag other               = group('O', Kind::aux);
 
 using positer = std::string_view::iterator;
 
+union TokenDetails {
+  uint16_t index;
+  struct {
+    char letter;
+    bool marker;
+  };
+};
+
 struct Token {
   Tag tag;
-  uint16_t external_index;
+  TokenDetails details;
   uint32_t size = 0;
   positer start = nullptr;
   Position start_pos;
@@ -116,7 +124,7 @@ struct Token {
 
 constexpr Token code_token(std::string_view text, Position start_pos) {
   return Token{.tag = tag::code,
-               .external_index = 0,
+               .details = {0},
                .size = static_cast<uint32_t>(text.size()),
                .start = text.data(),
                .start_pos = start_pos,
