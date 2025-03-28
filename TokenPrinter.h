@@ -27,9 +27,9 @@ class TokenPrinter {
   TokenPrinter(std::ostream& os, bool print_lines = false)
       : os(os), print_lines(print_lines) {}
 
-  inline void print(Token token, std::string_view src) {
-    std::string_view text = token.get_text(src);
-    auto clr = [text, &token, &src]() -> const char* {
+  inline void print(Token token) {
+    std::string_view text = token.get_text();
+    auto clr = [text, &token]() -> const char* {
       std::unordered_set<std::string_view> keywords = {
           "return",  "if",     "using", "while", "do",    "break",
           "else",    "for",    "#",     "ifdef", "endif", "else",
@@ -53,18 +53,18 @@ class TokenPrinter {
       if (std::isdigit(text.front())) return "\033[38;5;193m";
       if (text.front() == '(' || text.front() == ')') return "\033[38;5;228m";
       if (std::ispunct(text.front())) return "\033[38;5;248m";
-      if (token.tag == tag::identifier && src[token.range.end] == ':')
+      if (token.tag == tag::identifier && *token.end() == ':')
         return "\033[38;5;37m";
-      if (token.tag == tag::identifier && src[token.range.end] == '(')
+      if (token.tag == tag::identifier && *token.end() == '(')
         return "\033[38;5;230m";
 
       return "\033[38;5;153m";
     };
-    if (last_line != token.range.start_pos.line) {
-      last_line = token.range.start_pos.line;
+    if (last_line != token.start_pos.line) {
+      last_line = token.start_pos.line;
       if (print_lines)
         os << "\033[38;5;240m" << std::setw(3)
-           << (token.range.start_pos.line + 1) << "│ ";
+           << (token.start_pos.line + 1) << "│ ";
     }
     os << clr() << text << "\033[0m";
   }

@@ -36,7 +36,7 @@
 // CATSTR5(x, y) f2 $0_$1_
 
 SELF1(x, y)     // (x, y)
-CAT1(x, y)      // xy
+CAT1(CAT1(x, y), y)      // xy
 STR1(x)         // "x"
 CATSTR1(L,2)_a; // L "2" _a;
 CATSTR2(L,2)_a; // L"2" _a;

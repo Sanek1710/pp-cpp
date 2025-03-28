@@ -4,8 +4,8 @@
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 1 "<command-line>" 2
 # 1 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
-""int
-     f0;
+
+ int f0;
 
 
 
@@ -51,18 +51,7 @@ ____MACRO_MAGIC____;
 
 
 define arr 5
-
-
-
-
-string";m;
-
-
-
-
-
-
-
+# 71 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
 int foo() {
   REAL_MACRO1;
   return str + b - str;
@@ -78,3 +67,7 @@ int foo() {
 
 Macro1;
 Macro21;
+
+
+
+R"str"

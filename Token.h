@@ -95,14 +95,30 @@ static constexpr Tag other               = group('O', Kind::aux);
 
 }  // namespace tag
 
+using positer = std::string_view::iterator;
+
 struct Token {
   Tag tag;
   uint16_t external_index;
-  Range range;
+  uint32_t size = 0;
+  positer start = nullptr;
+  Position start_pos;
+  Position end_pos;
 
-  inline constexpr std::string_view get_text(std::string_view src) const {
-    return src.substr(range.start, range.end - range.start);
+  inline constexpr std::string_view get_text() const {
+    return std::string_view(start, size);
   }
+  inline constexpr positer begin() const { return start; }
+  inline constexpr positer end() const { return start + size; }
 
-  void print(std::string_view src, std::ostream& os) const;
+  void print(std::ostream& os) const;
 };
+
+constexpr Token code_token(std::string_view text, Position start_pos) {
+  return Token{.tag = tag::code,
+               .external_index = 0,
+               .size = static_cast<uint32_t>(text.size()),
+               .start = text.data(),
+               .start_pos = start_pos,
+               .end_pos = start_pos};
+}

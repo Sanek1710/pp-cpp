@@ -78,22 +78,23 @@ std::string process_code(std::string_view src) {
   Token token;
 #define swap_dump_glued()                             \
   do {                                                \
-    if (last_token.range.end == token.range.start) {  \
-      last_token.range.end = token.range.end;         \
-      last_token.range.end_pos = token.range.end_pos; \
+    if (last_token.end() == token.begin()) {  \
+      last_token.size += token.size;         \
+      last_token.end_pos = token.end_pos; \
     } else {                                          \
       codeDumper.align_dump(last_token);              \
-      last_token.range = token.range;                 \
+      last_token.start = token.start;                 \
+      last_token.size = token.size;                 \
     }                                                 \
   } while (false)
 
 #define skip_dump_glued()                             \
   do {                                                \
     codeDumper.align_dump(last_token);                \
-    last_token.range.start = token.range.end;         \
-    last_token.range.end = token.range.end;           \
-    last_token.range.end_pos = token.range.end_pos;   \
-    last_token.range.start_pos = token.range.end_pos; \
+    last_token.start = token.end();         \
+    last_token.size = 0;           \
+    last_token.end_pos = token.end_pos;   \
+    last_token.start_pos = token.end_pos; \
   } while (false);
 
 #define swap_dump_raw() codeDumper.align_dump(token);
@@ -106,32 +107,32 @@ std::string process_code(std::string_view src) {
     // skip_extras<false>();
     token = rq.read();
 
-    // codeDumper.out += token.get_text(src);
+    // codeDumper.out += token.get_text();
     // printer.print(token, src);
 
     if (token.tag == tag::eof) break;
 
     if (token.tag == tag::pp_include) {
       continue;
-      includes.emplace_back(tokeniser.includeImage.name.get_text(src));
+      includes.emplace_back(tokeniser.includeImage.name.get_text());
 
       continue;
     }
     if (token.tag == tag::pp_define) {
       continue;
-      macromap.emplace(tokeniser.defineImage.name.get_text(src),
+      macromap.emplace(tokeniser.defineImage.name.get_text(),
                        compile_macro_expansion(tokeniser.defineImage, src));
       continue;
     }
     if (token.tag == tag::pp_undef) {
       continue;
-      macromap.erase(tokeniser.defineImage.name.get_text(src));
+      macromap.erase(tokeniser.defineImage.name.get_text());
       continue;
     }
 
     if (token.tag == tag::identifier) {
       // continue;
-      auto identifier_text = token.get_text(src);
+      auto identifier_text = token.get_text();
       auto macroIt = macromap.find(identifier_text);
       if (macroIt == macromap.end()) {
         swap_dump();
@@ -141,7 +142,7 @@ std::string process_code(std::string_view src) {
       MacroStamp macroStamp{macroIt->second};
       if (!macroStamp.info.is_functional) {
         skip_dump();
-        codeDumper.align_dump(macroStamp.expansion, token.range.start_pos);
+        codeDumper.align_dump(macroStamp.expansion, token.start_pos);
         continue;
       }
 

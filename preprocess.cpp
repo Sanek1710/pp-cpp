@@ -20,7 +20,6 @@
 #include "Cursor.h"
 #include "Macro.h"
 #include "PositionMap.h"
-#include "StringToken.h"
 #include "Token.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
@@ -33,16 +32,15 @@ class MacroExpansionTokeniser : private Tokeniser {
 
   inline Token read_token() {
     Token token;
-    token.range.start = cur.it - src.begin();
-    token.range.start_pos = cur.to_position();
+    token.start = cur.it;
+    token.start_pos = cur.to_position();
     token.tag = skip_next();
     if (token.tag == tag::arg) {
       cur.it = std::from_chars(cur.it, end, token.external_index).ptr;
-      // fill =
       cur.it++;
     }
-    token.range.end = cur.it - src.begin();
-    token.range.end_pos = cur.to_position();
+    token.size = cur.it - token.start;
+    token.end_pos = cur.to_position();
     return token;
   }
 
@@ -69,8 +67,8 @@ class Preprocessor {
   // StringSet macronames;
   StringMap<std::string> macroMap;
 
-  std::vector<StrToken> out;
-  std::vector<StrToken> buffer;
+  std::vector<Token> out;
+  std::vector<Token> buffer;
   std::vector<size_t> arg_rages;
   std::string str_buffer;
   std::vector<std::string_view> macro_stack;
@@ -92,7 +90,7 @@ class Preprocessor {
       // just add expansion and return
       // for now i just return next token as that is what expected
       out.pop_back();
-      out.emplace_back(expand_pos, macroStamp.expansion);
+      out.push_back(code_token(macroStamp.expansion, expand_pos));
       return token;
     }
     // here we skipping all extras, without writing them anywhere
@@ -107,10 +105,11 @@ class Preprocessor {
     static constexpr unsigned balance_origin = 0;
     int balance = balance_origin;
     bool successfullness = false;
+
     while (token.tag != tag::eof) {
       // TODONOW: preserve at least one space
       if (tag::is_extra(token.tag)) {
-        out.emplace_back(token.range.start_pos, " ");
+        out.push_back(code_token(" ", token.start_pos));
         do {
           token = tkz.read_token();
         } while (tag::is_extra(token.tag));
@@ -126,30 +125,28 @@ class Preprocessor {
           if (balance != balance_origin) break;
           // remember end position for last arg
           arg_rages.push_back(out.size());
-          out.emplace_back(token, src);
-          // setup for loop exit:
-          successfullness = true;
-          token.tag = tag::eof;
-          continue;  // in fact break from while loop
+          out.emplace_back(token);
+          // god forgive me
+          goto process_expansion;
         }
 
         case tag::raw(','): {
-          if (balance == 1) arg_rages.push_back(out.size());
+          if (balance == balance_origin + 1) arg_rages.push_back(out.size());
           break;
         }
 
         case tag::identifier: {
-          const auto macro_name = token.get_text(src);
+          const auto macro_name = token.get_text();
           auto macroIt = macroMap.find(macro_name);
           if (macroIt == macroMap.end()) break;
           if (std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
               macro_stack.end())
             break;
 
-          out.emplace_back(token, src);
+          out.push_back(token);
           macro_stack.push_back(macro_name);
-          token = expand_macro(token.range.start_pos, tkz,
-                               MacroStamp{macroIt->second});
+          token =
+              expand_macro(token.start_pos, tkz, MacroStamp{macroIt->second});
           macro_stack.pop_back();
           continue;
         }
@@ -157,12 +154,14 @@ class Preprocessor {
         default:
           break;
       }
-      out.emplace_back(token, src);
+      out.push_back(token);
       token = tkz.read_token();
     }
 
+  process_expansion:
+
     const size_t nargs_input = arg_rages.size() - 1 - arg_range_origin_idx;
-    if (successfullness && macroStamp.is_valid_call(nargs_input)) {
+    if (token.tag != tag::eof && macroStamp.is_valid_call(nargs_input)) {
       // to this point we have whole bunch of expansion relevant tokens
       // also marked argument ranges
       // also argument count
@@ -178,14 +177,18 @@ class Preprocessor {
           const size_t arg_idx = token.external_index;
           auto arg_it = out.begin() + arg_range_origin[arg_idx] + 1;
           const auto arg_end = out.begin() + arg_range_origin[arg_idx + 1];
+
           for (; arg_it != arg_end; ++arg_it) {
             buffer.push_back(*arg_it);
           }
+
           continue;
         }
-        Position tok_pos = expand_pos;
-        tok_pos.column += expand_pos.column;
-        buffer.emplace_back(tok_pos, token.get_text(macroStamp.expansion));
+        token.start_pos.line = expand_pos.line;
+        token.start_pos.column += expand_pos.column;
+        token.end_pos.line += expand_pos.line;
+        token.end_pos.column += expand_pos.column;
+        buffer.emplace_back(token);
       }
 
       // buffer.emplace_back(expand_pos, macroStamp.expansion);
@@ -195,58 +198,48 @@ class Preprocessor {
       out.insert(out.end(), buffer.begin(), buffer.end());
       buffer.clear();
     }
+
     arg_rages.erase(arg_rages.begin() + arg_range_origin_idx,  //
                     arg_rages.end());
-    // if cant expand
-    // maybe find better match if such exists?
-    // dump all the deque
-    // but actually seems like just leave it as is and return next token
-
     return tkz.read_token();
   }
 
   const auto& process_code(std::string_view src) {
     out.clear();
-    size_t h = 0;
     Tokeniser tkz = Tokeniser{src};
-    Token lastExpansionToken;
 
     Token token = tkz.read_token();
     while (token.tag != tag::eof) {
       switch (token.tag) {
-        case tag::pp_include: {
+        case tag::pp_include:
           // totaltimeit;
           break;
-        }
-        case tag::pp_define: {
-          // totaltimeit;
-          const auto macro_name = tkz.defineImage.name.get_text(src);
-          // printit(macro_name);
-          // printit(compile_macro_expansion(tkz.defineImage, src));
-          macroMap.emplace(macro_name,
+
+        case tag::pp_define:
+          macroMap.emplace(tkz.defineImage.name.get_text(),
                            compile_macro_expansion(tkz.defineImage, src));
           break;
-        }
-        case tag::pp_undef: {
-          // totaltimeit;
-          macroMap.erase(tkz.undefImage.name.get_text(src));
+
+        case tag::pp_undef:
+          macroMap.erase(tkz.undefImage.name.get_text());
           break;
-        }
+
         case tag::identifier: {
-          const auto macro_name = token.get_text(src);
+          // break;
+          const auto macro_name = token.get_text();
           auto macroIt = macroMap.find(macro_name);
           if (macroIt == macroMap.end()) break;  // from switch
 
           // out.clear();
-          out.emplace_back(token, src);
+          out.push_back(token);
           macro_stack.push_back(macro_name);
-          token = expand_macro(token.range.start_pos, tkz,
-                               MacroStamp{macroIt->second});
+          token =
+              expand_macro(token.start_pos, tkz, MacroStamp{macroIt->second});
           macro_stack.pop_back();
           continue;
         }
         default:
-          out.emplace_back(token, src);
+          // out.push_back(token);
           break;  // from switch
       }
       token = tkz.read_token();
@@ -255,7 +248,6 @@ class Preprocessor {
     once {
       notignore += out.size();
       printit(out.size());
-      lastExpansionToken.print(src, std::cerr);
       auto exp = macroMap.at("CTIMEOPT_VAL");
       printit(exp);
     };
@@ -346,9 +338,9 @@ testit(compile_macro_expansion) {
   size_t nfailed = 0;
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      std::string_view name = tkz.defineImage.name.get_text(src);
+      std::string_view name = tkz.defineImage.name.get_text();
       std::string act = compile_macro_expansion(tkz.defineImage, src);
-      tkz.defineImage.print(std::cerr, src);
+      tkz.defineImage.print(std::cerr);
       std::cerr << "\n";
 
       if (expected.contains(name)) {
@@ -407,14 +399,14 @@ testit(tokenise_macro_expansion) {
   size_t nfailed = 0;
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      std::string_view name = tkz.defineImage.name.get_text(src);
+      std::string_view name = tkz.defineImage.name.get_text();
       std::string compile = compile_macro_expansion(tkz.defineImage, src);
 
       MacroExpansionTokeniser macro_tkz{compile};
 
       token = macro_tkz.read_token();
       while (token.tag != tag::eof) {
-        token.print(compile, std::cerr);
+        token.print(std::cerr);
         token = macro_tkz.read_token();
       }
       std::cerr << "\n";

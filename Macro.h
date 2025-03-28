@@ -87,16 +87,16 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
 
     // what if arg
     if (macro.info.is_functional && tok.tag == tag::identifier) {
-      const auto text = tok.get_text(src);
+      const auto text = tok.get_text();
 
       // check arg
       auto arg_it = std::find_if(
           macro.args_begin(), macro.args_end(),
-          [&](const Token& arg) { return arg.get_text(src) == text; });
+          [&](const Token& arg) { return arg.get_text() == text; });
 
       // or __VA_ARGS__ if expected
       if (macro.info.is_variadic && text == "__VA_ARGS__" &&
-          macro.args_back().get_text(src).empty()) {
+          macro.args_back().get_text().empty()) {
         arg_it = std::prev(macro.args_end());
       }
 
@@ -116,7 +116,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
       }
     }
 
-    for (char c : tok.get_text(src)) {
+    for (char c : tok.get_text()) {
       if (c == '$') out += '$';
       out += c;
     }

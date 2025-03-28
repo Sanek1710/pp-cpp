@@ -4,7 +4,6 @@
 #include <iostream>
 #include <sstream>
 
-#include "StringToken.h"
 #include "Token.h"
 #include "helper.h"
 
@@ -16,19 +15,15 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
             << "]";
 }
 
-std::ostream& operator<<(std::ostream& os, const Range& range) {
-  return os << range.start_pos << " - " << range.end_pos;
-}
-
-void DefineImage::print(std::ostream& os, std::string_view src) const {
-  os << "#define " << name.get_text(src);
+void DefineImage::print(std::ostream& os) const {
+  os << "#define " << name.get_text();
   if (info.is_functional) {
     os << "(";
     if (info.nargs) {
       auto argit = args_begin();
-      os << argit->get_text(src);
+      os << argit->get_text();
       for (++argit; argit != args_end(); ++argit) {
-        os << ", " << argit->get_text(src);
+        os << ", " << argit->get_text();
       }
     }
     if (info.is_variadic) os << "...";
@@ -36,7 +31,7 @@ void DefineImage::print(std::ostream& os, std::string_view src) const {
   }
   os << " ";
   for (auto expIt = expansion_begin(); expIt != expansion_end(); ++expIt) {
-    os << expIt->get_text(src);
+    os << expIt->get_text();
   }
 }
 
@@ -66,14 +61,8 @@ void print_tag(std::ostream& os, Tag tag) {
 }
 }  // namespace
 
-void Token::print(std::string_view src, std::ostream& os) const {
-  os << 'y';
-  print_tag(os, tag);
-  os << range.start_pos << ": -> `" << ctrl_str{get_text(src)} << "`\n";
-}
-
-void StrToken::print(std::ostream& os) const {
+void Token::print(std::ostream& os) const {
   os << 'T';
   print_tag(os, tag);
-  os << pos << ": `" << ctrl_str{text} << "`\n";
+  os << start_pos << ": -> `" << ctrl_str{get_text()} << "`\n";
 }

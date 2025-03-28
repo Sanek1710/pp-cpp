@@ -33,5 +33,5 @@ struct DefineImage : ImageBase {
   inline auto expansion_begin() const { return args_end(); }
   inline auto expansion_end() const { return tokens.end(); }
 
-  void print(std::ostream& os, std::string_view src) const;
+  void print(std::ostream& os) const;
 };

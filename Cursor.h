@@ -72,8 +72,11 @@ struct Cursor {
     ++nline;
   }
 
+  inline unsigned line() const { return nline; }
+  inline unsigned column() const { return it - line_start_it; }
+
   inline Position to_position() const {
-    return {.line = nline, .column = static_cast<uint32_t>(it - line_start_it)};
+    return {.line = line(), .column = column()};
   }
 };
 
@@ -99,25 +102,25 @@ class Tokeniser {
 
   inline Token read_token() {
     Token token;
-    token.range.start = cur.it - src.begin();
-    token.range.start_pos = cur.to_position();
+    token.start = cur.it;
+    token.start_pos = cur.to_position();
     token.tag = skip_next();
     // TODO: maybe peek next and cat with previous
     // if we see line_continuation here
-    token.range.end = cur.it - src.begin();
-    token.range.end_pos = cur.to_position();
+    token.size = cur.it - token.start;
+    token.end_pos = cur.to_position();
     return token;
   }
 
   inline Token read_pptoken() {
     Token token;
-    token.range.start = cur.it - src.begin();
-    token.range.start_pos = cur.to_position();
+    token.start = cur.it;
+    token.start_pos = cur.to_position();
     token.tag = skip_ppnext();
     // TODO: maybe peek next and cat with previous
     // if we see line_continuation here
-    token.range.end = cur.it - src.begin();
-    token.range.end_pos = cur.to_position();
+    token.size = cur.it - token.start;
+    token.end_pos = cur.to_position();
     return token;
   }
 
@@ -228,16 +231,16 @@ class Tokeniser {
     return true;
   }
   inline bool consume_identifier_token(Token& token) {
-    token.range.start = cur.it - src.begin();
-    token.range.start_pos = cur.to_position();
+    token.start = cur.it;
+    token.start_pos = cur.to_position();
     token.tag = tag::identifier;
     bool consumed = false;
     if (is_word_start_char(*cur.it)) {
       skip_identifier();
       consumed = true;
     }
-    token.range.end = cur.it - src.begin();
-    token.range.end_pos = cur.to_position();
+    token.size = cur.it - token.start;
+    token.end_pos = cur.to_position();
     return consumed;
   }
 
@@ -389,11 +392,11 @@ class Tokeniser {
 
   inline bool process_include() {
     skip_ppline_extras();
-    includeImage.name.range.start = cur.it - src.begin();
-    includeImage.name.range.start_pos = cur.to_position();
+    includeImage.name.start = cur.it;
+    includeImage.name.start_pos = cur.to_position();
     if (!consume_include_string()) return false;
-    includeImage.name.range.end = cur.it - src.begin();
-    includeImage.name.range.end_pos = cur.to_position();
+    includeImage.name.size = cur.it - includeImage.name.start;
+    includeImage.name.end_pos = cur.to_position();
     skip_ppline();
     return true;
   }

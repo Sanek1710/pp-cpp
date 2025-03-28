@@ -19,18 +19,18 @@ class CodeDumper {
 
   // Standard token dump with alignment
   inline void align_dump(const Token& token) {
-    const auto& pos = token.range.start_pos;
+    const auto& pos = token.start_pos;
     if (align_to(pos)) {
-      out += token.get_text(src);
-      last_pos = token.range.end_pos;
+      out += token.get_text();
+      last_pos = token.end_pos;
       getnote(naligned)++;
       return;
     }
     getnote(nnotaligned)++;
     posmap[last_pos] = pos;
-    out += token.get_text(src);
-    // applySameDelta(last_pos, token.range.start_pos, token.range.end_pos);
-    addDeltaPos(last_pos, deltaPos(token.range));
+    out += token.get_text();
+    // applySameDelta(last_pos, token.start_pos, token.end_pos);
+    addDeltaPos(last_pos, deltaPos(token.start_pos, token.end_pos));
   }
 
   // Raw text dump with alignment

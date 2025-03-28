@@ -17,3 +17,4 @@ struct string_hash {
 template <typename Value>
 using StringMap = dense::map<std::string, Value, string_hash, std::equal_to<>>;
 using StringSet = dense::set<std::string, string_hash, std::equal_to<>>;
+

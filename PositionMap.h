@@ -35,12 +35,8 @@ using PositionMap = dense::map<Position, Position, PositionHash>;
 inline Position deltaPos(const Position& less, const Position& greater) {
   Position dpos;
   dpos.line = greater.line - less.line;
-  dpos.column = dpos.line ? greater.column : greater.column - less.column;
+  dpos.column = greater.column - (dpos.line ? 0 : less.column);
   return dpos;
-}
-
-inline Position deltaPos(const Range& range) {
-  return deltaPos(range.start_pos, range.end_pos);
 }
 
 inline void addDeltaPos(Position& pos, const Position& dpos) {
@@ -51,9 +47,8 @@ inline void addDeltaPos(Position& pos, const Position& dpos) {
 
 inline void applySameDelta(Position& orig, const Position& less,
                            const Position& greater) {
-  const auto dline = greater.line - less.line;
-  orig.line += dline;
-  if (dline) {
+  if (const auto dline = greater.line - less.line) {
+    orig.line += dline;
     orig.column = greater.column;
   } else {
     orig.column += greater.column - less.column;
