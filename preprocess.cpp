@@ -73,11 +73,10 @@ class Preprocessor {
   std::string str_buffer;
   std::vector<std::string_view> macro_stack;
 
-  inline std::pair<std::vector<Token>::iterator, std::vector<Token>::iterator>
-  arg_range(size_t arg_range_head, size_t arg_idx) {
+  inline auto arg_range(size_t arg_range_head, size_t arg_idx) {
     const auto arg_range_origin = arg_rages.begin() + arg_range_head + arg_idx;
-    return {out.begin() + arg_range_origin[0] + 1,
-            out.begin() + arg_range_origin[1]};
+    return Range{out.begin() + arg_range_origin[0] + 1,
+                 out.begin() + arg_range_origin[1]};
   }
 
   class TokeniserInterface {
@@ -113,7 +112,10 @@ class Preprocessor {
     out.push_back(macro_token);
 
     Token token = tkz.read_token();
-    while (tag::is_extra(token.tag)) token = tkz.read_token();
+    while (tag::is_extra(token.tag)) {
+      out.push_back(token);
+      token = tkz.read_token();
+    }
 
     if (token.tag != tag::raw('(')) return token;
 
@@ -159,14 +161,9 @@ class Preprocessor {
             break;
           }
           token.details.marker = false;
+          if (in_process(macro_name)) break;
 
-          if (std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
-              macro_stack.end())
-            break;
-
-          macro_stack.push_back(macro_name);
           token = process_macro_call(token, tkz, MacroStamp{macroIt->second});
-          macro_stack.pop_back();
           continue;
         }
 
@@ -203,9 +200,8 @@ class Preprocessor {
       Token token = macro_tkz.read_token();
       if (token.tag == tag::arg) {
         const size_t arg_idx = token.details.index;
-        auto [arg_it, arg_end] = arg_range(arg_range_head, arg_idx);
-        for (; arg_it != arg_end; ++arg_it) {
-          buffer.push_back(*arg_it);
+        for (const auto& arg_tok : arg_range(arg_range_head, arg_idx)) {
+          buffer.push_back(arg_tok);
         }
         continue;
       }
@@ -222,7 +218,9 @@ class Preprocessor {
     // TODO: treat bufer as new input to read from
     // then expand back to output on place of previous tokens
     // out.insert(out.end(), buffer.begin() + buffer_head, buffer.end());
+    macro_stack.push_back(macro_token.get_text());
     post_process_expansion(buffer_head);
+    macro_stack.pop_back();
 
     reset(buffer, buffer_head);
   }
@@ -250,7 +248,6 @@ class Preprocessor {
           break;
 
         case tag::identifier: {
-          // break;
           const auto macro_name = token.get_text();
           auto macroIt = macroMap.find(macro_name);
           if (macroIt == macroMap.end()) {
@@ -258,11 +255,9 @@ class Preprocessor {
             break;
           }
           token.details.marker = false;
+          if (in_process(macro_name)) break;
 
-          // out.clear();
-          macro_stack.push_back(macro_name);
           token = process_macro_call(token, tkz, MacroStamp{macroIt->second});
-          macro_stack.pop_back();
           continue;
         }
         default:
@@ -292,14 +287,9 @@ class Preprocessor {
             break;  // from switch
           }
           token.details.marker = false;
+          if (in_process(macro_name)) break;
 
-          if (std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
-              macro_stack.end())
-            break;
-
-          macro_stack.push_back(macro_name);
           token = process_macro_call(token, tkz, MacroStamp{macroIt->second});
-          macro_stack.pop_back();
           continue;
         }
         default:
@@ -311,6 +301,10 @@ class Preprocessor {
   }
 
  private:
+  inline bool in_process(std::string_view macro_name) {
+    return std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
+           macro_stack.end();
+  }
 };
 
 int perf_test() {
@@ -328,9 +322,9 @@ int perf_test() {
 }
 
 int user_test() {
-  // std::string src = read_file(ROOT "pp.test/pp.in.cpp");
-  std::string src = read_file(ROOT "helper.h");
-  src += read_file(ROOT "preprocess.cpp");
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+  // std::string src = read_file(ROOT "helper.h");
+  // src += read_file(ROOT "preprocess.cpp");
   timeit;
   Preprocessor pre;
   TokenPrinter printer{std::cerr, true};

@@ -54,11 +54,8 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
   bool need_space = false;
   Tag last_tag = tag::other;
 
-  auto it = macro.expansion_begin();
-  const auto end = macro.expansion_end();
-  for (; it != end; ++it) {
-    const Token& tok = *it;
-
+  const auto args = macro.args_view();
+  for (const Token& tok : macro.expansion_view()) {
     // skip extras mark as need space
     if (tag::is_extra(tok.tag)) {
       if (last_tag != tag::pp_op_cat  //
@@ -91,19 +88,19 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
 
       // check arg
       auto arg_it = std::find_if(
-          macro.args_begin(), macro.args_end(),
+          args.begin(), args.end(),
           [&](const Token& arg) { return arg.get_text() == text; });
 
       // or __VA_ARGS__ if expected
       if (macro.info.is_variadic && text == "__VA_ARGS__" &&
-          macro.args_back().get_text().empty()) {
-        arg_it = std::prev(macro.args_end());
+          args.back().get_text().empty()) {
+        arg_it = std::prev(args.end());
       }
 
       // actual arg
-      if (arg_it != macro.args_end()) {
+      if (arg_it != args.end()) {
         out += '$';
-        out += std::to_string(arg_it - macro.args_begin());
+        out += std::to_string(arg_it - args.begin());
         if (last_tag == tag::pp_op_str) {
           out += 's';
         } else if (last_tag == tag::pp_op_cat) {

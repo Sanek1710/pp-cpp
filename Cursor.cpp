@@ -19,19 +19,17 @@ void DefineImage::print(std::ostream& os) const {
   os << "#define " << name.get_text();
   if (info.is_functional) {
     os << "(";
-    if (info.nargs) {
-      auto argit = args_begin();
-      os << argit->get_text();
-      for (++argit; argit != args_end(); ++argit) {
-        os << ", " << argit->get_text();
-      }
+    bool first = true;
+    for (const auto arg : args_view()) {
+      os << (first ? "" : ", ") << arg.get_text();
+      first = false;
     }
     if (info.is_variadic) os << "...";
     os << ")";
   }
   os << " ";
-  for (auto expIt = expansion_begin(); expIt != expansion_end(); ++expIt) {
-    os << expIt->get_text();
+  for (const auto exp_tok : expansion_view()) {
+    os << exp_tok.get_text();
   }
 }
 

@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "Token.h"
+#include "RangeView.h"
 
 struct MacroInfo {
   unsigned short nargs = 0;
@@ -26,12 +27,12 @@ struct DefineImage : ImageBase {
     info = MacroInfo{};
   }
 
-  inline auto args_begin() const { return tokens.begin(); }
-  inline auto args_end() const { return tokens.begin() + info.nargs; }
-  inline auto& args_back() const { return *std::prev(args_end()); }
-
-  inline auto expansion_begin() const { return args_end(); }
-  inline auto expansion_end() const { return tokens.end(); }
+  inline auto args_view() const {
+    return Range{tokens.begin(), tokens.begin() + info.nargs};
+  }
+  inline auto expansion_view() const {
+    return Range{tokens.begin() + info.nargs, tokens.end()};
+  }
 
   void print(std::ostream& os) const;
 };

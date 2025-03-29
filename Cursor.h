@@ -233,7 +233,7 @@ class Tokeniser {
     cur.it += n;
   }
   inline void skip_line_continuation() {
-    ++cur.it;     // '\'
+    ++cur.it;     // '\\'
     cur.enter();  // '\n'
     ++cur.it;
   }
