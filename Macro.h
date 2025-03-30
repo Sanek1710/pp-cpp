@@ -40,14 +40,13 @@ struct MacroStamp {
   MacroInfo info;
 };
 
-inline std::string compile_macro_expansion(const DefineImage& macro,
-                                           std::string_view src) {
+inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
   std::string out;
 
   // Write macro type prefix
-  if (macro.info.is_functional) {
-    out += macro.info.is_variadic ? 'v' : 'f';
-    out += std::to_string(macro.info.nargs);
+  if (macro.info().is_functional) {
+    out += macro.info().is_variadic ? 'v' : 'f';
+    out += std::to_string(macro.info().nargs);
   }
   out += ' ';
 
@@ -83,7 +82,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
     need_space = false;
 
     // what if arg
-    if (macro.info.is_functional && tok.tag == tag::identifier) {
+    if (macro.info().is_functional && tok.tag == tag::identifier) {
       const auto text = tok.get_text();
 
       // check arg
@@ -92,7 +91,7 @@ inline std::string compile_macro_expansion(const DefineImage& macro,
           [&](const Token& arg) { return arg.get_text() == text; });
 
       // or __VA_ARGS__ if expected
-      if (macro.info.is_variadic && text == "__VA_ARGS__" &&
+      if (macro.info().is_variadic && text == "__VA_ARGS__" &&
           args.back().get_text().empty()) {
         arg_it = std::prev(args.end());
       }

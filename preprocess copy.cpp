@@ -24,6 +24,7 @@
 #include "Token.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
+#include "TokenProtocol.h"
 #include "helper.h"
 #include "util.h"
 
@@ -33,7 +34,7 @@ class MacroExpansionTokeniser : private Tokeniser {
  public:
   MacroExpansionTokeniser(std::string_view src) : Tokeniser(src, tokenImage) {}
 
-  inline Token read_token() {
+  inline Token read_token() { 
     Token token;
     token.start = cur.it;
     token.start_pos = cur.to_position();
@@ -54,7 +55,7 @@ class MacroExpansionTokeniser : private Tokeniser {
       if (*cur.it == '$') return tag::raw(*cur.it++);
       return tag::arg;
     }
-    return skip_common<false>(cur, end);
+    return skip_common<false>();
   }
 
   inline bool eof() const { return Tokeniser::eof(); }
@@ -66,10 +67,10 @@ class Preprocessor {
   static inline void reset(std::vector<T>& container, size_t head) {
     container.erase(container.begin() + head, container.end());
   }
-  StringMap<std::string> macroMap;
 
-  std::vector<Token> out;
-  std::vector<Token> buffer;
+  StringMap<std::string> macroMap;
+  TokenList out;
+  TokenList buffer;
   std::vector<size_t> arg_rages;
 
   std::string str_buffer;
@@ -83,23 +84,106 @@ class Preprocessor {
                  out.begin() + arg_range_origin[1]};
   }
 
-  class TokeniserInterface {
-   public:
-    TokeniserInterface(std::vector<Token>& tokens, size_t begin_idx,
-                       size_t end_idx)
-        : tokens(tokens), idx(begin_idx), end_idx(end_idx) {}
-    inline Token read_token() {
-      if (idx == end_idx) return Token{.tag = tag::eof};
-      return tokens[idx++];
+  template <typename TokensIn, typename TokensOut>
+  bool prescan_read_macro(Token macro_tk, MacroStamp macro_stamp,
+                          TokenReader<TokensIn>& input,
+                          TokenListWriter& output) {
+    const size_t arg_ranges_head = arg_rages.size();
+    output.write_token(macro_tk);
+    if (!macro_stamp.info.is_functional) return true;
+
+    Token token = input.read_token();
+    while (!input.eof()) {
+    }
+    while (tag::is_extra(token.tag)) {
+      output.write_token(token);
+      token = input.read_token();
     }
 
-   private:
-    std::vector<Token>& tokens;
-    size_t idx;
-    const size_t end_idx;
-  };
+    if (token.tag != tag::raw('(')) return token;
+
+    arg_rages.push_back(out.size());
+
+    int balance = 0;
+    while (!input.eof()) {
+      Token token = input.read_token();
+
+      switch (token.tag) {
+        case tag::raw('('):
+          ++balance;
+          break;
+
+        case tag::raw(')'): {
+          --balance;
+          if (balance != 0) break;
+          // remember end position for last arg
+          arg_rages.push_back(output.size());
+          output.write_token(token);
+
+          return macro_stamp.is_valid_call();
+        }
+
+        case tag::raw(','): {
+          if (balance == 1) arg_rages.push_back(output.size());
+          break;
+        }
+
+        default:
+          break;
+      }
+      output.write_token(token);
+    }
+  }
 
  public:
+  template <typename TokensIn, typename TokensOut>
+  void process_tokens(TokenReader<TokensIn>& input,
+                      TokenWriter<TokensOut>& output) {
+    while (!input.eof()) {
+      Token token = input.read_token();
+
+      switch (token.tag) {
+        case tag::pp_include: {
+          const IncludeTokenImage& includeImage =
+              tokenImage.as<IncludeTokenImage>();
+          continue;
+        }
+
+        case tag::pp_define: {
+          const DefineTokenImage& defineImage =
+              tokenImage.as<DefineTokenImage>();
+          macroMap.emplace(defineImage.name().get_text(),
+                           compile_macro_expansion(defineImage));
+          continue;
+        }
+
+        case tag::pp_undef: {
+          const UndefTokenImage& undefImage = tokenImage.as<UndefTokenImage>();
+          macroMap.erase(undefImage.name().get_text());
+          continue;
+        }
+
+        case tag::identifier: {
+          const auto macro_name = token.get_text();
+          auto macroIt = macroMap.find(macro_name);
+          if (macroIt == macroMap.end()) {
+            token.details.marker = true;
+            break;
+          }
+          token.details.marker = false;
+          if (in_process(macro_name)) break;
+
+          token = process_macro_call(token, input, MacroStamp{macroIt->second});
+          continue;
+        }
+
+        default:
+          break;  // from switch
+      }
+      output.write_token(token);
+    }
+  }
+
   template <typename TokeniserT>
   Token process_macro_call(Token macro_token, TokeniserT& tkz,
                            MacroStamp macroStamp) {
@@ -237,30 +321,22 @@ class Preprocessor {
     arg_rages.clear();
     macro_stack.clear();
 
-    Tokeniser tkz = Tokeniser{src, tokenImage};
+    Tokeniser tkz = Tokeniser{src};
     Token token = tkz.read_token();
     while (token.tag != tag::eof) {
       switch (token.tag) {
-        case tag::pp_include: {
-          const IncludeTokenImage& includeImage =
-              tokenImage.as<IncludeTokenImage>();
+        case tag::pp_include:
           // totaltimeit;
           break;
-        }
 
-        case tag::pp_define: {
-          const DefineTokenImage& defineImage =
-              tokenImage.as<DefineTokenImage>();
-          macroMap.emplace(defineImage.name().get_text(),
-                           compile_macro_expansion(defineImage));
+        case tag::pp_define:
+          macroMap.emplace(tkz.defineImage.name.get_text(),
+                           compile_macro_expansion(tkz.defineImage, src));
           break;
-        }
 
-        case tag::pp_undef: {
-          const UndefTokenImage& undefImage = tokenImage.as<UndefTokenImage>();
-          macroMap.erase(undefImage.name().get_text());
+        case tag::pp_undef:
+          macroMap.erase(tkz.undefImage.name.get_text());
           break;
-        }
 
         case tag::identifier: {
           const auto macro_name = token.get_text();
@@ -406,15 +482,13 @@ testit(compile_macro_expansion) {
           {"CATSTR5", "f2 $0_$1_"},                  //
       };
 
-  DirectiveTokenImage tokenImage;
-  Tokeniser tkz{src, tokenImage};
+  Tokeniser tkz{src};
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
-      std::string_view name = defineImage.name().get_text();
-      std::string act = compile_macro_expansion(defineImage);
-      defineImage.print(std::cerr);
+      std::string_view name = tkz.defineImage.name.get_text();
+      std::string act = compile_macro_expansion(tkz.defineImage, src);
+      tkz.defineImage.print(std::cerr);
       std::cerr << "\n";
 
       if (expected.contains(name)) {
@@ -457,14 +531,12 @@ testit(tokenise_macro_expansion) {
           {"CATSTR5", "f2 $0_$1_"},                  //
       };
 
-  DirectiveTokenImage tokenImage;
-  Tokeniser tkz{src, tokenImage};
+  Tokeniser tkz{src};
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
-      std::string_view name = defineImage.name().get_text();
-      std::string compile = compile_macro_expansion(defineImage);
+      std::string_view name = tkz.defineImage.name.get_text();
+      std::string compile = compile_macro_expansion(tkz.defineImage, src);
 
       MacroExpansionTokeniser macro_tkz{compile};
 

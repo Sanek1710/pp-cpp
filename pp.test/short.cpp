@@ -11,3 +11,15 @@
 #define CAT1(x, y) x###y
 
 CAT1(L, CAT1(y, z))
+
+#define cb 12
+#define M1(x, y) fromM1(x + y, x ## y)
+#define M2(x, y) fromM2(x + y, x ## y)
+#define CM2(x, y) fromCM2(#x, #y)
+
+fromM1(C + fromM2(c + b, cb)
+//         |
+
+M1(C, M2(c, b))
+//2 4         e
+//      8 a  d

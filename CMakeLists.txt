@@ -12,11 +12,11 @@ add_subdirectory(third-party)
 add_executable(perftest perftest.cpp)
 target_link_libraries(perftest unordered_dense)
 
-add_library(cursor Cursor.cpp)
+add_library(cursor Cursor.cpp Printable.cpp)
 target_link_libraries(cursor unordered_dense)
 
-add_executable(main main.cpp)
-target_link_libraries(main cursor)
+# add_executable(main main.cpp)
+# target_link_libraries(main cursor)
 
 add_executable(preprocess preprocess.cpp)
 target_link_libraries(preprocess cursor)

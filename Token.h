@@ -88,8 +88,11 @@ static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 
 // aux tokens
 static constexpr Tag code                = group('C', Kind::aux);
-static constexpr Tag arg                 = group('A', Kind::aux);
 static constexpr Tag other               = group('O', Kind::aux);
+
+static constexpr Tag arg                 = group('A', Kind::aux);
+static constexpr Tag arg_raw             = group('R', Kind::aux);
+static constexpr Tag arg_str             = group('S', Kind::aux);
 
 // clang-format on
 
