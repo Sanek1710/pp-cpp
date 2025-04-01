@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "memstat.h"
-#include "util.h"
+#include "util/util.h"
 
 using FileID = unsigned;
 using MacroName = std::string;

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <iterator>
+#include <memory>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 template <typename Iterator>
 class Range {
@@ -11,7 +14,7 @@ class Range {
   Iterator mbegin;
   Iterator mend;
 
-  using deref_type = decltype(*mbegin);
+  using reference = decltype(*mbegin);
   using size_type = decltype(std::distance(mbegin, mend));
 
  public:
@@ -27,8 +30,8 @@ class Range {
   size_type size() const { return std::distance(mbegin, mend); }
   bool empty() const { return mbegin == mend; }
 
-  deref_type front() const { return *mbegin; }
-  deref_type back() const { return *std::prev(mend); }
+  reference front() const { return *mbegin; }
+  reference back() const { return *std::prev(mend); }
 };
 
 template <typename Iterator>
@@ -41,13 +44,31 @@ Range(const Container&)
 
 template <typename Container>
 class SliceIterator {
- private:
-  const Container& container;
-  size_t i;
+  using const_reference = typename Container::const_reference;
+  using const_pointer = typename Container::const_pointer;
 
  public:
   SliceIterator(const Container& container, size_t i)
-      : container(container), i(i) {}
+      : container(container), idx(i) {}
+
+  constexpr const_reference operator*() const { return container[idx]; }
+  constexpr const_pointer operator->() const { return &container[idx]; }
+  constexpr SliceIterator& operator++() {
+    ++idx;
+    return *this;
+  }
+  constexpr SliceIterator operator++(int) {
+    return SliceIterator{container, idx++};
+  }
+
+  bool operator==(SliceIterator other) const {
+    return &this->container == &other.container && idx == other.idx;
+  }
+  bool operator!=(SliceIterator other) const { return !(*this == other); }
+
+ private:
+  const Container& container;
+  size_t idx;
 };
 
 template <typename Container>
@@ -63,10 +84,13 @@ class Slice {
 
   Slice(const Container& container, size_t ibegin, size_t iend)
       : container(container),
-        ibegin(ibegin), iend(iend) {}
+        ibegin(std::clamp(ibegin, 0UL, std::size(container))),
+        iend(std::clamp(iend, ibegin, std::size(container))) {}
 
   Slice(const Container& container, size_t ibegin)
-      : container(container), ibegin(ibegin), iend(std::size(container)) {}
+      : container(container),
+        ibegin(std::clamp(ibegin, 0UL, std::size(container))),
+        iend(std::size(container)) {}
 
   Slice(const Container& container)
       : container(container), ibegin(0), iend(std::size(container)) {}

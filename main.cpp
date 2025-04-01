@@ -1,249 +1,161 @@
-#include <algorithm>
-#include <charconv>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <string>
-#include <string_view>
-#include <vector>
+#include <unistd.h>
 
-#include "CodeDumper.h"
-#include "Cursor.h"
-#include "Macro.h"
-#include "PositionMap.h"
-#include "Token.h"
 #include "TokenPrinter.h"
-#include "helper.h"
-#include "util.h"
+#include "preprocess.h"
 
-// #define debug
-
-StringMap<std::string> macromap;
-
-// sucks basically
-// TODO: unsuck it
-struct RetrievalQueue {
-  RetrievalQueue(Tokeniser& tokeniser) : tokeniser(tokeniser) {}
-
-  Token read() {
-    if (!outers.empty()) return pop_outers();
-    if (inners.empty()) return tokeniser.read_token();
-    outers.assign(inners.rbegin(), inners.rend());
-    inners.clear();
-    return pop_outers();
+int perf_test() {
+  std::string src = read_file(ROOT "pp.test/sqliteall.c");
+  timeit;
+  repeat(5) {
+    repeat(20) {
+      Preprocessor pre;
+      pre.process_code(src);
+    }
+    untimeit;
+    usleep(500'000);
   }
+  return 0;
+}
 
-  Token& shadow_read() {  //
-    return inners.emplace_back(tokeniser.read_token());
-  }
-  size_t shadow_offset() const { return inners.size(); }
-
-  void shadow_push(const Token& token) { inners.push_back(token); }
-
-  std::vector<Token> inners;
-  std::vector<Token> outers;
-  Tokeniser& tokeniser;
-
-  inline Token pop_outers() {
-    Token token = outers.back();
-    outers.pop_back();
-    return token;
-  }
-};
-
-std::string process_code(std::string_view src) {
-  CodeDumper codeDumper{src};
-
-  Tokeniser tokeniser{src};
-  RetrievalQueue rq(tokeniser);
-  // static bool halt = false;
-  // if (halt) return;
-  // halt = true;
+int user_test() {
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+  // std::string src = read_file(ROOT "helper.h");
+  // src += read_file(ROOT "preprocess.cpp");
+  timeit;
+  Preprocessor pre;
   TokenPrinter printer{std::cerr, true};
-
-  std::vector<DefineImage> defines;
-  std::vector<std::string> includes;
-  std::vector<UndefImage> undefs;
-
-  std::vector<size_t> arg_start_ids;
-
-  Token last_token;
-  last_token.tag = tag::code;
-
-  bool do_dump = false;
-
-  Token token;
-#define swap_dump_glued()                             \
-  do {                                                \
-    if (last_token.end() == token.begin()) {  \
-      last_token.size += token.size;         \
-      last_token.end_pos = token.end_pos; \
-    } else {                                          \
-      codeDumper.align_dump(last_token);              \
-      last_token.start = token.start;                 \
-      last_token.size = token.size;                 \
-    }                                                 \
-  } while (false)
-
-#define skip_dump_glued()                             \
-  do {                                                \
-    codeDumper.align_dump(last_token);                \
-    last_token.start = token.end();         \
-    last_token.size = 0;           \
-    last_token.end_pos = token.end_pos;   \
-    last_token.start_pos = token.end_pos; \
-  } while (false);
-
-#define swap_dump_raw() codeDumper.align_dump(token);
-#define skip_dump_raw()
-
-#define swap_dump() swap_dump_glued()
-#define skip_dump() skip_dump_glued()
-
-  while (true) {
-    // skip_extras<false>();
-    token = rq.read();
-
-    // codeDumper.out += token.get_text();
-    // printer.print(token, src);
-
-    if (token.tag == tag::eof) break;
-
-    if (token.tag == tag::pp_include) {
-      continue;
-      includes.emplace_back(tokeniser.includeImage.name.get_text());
-
-      continue;
-    }
-    if (token.tag == tag::pp_define) {
-      continue;
-      macromap.emplace(tokeniser.defineImage.name.get_text(),
-                       compile_macro_expansion(tokeniser.defineImage, src));
-      continue;
-    }
-    if (token.tag == tag::pp_undef) {
-      continue;
-      macromap.erase(tokeniser.defineImage.name.get_text());
-      continue;
-    }
-
-    if (token.tag == tag::identifier) {
-      // continue;
-      auto identifier_text = token.get_text();
-      auto macroIt = macromap.find(identifier_text);
-      if (macroIt == macromap.end()) {
-        swap_dump();
-        continue;
-      }
-
-      MacroStamp macroStamp{macroIt->second};
-      if (!macroStamp.info.is_functional) {
-        skip_dump();
-        codeDumper.align_dump(macroStamp.expansion, token.start_pos);
-        continue;
-      }
-
-      // shadow: IDENTIFIER
-      Tag ltok_id = rq.shadow_read().tag;
-      while (tag::is_extra(ltok_id)) {
-        ltok_id = rq.shadow_read().tag;
-      }
-
-      // invalid macro call, just dump identifier
-      if (ltok_id != tag::raw('(')) {
-        swap_dump();
-        continue;
-      }
-      // at '('
-      arg_start_ids.clear();
-      unsigned balance = 1;
-      while (ltok_id != tag::eof) {
-        ltok_id = rq.shadow_read().tag;
-        if (ltok_id == tag::raw('('))
-          ++balance;
-        else if (ltok_id == tag::raw(')'))
-          --balance;
-        else if (ltok_id == tag::raw(',') && balance == 1) {
-        }
-        if (!balance) break;
-      }
-
-      swap_dump();
-      // printer.getos() << "call: ";
-      // for (auto& token : tokens) {
-      //   printer.print(token, src);
-      // }
-      // printer.getos() << "\n";
-      continue;
-    }
-
-    if (token.tag == tag::newline) continue;
-    if (token.tag == tag::space) {
-      skip_dump();
-      codeDumper.putch(' ');
-      continue;
-    }
-    swap_dump();
+  for (const auto out_tok : pre.process_code(src)) {
+    printer.print(out_tok);
+    // out_tok.print(std::cerr);
+    // std::cerr << "\n";
   }
-  never {
-    for (const auto& [name, exp] : macromap) {
-      std::cerr << MacroStamp{exp}.info.is_functional << "\n";
-      std::cerr << MacroStamp{exp}.info.is_variadic << "\n";
-      std::cerr << MacroStamp{exp}.info.nargs << "\n";
-      std::cerr << name << ": " << exp << "\n\n";
-    }
-    std::cerr << "macromap: " << macromap.size() << "\n";
-    std::cerr << "includes: " << includes.size() << "\n";
-    std::cerr << "defines : " << defines.size() << "\n";
-    std::cerr << "undefs  : " << undefs.size() << "\n";
-    // std::cout << "\e[30m" << codeDumper.out << "\e[0m";
-  }
-  return codeDumper.take_output();
+  std::cerr << "\n\n";
+
+  return 0;
 }
 
 int main(int argc, char* argv[]) {
-  timeit;
-  checkin;
-//~8.9 Mb
-#ifdef debug
-  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
-#else
-  std::string src = read_file(ROOT "pp.test/sqliteall.c");
-#endif
-  printit(src.size());
-  std::string out;
+  perf_test();
+  // user_test();
+}
 
-  if (true) {
-    timeit;
-    out = process_code(src);
-    // printit(it.nleft());
-  }
-#ifdef debug
-  write_file(ROOT "pp.test/pp.out.c", out);
-  return true;
-#endif
-  size_t summer = 0;
-
-  if (true) {
-    //~890 Mb benchmark
-    stimeit("process_code 100 times");
-    std::string out;
-    int loading = 0;
-    repeat(10) {
-      repeat(10) {
-        // std::cerr << ++loading << "\r";
-        process_code(src);
-      }
-      // untimeit;
-      // usleep(200000);
-    }
-    summer += out.size();
+int main_cli(int argc, char* argv[]) {
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <input_file>\n";
+    return 1;
   }
 
-  printit(out.size());
-  printit(summer);
+  // Read input file
+  std::string src = read_file(argv[1]);
+  if (src.empty()) {
+    std::cerr << "Failed to read input file: " << argv[1] << "\n";
+    return 1;
+  }
+
+  // Process the code
+  Preprocessor pre;
+  pre.process_code(src);
+
   return 0;
+}
+
+untestit(compile_macro_expansion) {
+  // return;
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+
+  StringMap<std::string> expected =  //
+      {
+          {"TWO_WORDS", "f0 aa bb"},                 //
+          {"STR_AFTER_TOKEN", "f1 aa $0s"},          //
+          {"NAMED_VA", "v1 some($0 )"},              //
+          {"UNNAMED_VA", "v1 some($0 )"},            //
+          {"INCNAMED_VA", "v1 some(__VA_ARGS__)"},   //
+          {"INCUNNAMED_VA", "v1 some(named)"},       //
+          {"CNSTINBOOL", " constexpr inline bool"},  //
+          {"farg", "f1 farg($0 )"},                  //
+          {"f", "f0 f()"},                           //
+          {"abeta", "f1 alpha$0_gamma"},             //
+          {"SELF1", "f2 ($0 , $1 )"},                //
+          {"CAT1", "f2 $0_$1_"},                     //
+          {"STR1", "f1 $0s"},                        //
+          {"STR1", "f1 $0s"},                        //
+          {"CATSTR1", "f2 $0 $1s"},                  //
+          {"CATSTR2", "f2 $0_$1s"},                  //
+          {"CATSTR3", "f2 $0_$1s"},                  //
+          {"CATSTR4", "f2 $0s$1s"},                  //
+          {"CATSTR5", "f2 $0_$1_"},                  //
+      };
+
+  DirectiveTokenImage tokenImage;
+  Tokeniser tkz{src, tokenImage};
+  Token token = tkz.read_token();
+  while (token.tag != tag::eof) {
+    if (token.tag == tag::pp_define) {
+      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
+      std::string_view name = defineImage.name().get_text();
+      std::string act = compile_macro_expansion(defineImage);
+      defineImage.print(std::cerr);
+      std::cerr << "\n";
+
+      if (expected.contains(name)) {
+        auto exp = expected.at(name);
+        check_print(act, exp);
+      } else {
+        uncheck_print(act);
+      }
+      std::cerr << "\n";
+    }
+    token = tkz.read_token();
+  }
+  // exit(0);
+}
+
+untestit(tokenise_macro_expansion) {
+  // return;
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+
+  StringMap<std::string> expected =  //
+      {
+          {"TWO_WORDS", "f0 aa bb"},                 //
+          {"STR_AFTER_TOKEN", "f1 aa $0s"},          //
+          {"NAMED_VA", "v1 some($0 )"},              //
+          {"UNNAMED_VA", "v1 some($0 )"},            //
+          {"INCNAMED_VA", "v1 some(__VA_ARGS__)"},   //
+          {"INCUNNAMED_VA", "v1 some(named)"},       //
+          {"CNSTINBOOL", " constexpr inline bool"},  //
+          {"farg", "f1 farg($0 )"},                  //
+          {"f", "f0 f()"},                           //
+          {"abeta", "f1 alpha$0_gamma"},             //
+          {"SELF1", "f2 ($0 , $1 )"},                //
+          {"CAT1", "f2 $0_$1_"},                     //
+          {"STR1", "f1 $0s"},                        //
+          {"STR1", "f1 $0s"},                        //
+          {"CATSTR1", "f2 $0 $1s"},                  //
+          {"CATSTR2", "f2 $0_$1s"},                  //
+          {"CATSTR3", "f2 $0_$1s"},                  //
+          {"CATSTR4", "f2 $0s$1s"},                  //
+          {"CATSTR5", "f2 $0_$1_"},                  //
+      };
+
+  DirectiveTokenImage tokenImage;
+  Tokeniser tkz{src, tokenImage};
+  Token token = tkz.read_token();
+  while (token.tag != tag::eof) {
+    if (token.tag == tag::pp_define) {
+      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
+      std::string_view name = defineImage.name().get_text();
+      std::string compile = compile_macro_expansion(defineImage);
+
+      MacroExpansionTokeniser macro_tkz{compile};
+
+      token = macro_tkz.read_token();
+      while (token.tag != tag::eof) {
+        token.print(std::cerr);
+        token = macro_tkz.read_token();
+      }
+      std::cerr << "\n";
+    }
+    token = tkz.read_token();
+  }
+  // exit(0);
 }

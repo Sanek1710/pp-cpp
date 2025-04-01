@@ -3,8 +3,10 @@
 #include <type_traits>
 #include <vector>
 
-#include "RangeView.h"
 #include "Token.h"
+#include "util/RangeView.h"
+
+using TokenList = std::vector<Token>;
 
 struct MacroInfo {
   unsigned short nargs = 0;
@@ -42,7 +44,7 @@ struct DirectiveTokenImage {
   Token base_token;
   Kind kind;
   Details details = {0};
-  std::vector<Token> tokens;
+  TokenList tokens;
 
   friend class Tokeniser;
 };

@@ -241,12 +241,12 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
     std::cerr << "\033[33m[skip]\033[0m  act: `" << (act) << "`\n"; \
   } while (false);
 
-#define testit(name, ...)                                             \
+#define testit_base(name, onend, modifier)                            \
   class LifetimeTest##name {                                          \
    public:                                                            \
     LifetimeTest##name() {                                            \
       runwrapper();                                                   \
-      __VA_OPT__(exit(0));                                            \
+      onend;                                                          \
     }                                                                 \
     void runwrapper() {                                               \
       std::cerr << ("test::" #name) << " \\\n";                       \
@@ -259,8 +259,12 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
     size_t nfailed = 0;                                               \
     void run();                                                       \
   };                                                                  \
-  const static LifetimeTest##name _lttst##name;                       \
+  modifier const LifetimeTest##name _lttst##name;                     \
   inline void LifetimeTest##name::run()
+
+#define testit(name) testit_base(name, , )
+#define testitexit(name) testit_base(name, exit(0), )
+#define untestit(name) testit_base(name, , extern)
 
 class NotIgnoreAdder {
  public:
