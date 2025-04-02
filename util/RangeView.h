@@ -10,28 +10,40 @@
 
 template <typename Iterator>
 class Range {
- private:
-  Iterator mbegin;
-  Iterator mend;
-
-  using reference = decltype(*mbegin);
-  using size_type = decltype(std::distance(mbegin, mend));
-
  public:
+  using iterator = Iterator;
+  using value_type = typename std::iterator_traits<Iterator>::value_type;
+  using difference_type =
+      typename std::iterator_traits<Iterator>::difference_type;
+  using reference = typename std::iterator_traits<Iterator>::reference;
+  using size_type = size_t;
+
   Range(Iterator begin, Iterator end) : mbegin(begin), mend(end) {}
 
   template <typename Container>
   Range(const Container& container)
       : mbegin(std::begin(container)), mend(std::end(container)) {}
 
-  Iterator begin() const { return mbegin; }
-  Iterator end() const { return mend; }
+  iterator begin() const { return mbegin; }
+  iterator end() const { return mend; }
 
   size_type size() const { return std::distance(mbegin, mend); }
   bool empty() const { return mbegin == mend; }
 
   reference front() const { return *mbegin; }
   reference back() const { return *std::prev(mend); }
+
+  reference operator[](difference_type n) const { return *(mbegin + n); }
+
+  void remove_prefix(size_type n) { mbegin += n; }
+  void remove_suffix(size_type n) { mend -= n; }
+  Range slice(difference_type from, difference_type to) const {
+    return Range(mbegin + from, mend + to);
+  }
+
+ private:
+  Iterator mbegin;
+  Iterator mend;
 };
 
 template <typename Iterator>
@@ -41,66 +53,115 @@ template <typename Container>
 Range(const Container&)
     -> Range<decltype(std::begin(std::declval<Container>()))>;
 
-
 template <typename Container>
-class SliceIterator {
-  using const_reference = typename Container::const_reference;
-  using const_pointer = typename Container::const_pointer;
-
+class IndexIterator {
  public:
-  SliceIterator(const Container& container, size_t i)
-      : container(container), idx(i) {}
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = typename Container::value_type;
+  using difference_type = std::ptrdiff_t;
+  using pointer = value_type*;
+  using reference = value_type&;
 
-  constexpr const_reference operator*() const { return container[idx]; }
-  constexpr const_pointer operator->() const { return &container[idx]; }
-  constexpr SliceIterator& operator++() {
-    ++idx;
+  IndexIterator(Container& cont, size_t idx) : container(&cont), mindex(idx) {}
+
+  reference operator*() { return (*container)[mindex]; }
+  pointer operator->() { return &(*container)[mindex]; }
+
+  IndexIterator& operator++() {
+    ++mindex;
     return *this;
   }
-  constexpr SliceIterator operator++(int) {
-    return SliceIterator{container, idx++};
+  IndexIterator operator++(int) {
+    auto tmp = *this;
+    ++mindex;
+    return tmp;
+  }
+  IndexIterator& operator--() {
+    --mindex;
+    return *this;
+  }
+  IndexIterator operator--(int) {
+    auto tmp = *this;
+    --mindex;
+    return tmp;
   }
 
-  bool operator==(SliceIterator other) const {
-    return &this->container == &other.container && idx == other.idx;
+  IndexIterator& operator+=(difference_type n) {
+    mindex += n;
+    return *this;
   }
-  bool operator!=(SliceIterator other) const { return !(*this == other); }
+  IndexIterator operator+(difference_type n) const {
+    return IndexIterator(*container, mindex + n);
+  }
+  IndexIterator& operator-=(difference_type n) {
+    mindex -= n;
+    return *this;
+  }
+  IndexIterator operator-(difference_type n) const {
+    return IndexIterator(*container, mindex - n);
+  }
+  difference_type operator-(const IndexIterator& other) const {
+    return mindex - other.mindex;
+  }
+
+  bool operator==(const IndexIterator& other) const {
+    return mindex == other.mindex;
+  }
+  bool operator!=(const IndexIterator& other) const {
+    return !(*this == other);
+  }
+  bool operator<(const IndexIterator& other) const {
+    return mindex < other.mindex;
+  }
+  bool operator>(const IndexIterator& other) const { return other < *this; }
+  bool operator<=(const IndexIterator& other) const { return !(other < *this); }
+  bool operator>=(const IndexIterator& other) const { return !(*this < other); }
+
+  size_t index() const { return mindex; }
 
  private:
-  const Container& container;
-  size_t idx;
+  Container* container;
+  size_t mindex;
 };
 
 template <typename Container>
-class Slice {
- private:
-  const Container& container;
-  size_t ibegin;
-  size_t iend;
-
+class IndexRange {
  public:
-  using iterator = SliceIterator<Container>;
-  using reference = decltype(std::declval<Container>()[std::declval<size_t>()]);
+  using iterator = IndexIterator<Container>;
+  using value_type = typename Container::value_type;
+  using difference_type = std::ptrdiff_t;
+  using reference = value_type&;
+  using size_type = size_t;
 
-  Slice(const Container& container, size_t ibegin, size_t iend)
-      : container(container),
-        ibegin(std::clamp(ibegin, 0UL, std::size(container))),
-        iend(std::clamp(iend, ibegin, std::size(container))) {}
+  IndexRange(Container& cont)
+      : container(&cont), mibegin(0), miend(std::size(cont)) {}
+  IndexRange(Container& cont, size_t begin)
+      : container(&cont), mibegin(begin), miend(std::size(cont)) {}
+  IndexRange(Container& cont, size_t begin, size_t end)
+      : container(&cont), mibegin(begin), miend(end) {}
 
-  Slice(const Container& container, size_t ibegin)
-      : container(container),
-        ibegin(std::clamp(ibegin, 0UL, std::size(container))),
-        iend(std::size(container)) {}
+  iterator begin() const { return iterator(*container, mibegin); }
+  iterator end() const { return iterator(*container, miend); }
 
-  Slice(const Container& container)
-      : container(container), ibegin(0), iend(std::size(container)) {}
+  size_t size() const { return miend - mibegin; }
+  bool empty() const { return mibegin == miend; }
 
-  iterator begin() const { return {container, ibegin}; }
-  iterator end() const { return {container, iend}; }
+  reference front() const { return (*container)[mibegin]; }
+  reference back() const { return (*container)[miend - 1]; }
 
-  size_t size() const { return iend - ibegin; }
-  bool empty() const { return ibegin == iend; }
+  reference operator[](size_t n) const { return (*container)[mibegin + n]; }
 
-  reference front() const { return container[ibegin]; }
-  reference back() const { return container[iend - 1]; }
+  void remove_prefix(size_type n) { mibegin += n; }
+  void remove_suffix(size_type n) { miend -= n; }
+  IndexRange slice(size_t from, size_t to) const {
+    return IndexRange(*container, mibegin + from, mibegin + to);
+  }
+
+  size_t ibegin() const { return mibegin; }
+  size_t iend() const { return miend; }
+
+ private:
+  Container* container;
+  size_t mibegin;
+  size_t miend;
 };

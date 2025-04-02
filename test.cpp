@@ -36,14 +36,14 @@ testit(range) {
 
 testit(slice) {
   std::vector<int> vec = {1, 2, 3, 4, 5};
-  Slice slice1(vec);  // CTAD deduces Slice<std::vector<int>::iterator>
+  IndexRange slice1(vec);  // CTAD deduces Slice<std::vector<int>::iterator>
   for (auto x : slice1) {
     std::cout << x << " ";
   }
   std::cout << "\n";
 
   // From iterator pair
-  Slice slice2(vec, 1, vec.size() - 1);  // CTAD works here
+  IndexRange slice2(vec, 1, vec.size() - 1);  // CTAD works here
   for (auto x : slice2) {
     std::cout << x << " ";
   }
@@ -51,7 +51,7 @@ testit(slice) {
 
   // From array
   std::array<double, 3> arr = {1.1, 2.2, 3.3};
-  Slice slice3(arr);  // CTAD deduces Slice<std::array<double, 3>::iterator>
+  IndexRange slice3(arr);  // CTAD deduces Slice<std::array<double, 3>::iterator>
   for (auto x : slice3) {
     std::cout << x << " ";
   }

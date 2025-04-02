@@ -30,6 +30,14 @@ class Preprocessor {
     return Range{exp_chunk.begin() + arg_chunk[arg_idx] + 1,
                  exp_chunk.begin() + arg_chunk[arg_idx + 1]};
   }
+  inline auto arg_index_range(VectorTail<Token>& exp_chunk,
+                              VectorTail<size_t>& arg_chunk, size_t arg_idx) {
+    return IndexRange{
+        exp_chunk.base(),
+        exp_chunk.head() + arg_chunk[arg_idx] + 1,
+        exp_chunk.head() + arg_chunk[arg_idx + 1],
+    };
+  }
 
   class TokeniserInterface {
    public:
@@ -153,7 +161,7 @@ class Preprocessor {
       Token token = macro_tkz.read_token();
       if (token.tag == tag::arg) {
         const size_t arg_idx = token.details.index;
-        for (const auto& arg_tok : arg_range(exp_chunk, arg_chunk, arg_idx)) {
+        for (const auto& arg_tok : arg_index_range(exp_chunk, arg_chunk, arg_idx)) {
           buffer_chunk.push_back(arg_tok);
         }
 
@@ -272,6 +280,3 @@ class Preprocessor {
            macro_stack.end();
   }
 };
-
-
-

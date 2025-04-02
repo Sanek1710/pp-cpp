@@ -23,3 +23,10 @@ fromM1(C + fromM2(c + b, cb)
 M1(C, M2(c, b))
 //2 4         e
 //      8 a  d
+
+#define OPEN (
+#define CLOSE )
+#define MACRO(arg) #arg
+#define CHAIN(a, b, c, d) a b c d
+CHAIN(MACRO, OPEN, c, CLOSE)
+  

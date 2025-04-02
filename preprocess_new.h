@@ -1,10 +1,13 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include "ExpansionTokeniser.h"
 #include "Macro.h"
+#include "Token.h"
 #include "TokenGroup.h"
 #include "util/VectorTail.h"
 #include "util/util.h"
@@ -28,8 +31,12 @@ class TokeniserIterator {
 
 class Preprocessor {
   using IndexList = std::vector<size_t>;
+  using IndexListTail = VectorTail<size_t>;
+  using TokenListTail = VectorTail<Token>;
 
-  StringMap<std::string> macroMap;
+  using MacroMapValue = std::string;
+  using MacroMapValuePtr = MacroMapValue*;
+  SegStringMap<MacroMapValue> macroMap;
 
   TokenList out;
   TokenList buffer;
@@ -39,10 +46,19 @@ class Preprocessor {
 
   DirectiveTokenImage tokenImage;
 
-  inline auto arg_range(VectorTail<Token>& exp_chunk,
-                        VectorTail<size_t>& arg_chunk, size_t arg_idx) {
+  inline auto arg_range(TokenListTail& exp_chunk,  //
+                        IndexListTail& arg_chunk, size_t arg_idx) {
     return Range{exp_chunk.begin() + arg_chunk[arg_idx] + 1,
                  exp_chunk.begin() + arg_chunk[arg_idx + 1]};
+  }
+
+  inline auto arg_index_range(VectorTail<Token>& exp_chunk,
+                              VectorTail<size_t>& arg_chunk, size_t arg_idx) {
+    return IndexRange{ 
+        exp_chunk.base(),
+        exp_chunk.head() + arg_chunk[arg_idx] + 1,
+        exp_chunk.head() + arg_chunk[arg_idx + 1],
+    };
   }
 
   class TokeniserInterface {
@@ -60,6 +76,128 @@ class Preprocessor {
     size_t idx;
     const size_t end_idx;
   };
+
+  std::optional<MacroStamp> lookup_macro(Token& token) {
+    if (token.details.marker) return std::nullopt;
+    const auto macro_name = token.get_text();
+    auto macroIt = macroMap.find(macro_name);
+    if (macroIt == macroMap.end()) {
+      token.details.marker = true;
+      return std::nullopt;
+    }
+    token.details.marker = false;
+    if (in_process(macro_name)) return std::nullopt;
+    return MacroStamp{macroIt->second};
+  }
+
+  // returns amount of valid prescanned tokens
+  size_t prescan_macro(TokenListTail input, size_t size,  //
+                       MacroStamp macroStamp, IndexListTail arg_chunk) {
+    if (!macroStamp.info.is_functional) return 1;
+    // token 0 is macroname
+    int i = 0;
+    // skip extras
+    do {
+      if (++i >= size) return 0;
+    } while (tag::is_extra(input[i].tag));
+    // next after extras should be '('
+    // as it supposed to be macro call
+    if (input[i].tag != tag::raw('(')) return 0;
+    // push args start
+    arg_chunk.push_back(i);
+
+    int balance = 1;
+    for (++i; i < size; ++i) {
+      switch (input[i].tag) {
+        case tag::raw('('): {
+          ++balance;
+          break;
+        }
+        case tag::raw(','): {
+          if (balance == 1) arg_chunk.push_back(i);
+          break;
+        }
+        case tag::raw(')'): {
+          --balance;
+          if (balance != 0) break;
+          arg_chunk.push_back(i);
+          const size_t nargs = arg_chunk.size() - 1;
+          if (macroStamp.is_valid_call(nargs)) return ++i;
+          // invalid macro use: nargs mismatch
+          arg_chunk.clear();
+          return 0;
+        }
+        default:
+          break;
+      }
+    }
+    // invalid macro use: eof
+    arg_chunk.clear();
+    return 0;
+  }
+
+  void expand_macro(MacroStamp macro_stamp, TokenListTail source,
+                    IndexListTail arg_chunk, TokenListTail output) {
+    TokenListTail preexpanion{source.slice()};
+    const Token macro_token = source.front();
+    macro_stack.push_back(macro_token.get_text());
+
+    MacroExpansionTokeniser macro_tkz{macro_stamp.expansion};
+    while (!macro_tkz.eof()) {
+      Token token = macro_tkz.read_token();
+      if (token.tag == tag::arg) {
+        const size_t arg_idx = token.details.index;
+        const size_t arg_ntokens =
+            arg_chunk[arg_idx + 1] - arg_chunk[arg_idx] + 1;
+        if (true /*not concat or stringify*/) {
+          preprocess_tokens(source.slice(arg_chunk[arg_idx + 1]), arg_ntokens,
+                            preexpanion);
+        } else if (false /*stringify*/) {
+          // stringify all tokens
+        } else if (false /*concat*/) {
+          // copy all tokens as are
+        }
+        continue;
+      }
+      token.start_pos.line = macro_token.start_pos.line;
+      token.start_pos.column += macro_token.start_pos.column;
+      token.end_pos.line += macro_token.start_pos.line;
+      token.end_pos.column += macro_token.start_pos.column;
+      preexpanion.push_back(token);
+    }
+    // clear applied args
+    arg_chunk.clear();
+    preprocess_tokens(preexpanion, preexpanion.size(), output);
+    preexpanion.clear();
+    macro_stack.pop_back();
+  }
+
+  void preprocess_tokens(TokenListTail input, size_t size,
+                         TokenListTail output) {
+    // size = std::min(size, input.size());
+    while (size) {
+      switch (input.front().tag) {
+        case tag::identifier: {
+          auto oMacroStamp = lookup_macro(input.front());
+          if (!oMacroStamp) break;
+
+          IndexListTail arg_chunk{arg_rages};
+          const size_t nprescanned =
+              prescan_macro(input, size, *oMacroStamp, arg_chunk);
+          if (nprescanned == 0) break;
+          expand_macro(*oMacroStamp, input, arg_chunk, output);
+          input.remove_prefix(nprescanned);
+          size -= nprescanned;
+          continue;
+        }
+        default:
+          break;
+      }
+      output.push_back(input.front());
+      input.remove_prefix(1);
+      size -= 1;
+    }
+  }
 
  public:
   template <typename TokeniserT>
@@ -167,7 +305,8 @@ class Preprocessor {
       Token token = macro_tkz.read_token();
       if (token.tag == tag::arg) {
         const size_t arg_idx = token.details.index;
-        for (const auto& arg_tok : arg_range(exp_chunk, arg_chunk, arg_idx)) {
+        for (const auto& arg_tok :
+             arg_index_range(exp_chunk, arg_chunk, arg_idx)) {
           buffer_chunk.push_back(arg_tok);
         }
 
@@ -282,7 +421,7 @@ class Preprocessor {
 
  private:
   inline bool in_process(std::string_view macro_name) {
-    return std::find(macro_stack.begin(), macro_stack.end(), macro_name) !=
-           macro_stack.end();
+    return std::find(macro_stack.rbegin(), macro_stack.rend(), macro_name) !=
+           macro_stack.rend();
   }
 };
