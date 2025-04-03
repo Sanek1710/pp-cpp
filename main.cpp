@@ -1,20 +1,30 @@
 #include <unistd.h>
 
+#include "Cursor.h"
+#include "TokenGroup.h"
 #include "TokenPrinter.h"
 #include "preprocess.h"
 
 int perf_test() {
   std::string src = read_file(ROOT "pp.test/sqliteall.c");
+  std::string out;
   timeit;
   repeat(5) {
     repeat(20) {
       Preprocessor pre;
-      pre.process_code(src);
+      pre.process_code(src, out);
     }
     untimeit;
     usleep(500'000);
   }
   return 0;
+}
+
+void print_source(std::string_view src) {
+  DirectiveTokenImage ti;
+  Tokeniser tkz{src, ti};
+  TokenPrinter printer{std::cerr, true};
+  while (!tkz.eof()) printer.print(tkz.read_token());
 }
 
 int user_test() {
@@ -24,19 +34,22 @@ int user_test() {
   timeit;
   Preprocessor pre;
   TokenPrinter printer{std::cerr, true};
-  for (const auto out_tok : pre.process_code(src)) {
-    printer.print(out_tok);
+  std::string out;
+  for (const auto out_tok : pre.process_code(src, out)) {
+    // printer.print(out_tok);
     // out_tok.print(std::cerr);
     // std::cerr << "\n";
   }
+  print_source(out);
+
   std::cerr << "\n\n";
 
   return 0;
 }
 
 int main(int argc, char* argv[]) {
-  perf_test();
-  // user_test();
+  // perf_test();
+  user_test();
 }
 
 int main_cli(int argc, char* argv[]) {

@@ -36,6 +36,8 @@ class VectorTail {
 
   iterator begin() { return mbase->begin() + mhead; }
   iterator end() { return mbase->end(); }
+  iterator begin() const { return mbase->begin() + mhead; }
+  iterator end() const { return mbase->end(); }
 
   size_type size() const { return mbase->size() - mhead; }
   bool empty() const { return mbase->size() == mhead; }

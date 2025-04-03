@@ -271,6 +271,7 @@ class Tokeniser {
     Token token;
     token.start = cur.it;
     token.start_pos = cur.to_position();
+    token.details.index = 0;
     token.tag = (this->*SkipF)();
     token.size = cur.it - token.start;
     token.end_pos = cur.to_position();
