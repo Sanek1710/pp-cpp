@@ -41,6 +41,9 @@ inline static constexpr bool is_extra(Tag tag) {
 inline static constexpr bool is_raw(Tag tag) {
   return kindof(tag) == Kind::raw;
 }
+inline static constexpr bool is_ppline(Tag tag) {
+  return kindof(tag) == Kind::ppline;
+}
 
 // basically character mapping to enum like constants:
 // `any space         -> ' ', except from '\n'`

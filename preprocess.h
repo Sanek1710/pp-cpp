@@ -17,7 +17,7 @@ class Preprocessor {
   StringMap<std::string> macroMap;
 
   std::vector<Token> out;
-  std::vector<Token> buffer;
+  std::vector<Token> buf;
   std::vector<size_t> arg_rages;
 
   std::string str_buffer;
@@ -154,7 +154,7 @@ class Preprocessor {
   }
   void expand_macro(Token macro_token, MacroStamp macroStamp,
                     VectorTail<Token> exp_chunk, VectorTail<size_t> arg_chunk) {
-    VectorTail buffer_chunk{buffer};
+    VectorTail buffer_chunk{buf};
     // TODO: support base position for tokenisers
     MacroExpansionTokeniser macro_tkz{macroStamp.expansion};
     while (!macro_tkz.eof()) {
@@ -189,7 +189,7 @@ class Preprocessor {
 
   const auto& process_code(std::string_view src) {
     out.clear();
-    buffer.clear();
+    buf.clear();
     arg_rages.clear();
     macro_stack.clear();
 
@@ -248,7 +248,7 @@ class Preprocessor {
   }  // const auto& process_code(std::string_view src) {
 
   inline void post_process_expansion(VectorTail<Token> buffer_chunk) {
-    TokeniserInterface tkz{buffer, buffer_chunk.head(),
+    TokeniserInterface tkz{buf, buffer_chunk.head(),
                            buffer_chunk.head() + buffer_chunk.size()};
     Token token = tkz.read_token();
     while (token.tag != tag::eof) {
