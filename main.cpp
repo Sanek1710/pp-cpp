@@ -48,8 +48,8 @@ int user_test() {
 }
 
 int main(int argc, char* argv[]) {
-  // perf_test();
-  user_test();
+  perf_test();
+  // user_test();
 }
 
 int main_cli(int argc, char* argv[]) {
@@ -72,7 +72,7 @@ int main_cli(int argc, char* argv[]) {
   return 0;
 }
 
-untestit(compile_macro_expansion) {
+testit(compile_macro_expansion) {
   // return;
   std::string src = read_file(ROOT "pp.test/pp.in.cpp");
 
@@ -97,6 +97,9 @@ untestit(compile_macro_expansion) {
           {"CATSTR3", "f2 $0_$1s"},                  //
           {"CATSTR4", "f2 $0s$1s"},                  //
           {"CATSTR5", "f2 $0_$1_"},                  //
+          {"EMPTY", " "},                            //
+          {"EMPTYF", "f0 "},                         //
+          {"SELF2", "f2 $0 , $1 "},                  //
       };
 
   DirectiveTokenImage tokenImage;

@@ -22,6 +22,10 @@ enum class Kind : uint8_t {
   ppline = 4,
   // auxionry tokens for custom kinds
   aux = 8,
+  // Token owning allocated string
+  owning = 16,
+  // concatenated token holds pointer to structure with 2 tokens
+  catenation = 32,
 };
 
 inline static constexpr Tag group(char id, Kind category) {
@@ -127,6 +131,20 @@ struct Token {
 
   void print(std::ostream& os) const;
 };
+
+// struct TokenCatenation {
+//   Token left;
+//   Token right;
+// };
+
+// constexpr Token cat_tokens(Token left, Token right) {
+//   return Token{.tag = tag::group(0, tag::Kind::catenation),
+//     .details = {0},
+//     .size = left.size + right.size,
+//     .start = std::make_unique(new TokenCatenation{left, right}),
+//     .start_pos = left.start_pos,
+//     .end_pos = left.end_pos};
+// }
 
 constexpr Token code_token(std::string_view text, Position start_pos) {
   return Token{.tag = tag::code,

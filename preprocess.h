@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <iomanip>
 #include <optional>
 #include <ostream>
 #include <string>
@@ -275,7 +276,7 @@ class Preprocessor {
                     TokenListTail output) {
     TokenListTail preexpanion{buffer};
     const Token macro_token = input.front();
-
+const char *a = STR(\\);
     MacroExpansionTokeniser macro_tkz{macro_stamp.expansion};
     while (!macro_tkz.eof()) {
       Token token = macro_tkz.read_token();
@@ -286,8 +287,20 @@ class Preprocessor {
           preprocess_tokens(input.slice(arg_ibegin), arg_iend - arg_ibegin,
                             output.base(), preexpanion);
         } else if (false /*stringify*/) {
+          std::string stringised{'"'};
+          for (const auto& arg_tok : IndexRange(input, arg_ibegin, arg_iend)) {
+            for (const char c : arg_tok.get_text()) {
+              if (c == '"') stringised += '\\';
+              stringised += c;
+            }
+          }
+          stringised += '"';
+          // preexpanion.push_back(stringised);
           // stringify all tokens
         } else if (false /*concat*/) {
+          for (const auto& arg_tok : IndexRange(input, arg_ibegin, arg_iend)) {
+            preexpanion.push_back(arg_tok);
+          }
           // copy all tokens as are
         }
         continue;

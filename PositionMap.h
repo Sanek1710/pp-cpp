@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Position.h"
-#include "util.h"
+#include "util/util.h"
 
 // Position manipulations
 

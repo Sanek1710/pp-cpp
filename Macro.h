@@ -10,7 +10,7 @@
 using FileID = unsigned;
 
 struct Marker {
-  enum {
+  enum : char {
     as_is = '_',
     stringify = 's',
     spacing = ' ',
@@ -65,7 +65,7 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
 
     if (tok.tag == tag::pp_op_cat) {
       if (last_tag == tag::arg) {
-        if (out.back() == ' ') out.back() = '_';
+        if (out.back() == ' ') out.back() = Marker::as_is;
       }
       need_space = false;
       last_tag = tag::pp_op_cat;
@@ -101,21 +101,19 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
         out += '$';
         out += std::to_string(arg_it - args.begin());
         if (last_tag == tag::pp_op_str) {
-          out += 's';
+          out += Marker::stringify;
         } else if (last_tag == tag::pp_op_cat) {
-          out += '_';
+          out += Marker::as_is;
         } else {
-          out += ' ';
+          out += Marker::spacing;
         }
         last_tag = tag::arg;
         continue;
       }
     }
 
-    for (char c : tok.get_text()) {
-      if (c == '$') out += '$';
-      out += c;
-    }
+    if (tok.tag == tag::raw('$')) out += '$';
+    out += tok.get_text();
     last_tag = tok.tag;
   }
 
