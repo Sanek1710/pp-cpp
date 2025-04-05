@@ -55,7 +55,9 @@ Range(const Container&)
 
 template <typename Container>
 class IndexIterator {
-  using subscr_type = decltype(std::declval<Container>()[std::declval<size_t>()]);
+  using subscr_type =
+      decltype(std::declval<Container>()[std::declval<size_t>()]);
+
  public:
   using iterator_category = std::random_access_iterator_tag;
   using value_type = std::remove_reference_t<subscr_type>;
@@ -127,8 +129,10 @@ class IndexIterator {
 
 template <typename Container>
 class IndexRange {
-  using subscr_type = decltype(std::declval<Container>()[std::declval<size_t>()]);
-  public:
+  using subscr_type =
+      decltype(std::declval<Container>()[std::declval<size_t>()]);
+
+ public:
   using iterator = IndexIterator<Container>;
   using value_type = std::remove_reference_t<subscr_type>;
   using difference_type = std::ptrdiff_t;
@@ -159,6 +163,7 @@ class IndexRange {
     return IndexRange(*container, mibegin + from, mibegin + to);
   }
 
+  Container& base() { return *container; }
   size_t ibegin() const { return mibegin; }
   size_t iend() const { return miend; }
 

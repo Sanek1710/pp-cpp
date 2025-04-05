@@ -48,8 +48,8 @@ int user_test() {
 }
 
 int main(int argc, char* argv[]) {
-  // perf_test();
-  user_test();
+  perf_test();
+  // user_test();
 }
 
 int main_cli(int argc, char* argv[]) {

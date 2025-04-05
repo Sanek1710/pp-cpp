@@ -17,7 +17,7 @@
 #include "TokenPrinter.h"
 #include "ankerl/unordered_dense.h"
 #include "helper.h"
-#include "util/VectorTail.h"
+#include "util/RangeView.h"
 #include "util/util.h"
 
 template <typename TokeniserT>
@@ -50,7 +50,7 @@ class TokenWriter {
 };
 
 inline std::ostream& operator<<(std::ostream& os,
-                                const VectorTail<Token>& tokens) {
+                                const IndexRange<std::vector<Token>>& tokens) {
   TokenPrinter printer{os, false};
   for (const auto& token : tokens) {
     if (token.tag == tag::newline) {
@@ -128,8 +128,9 @@ untestit(compl ) {
 
 class Preprocessor {
   using IndexList = std::vector<size_t>;
-  using IndexListTail = VectorTail<size_t>;
-  using TokenListTail = VectorTail<Token>;
+
+  using TokenListSlice = IndexRange<TokenList>;
+  using IndexListSlice = IndexRange<IndexList>;
 
   using MacroMapValue = std::string;
   using MacroMapValuePtr = MacroMapValue*;
@@ -159,8 +160,8 @@ class Preprocessor {
   }
 
  private:
-  SegStringMap<MacroMapValue> macroMap;
-  StringStorage stringStorage;
+  SegStringMap<MacroMapValue> macro_map;
+  StringStorage string_storage;
 
   TokenList out;
   TokenList buf;
@@ -170,50 +171,61 @@ class Preprocessor {
 
   DirectiveTokenImage tokenImage;
 
+  // TODO:
+  struct MacroUseView {
+    TokenListSlice input;
+    IndexListSlice arg_chunk;
+    MacroStamp macro_stamp;
+  };
+
+
   // returns amount of valid prescanned tokens
-  size_t prescan_macro(TokenListTail input, size_t size,  //
-                       MacroStamp macroStamp, IndexListTail arg_chunk) {
+  size_t prescan_macro(TokenListSlice input,  //
+                       MacroStamp macroStamp) {
     if (!macroStamp.info.is_functional) return 1;
     // token 0 is macroname
-    int i = 0;
+    auto it = input.begin();
+    const auto end = input.end();
     // skip extras
     do {
-      if (++i >= size) return 0;
-    } while (tag::is_extra(input[i].tag));
+      if (++it >= end) return 0;
+    } while (tag::is_extra(it->tag));
     // next after extras should be '('
     // as it supposed to be macro call
-    if (input[i].tag != tag::raw('(')) return 0;
+    if (it->tag != tag::raw('(')) return 0;
     // push args start
-    arg_chunk.push_back(i);
+    const size_t args_head = arg_rages.size();
+    arg_rages.push_back(it.index());
 
     int balance = 1;
-    for (++i; i < size; ++i) {
-      if (!mark_arg_ranges(input[i].tag, i, balance, arg_chunk)) continue;
-      const size_t nargs = arg_chunk.size() - 1;
+    for (++it; it < end; ++it) {
+      if (!mark_arg_ranges(it->tag, it.index(), balance)) continue;
+      const size_t nargs = arg_rages.size() - args_head - 1;
       if (!macroStamp.is_valid_call(nargs)) break;
-      return ++i;
+      return it - input.begin();
     }
     // invalid macro use: eof
-    arg_chunk.clear();
+    arg_rages.resize(args_head);
     return 0;
   }
 
-  void preprocess_tokens(TokenListTail input, size_t size,  //
-                         TokenList& buffer,  // same as input on start
-                         TokenListTail output) {
-    while (size) {
+  void preprocess_tokens(TokenListSlice input,  //
+                         TokenList& buffer,     // same as input on start
+                         TokenList& output) {
+                          
+    while (!input.empty()) {
       switch (input.front().tag) {
         case tag::identifier: {
           const auto oMacroStamp = lookup_macro(input.front());
           if (!oMacroStamp) break;
 
-          IndexListTail arg_chunk{arg_rages};
-          const size_t nprescanned =
-              prescan_macro(input, size, *oMacroStamp, arg_chunk);
+          const size_t args_head = arg_rages.size();
+          const size_t nprescanned = prescan_macro(input, *oMacroStamp);
           if (nprescanned == 0) break;
-          expand_macro(*oMacroStamp, input, arg_chunk, buffer, output);
+          expand_macro(*oMacroStamp, input,
+                       IndexListSlice{arg_rages, args_head},  //
+                       buffer, output);
           input.remove_prefix(nprescanned);
-          size -= nprescanned;
           continue;
         }
         default:
@@ -221,15 +233,15 @@ class Preprocessor {
       }
       output.push_back(input.front());
       input.remove_prefix(1);
-      size -= 1;
     }
   }
 
   // TODO: unify:
 
   size_t prescan_tkz_macro(Token token, Tokeniser& tkz,
-                           TokenListTail output,  //
-                           MacroStamp macroStamp, IndexListTail arg_chunk) {
+                           TokenList& output,  //
+                           MacroStamp macroStamp) {
+    output.clear();
     output.push_back(token);
     if (!macroStamp.info.is_functional) return output.size();
 
@@ -248,7 +260,8 @@ class Preprocessor {
     // as it supposed to be macro call
     if (token.tag != tag::raw('(')) return 0;
     // push args start
-    arg_chunk.push_back(output.size() - 1);
+    const size_t args_head = arg_rages.size();
+    arg_rages.push_back(output.size() - 1);
 
     int balance = 1;
     while (!tkz.eof()) {
@@ -258,15 +271,13 @@ class Preprocessor {
         continue;
       }
       output.push_back(token);
-      if (!mark_arg_ranges(token.tag, output.size() - 1,  //
-                           balance, arg_chunk))
-        continue;
-      const size_t nargs = arg_chunk.size() - 1;
+      if (!mark_arg_ranges(token.tag, output.size() - 1, balance)) continue;
+      const size_t nargs = arg_rages.size() - args_head - 1;
       if (!macroStamp.is_valid_call(nargs)) break;
       return output.size();
     }
     // invalid macro use
-    arg_chunk.clear();
+    arg_rages.resize(args_head);
     return 0;
   }
 
@@ -275,7 +286,7 @@ class Preprocessor {
     buf.clear();
     arg_rages.clear();
     macro_stack.clear();
-    stringStorage.clear();
+    string_storage.clear();
 
     while (!tkz.eof()) {
       Token token = tkz.read_token();
@@ -288,15 +299,18 @@ class Preprocessor {
           const auto oMacroStamp = lookup_macro(token);
           if (!oMacroStamp) break;
 
-          IndexListTail arg_chunk{arg_rages};
+          const size_t args_head = arg_rages.size();
           const size_t nprescanned =
-              prescan_tkz_macro(token, tkz, buf, *oMacroStamp, arg_chunk);
+              prescan_tkz_macro(token, tkz, buf, *oMacroStamp);
+          IndexListSlice arg_chunk{arg_rages, args_head};
+
+          TokenListSlice buff_input{buf};
           if (nprescanned == 0) {
             writer.write(buf.front());
-            preprocess_tokens(TokenListTail{buf, 1}, buf.size() - 1, buf, out);
+            buff_input.remove_prefix(1);
+            preprocess_tokens(buff_input, buf, out);
           } else {
-            expand_macro(*oMacroStamp, TokenListTail{buf, 0}, arg_chunk, buf,
-                         out);
+            expand_macro(*oMacroStamp, buff_input, arg_chunk, buf, out);
           }
           notignore += buf.size();
           notignore += out.size();
@@ -328,8 +342,8 @@ class Preprocessor {
   std::optional<MacroStamp> lookup_macro(Token& token) const {
     if (token.details.marker) return std::nullopt;
     const auto macro_name = token.get_text();
-    auto macroIt = macroMap.find(macro_name);
-    if (macroIt == macroMap.end()) {
+    auto macroIt = macro_map.find(macro_name);
+    if (macroIt == macro_map.end()) {
       token.details.marker = true;
       return std::nullopt;
     }
@@ -338,11 +352,13 @@ class Preprocessor {
     return MacroStamp{macroIt->second};
   }
 
-  void expand_macro(MacroStamp macro_stamp,                        //
-                    TokenListTail input, IndexListTail arg_chunk,  //
-                    TokenList& buffer,                             //
-                    TokenListTail output) {
-    TokenListTail preexpanion{buffer};
+
+
+  void expand_macro(MacroStamp macro_stamp,                          //
+                    TokenListSlice input, IndexListSlice arg_chunk,  //
+                    TokenList& buffer,                               //
+                    TokenList& output) {
+    size_t buffer_head = buffer.size();
     const Token macro_token = input.front();
 
     MacroExpansionTokeniser macro_tkz{macro_stamp.expansion};
@@ -356,19 +372,17 @@ class Preprocessor {
       if (tag::is_macro_arg(token.tag)) {
         const size_t arg_ibegin = arg_chunk[token.details.index] + 1;
         const size_t arg_iend = arg_chunk[token.details.index + 1];
-        const IndexRange arg_tokens{input, arg_ibegin, arg_iend};
+        IndexRange arg_tokens{input.base(), arg_ibegin, arg_iend};
 
         if (token.tag == tag::arg) {
-
-          preprocess_tokens(input.slice(arg_ibegin), arg_iend - arg_ibegin,
-                            output.base(), preexpanion);
+          preprocess_tokens(arg_tokens, output, buffer);
 
         } else if (token.tag == tag::arg_str) {
           // estimate size
           size_t estim_size = 2;
           for (const auto& arg_tok : arg_tokens) estim_size += arg_tok.size;
           // create string in storage
-          std::string& stringised = stringStorage.emplace_back();
+          std::string& stringised = string_storage.emplace_back();
           // init string
           stringised.reserve(estim_size);
           // stringify all tokens
@@ -386,21 +400,20 @@ class Preprocessor {
           stringised += '"';
           // push token
           last_tag = tag::string_like_literal;
-          preexpanion.push_back(
+          buffer.push_back(
               make_token(stringised, last_tag, macro_token.start_pos));
           need_check = true;
         } else if (token.tag == tag::arg_raw) {
           // copy all tokens as are
-          for (const auto& arg_tok : arg_tokens) preexpanion.push_back(arg_tok);
+          for (const auto& arg_tok : arg_tokens) buffer.push_back(arg_tok);
           if (!arg_tokens.empty()) last_tag = arg_tokens.back().tag;
           need_check = true;
         }
-        if (!preexpanion.empty()) last_tag = preexpanion.back().tag;
         continue;
       }
 
       if (need_check && incompatible(last_tag, token.tag)) {
-        preexpanion.push_back(make_token(" ", last_tag, macro_token.start_pos));
+        buffer.push_back(make_token(" ", last_tag, macro_token.start_pos));
       }
       need_check = false;
 
@@ -408,35 +421,35 @@ class Preprocessor {
       token.start_pos.column += macro_token.start_pos.column;
       token.end_pos.line += macro_token.start_pos.line;
       token.end_pos.column += macro_token.start_pos.column;
-      preexpanion.push_back(token);
+      buffer.push_back(token);
       last_tag = token.tag;
     }
     // clear applied args
+    arg_rages.resize(arg_chunk.ibegin());
+
     push_process_macro(macro_token.get_text());
-    arg_chunk.clear();
-    preprocess_tokens(preexpanion, preexpanion.size(), buffer, output);
-    preexpanion.clear();
+    {
+      TokenListSlice buff_input{buffer, buffer_head};
+      preprocess_tokens(buff_input, buffer, output);
+      buffer.resize(buffer_head);
+    }
     pop_process_macro(macro_token.get_text());
   }
 
   // true on final mark
-  inline bool mark_arg_ranges(Tag tag, size_t index, int& balance,
-                              IndexListTail arg_chunk) {
+  inline bool mark_arg_ranges(Tag tag, size_t index, int& balance) {
     switch (tag) {
-      case tag::raw('('): {
+      case tag::raw('('):
         ++balance;
         break;
-      }
-      case tag::raw(','): {
-        if (balance == 1) arg_chunk.push_back(index);
+      case tag::raw(','):
+        if (balance == 1) arg_rages.push_back(index);
         break;
-      }
-      case tag::raw(')'): {
+      case tag::raw(')'):
         --balance;
         if (balance != 0) break;
-        arg_chunk.push_back(index);
+        arg_rages.push_back(index);
         return true;
-      }
       default:
         break;
     }
@@ -453,14 +466,14 @@ class Preprocessor {
 
       case tag::pp_define: {
         const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
-        macroMap.emplace(defineImage.name().get_text(),
+        macro_map.emplace(defineImage.name().get_text(),
                          compile_macro_expansion(defineImage));
         break;
       }
 
       case tag::pp_undef: {
         const UndefTokenImage& undefImage = tokenImage.as<UndefTokenImage>();
-        macroMap.erase(undefImage.name().get_text());
+        macro_map.erase(undefImage.name().get_text());
         break;
       }
 
