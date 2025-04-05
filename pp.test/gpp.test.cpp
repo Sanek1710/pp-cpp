@@ -1,9 +1,9 @@
-# 1 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+# 1 "/home/user/playground/pp-cpp/pp.test/test.cpp"
 # 1 "<built-in>"
 # 1 "<command-line>"
 # 1 "/usr/include/stdc-predef.h" 1 3 4
 # 1 "<command-line>" 2
-# 1 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+# 1 "/home/user/playground/pp-cpp/pp.test/test.cpp"
 
  int f0;
 
@@ -36,7 +36,7 @@ string)";
 
 
 ____MACRO_MAGIC____;
-# 46 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+# 46 "/home/user/playground/pp-cpp/pp.test/test.cpp"
 12
 
 
@@ -46,12 +46,12 @@ ____MACRO_MAGIC____;
 
 
 # 1 "/mnt/d/Projects/pp-cpp/pp.test/empty.h" 1
-# 55 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp" 2
+# 55 "/home/user/playground/pp-cpp/pp.test/test.cpp" 2
 
 
 
 define arr 5
-# 71 "/mnt/d/Projects/pp-cpp/pp.test/test.cpp"
+# 71 "/home/user/playground/pp-cpp/pp.test/test.cpp"
 int foo() {
   REAL_MACRO1;
   return str + b - str;

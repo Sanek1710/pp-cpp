@@ -3,9 +3,22 @@
 #include <charconv>
 
 #include "Cursor.h"
+#include "Token.h"
 
 class MacroExpansionTokeniser : private Tokeniser {
   DirectiveTokenImage tokenImage;
+
+  inline static constexpr Tag arg_tag_marker_to_arg_tag(char op_tag) {
+    switch (op_tag) {
+      case tag::markerof(tag::arg_str):
+        return tag::arg_str;
+      case tag::markerof(tag::arg_raw):
+        return tag::arg_raw;
+      default:
+        break;
+    }
+    return tag::arg;
+  }
 
  public:
   MacroExpansionTokeniser(std::string_view src) : Tokeniser(src, tokenImage) {}
@@ -17,7 +30,7 @@ class MacroExpansionTokeniser : private Tokeniser {
     token.tag = skip_next();
     if (token.tag == tag::arg) {
       cur.it = std::from_chars(cur.it, end, token.details.index).ptr;
-      cur.it++;
+      token.tag = arg_tag_marker_to_arg_tag(*cur.it++);
     }
     token.size = cur.it - token.start;
     token.end_pos = cur.to_position();

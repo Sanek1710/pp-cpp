@@ -9,15 +9,6 @@
 
 using FileID = unsigned;
 
-struct Marker {
-  enum : char {
-    as_is = '_',
-    stringify = 's',
-    spacing = ' ',
-    nothing = '.',
-  };
-};
-
 // Helper struct to parse macro information
 struct MacroStamp {
   MacroStamp(std::string_view content) {
@@ -31,7 +22,7 @@ struct MacroStamp {
     expansion = std::string_view(it, content.end() - it);
   }
 
-  bool is_valid_call(unsigned short nargs_input) {
+  inline bool is_valid_call(unsigned short nargs_input) const {
     return info.is_variadic ? info.nargs - 1 <= nargs_input
                             : info.nargs == nargs_input;
   }
@@ -39,6 +30,18 @@ struct MacroStamp {
   std::string_view expansion;
   MacroInfo info;
 };
+
+inline constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
+  switch (op_tag) {
+    case tag::pp_op_str:
+      return tag::arg_str;
+    case tag::pp_op_cat:
+      return tag::arg_raw;
+    default:
+      break;
+  }
+  return tag::arg;
+}
 
 inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
   std::string out;
@@ -64,8 +67,9 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
     }
 
     if (tok.tag == tag::pp_op_cat) {
-      if (last_tag == tag::arg) {
-        if (out.back() == ' ') out.back() = Marker::as_is;
+      if (tag::is_macro_arg(last_tag)) {
+        if (out.back() == tag::markerof(tag::arg))
+          out.back() = tag::markerof(tag::arg_raw);
       }
       need_space = false;
       last_tag = tag::pp_op_cat;
@@ -100,14 +104,8 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
       if (arg_it != args.end()) {
         out += '$';
         out += std::to_string(arg_it - args.begin());
-        if (last_tag == tag::pp_op_str) {
-          out += Marker::stringify;
-        } else if (last_tag == tag::pp_op_cat) {
-          out += Marker::as_is;
-        } else {
-          out += Marker::spacing;
-        }
-        last_tag = tag::arg;
+        last_tag = pp_op_to_arg_tag(last_tag);
+        out += tag::markerof(last_tag);
         continue;
       }
     }
@@ -116,7 +114,8 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
     out += tok.get_text();
     last_tag = tok.tag;
   }
-
+  // if (need_space && out.back() != ' ' && tag::is_macro_arg(last_tag))
+  //   out += ' ';
   // Clean up trailing space
   // if (!out.empty() && out.back() == ' ') out.pop_back();
   return out;

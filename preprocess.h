@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cstddef>
 #include <iomanip>
 #include <optional>
@@ -14,6 +15,7 @@
 #include "Token.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
+#include "ankerl/unordered_dense.h"
 #include "helper.h"
 #include "util/VectorTail.h"
 #include "util/util.h"
@@ -61,6 +63,69 @@ inline std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
+static constexpr bool oneof(char c, std::string_view char_set) {
+  return char_set.rfind(c) != std::string_view::npos;
+};
+
+inline constexpr bool incompatible(Tag lhs, Tag rhs) {
+  const char mrhs = tag::markerof(rhs);
+  // anything after categorised chars
+  if (!tag::is_raw(lhs)) {
+    // in most cases these are iconpatible
+    if (!tag::is_raw(rhs)) return true;
+    return lhs == tag::number && oneof(mrhs, ".+-");
+  }
+
+  // categorised chars after raw chars
+  if (!tag::is_raw(rhs)) return lhs == tag::raw('.') && rhs == tag::number;
+
+  // raw chars after raw chars
+  const char mlhs = tag::markerof(lhs);
+  switch (mrhs) {
+      // clang-format off
+      case '%': return oneof(mlhs, ".<");
+      case '&': return mlhs == '&';
+      case '*': return mlhs == '/';
+      case '+': [[fallthrough]];
+      case '-': [[fallthrough]];
+      case '.': [[fallthrough]];
+      case '/': return mlhs == mrhs;
+      case ':': return oneof(mlhs, ":%<");
+      case '<': return mlhs == '<';
+      case '=': return oneof(mlhs, "!%&*+-/<=>|^");
+      case '>': return oneof(mlhs, ":%->");
+      case '|': return mlhs == '|';
+    // clang-format on
+    default:
+      break;
+  }
+  // rest are compatible-ish
+  return false;
+}
+
+untestit(compl ) {
+  static_assert(incompatible(tag::identifier, tag::identifier));
+
+  const Tag tags[]{
+      tag::raw('!'), tag::raw('.'),   tag::raw(':'),
+      tag::raw('%'), tag::raw('&'),   tag::raw('*'),
+      tag::raw('+'), tag::raw('-'),   tag::raw('/'),
+      tag::raw('<'), tag::raw('='),   tag::raw('>'),
+      tag::raw('|'), tag::raw('^'),   tag::raw('`'),
+      tag::raw('('), tag::raw(')'),   tag::raw(','),
+      tag::raw(';'), tag::raw('?'),   tag::raw('@'),
+      tag::raw('['), tag::raw(']'),   tag::raw('{'),
+      tag::raw('}'), tag::raw('~'),   tag::string_like_literal,
+      tag::number,   tag::identifier,
+  };
+  for (auto l : tags) {
+    for (auto r : tags) {
+      std::cerr << (incompatible(l, r) ? '+' : ' ') << "|";
+    }
+    std::cerr << "\n";
+  }
+}
+
 class Preprocessor {
   using IndexList = std::vector<size_t>;
   using IndexListTail = VectorTail<size_t>;
@@ -68,6 +133,8 @@ class Preprocessor {
 
   using MacroMapValue = std::string;
   using MacroMapValuePtr = MacroMapValue*;
+
+  using StringStorage = dense::segmented_vector<std::string>;
 
  public:
   std::string output;
@@ -93,6 +160,7 @@ class Preprocessor {
 
  private:
   SegStringMap<MacroMapValue> macroMap;
+  StringStorage stringStorage;
 
   TokenList out;
   TokenList buf;
@@ -207,6 +275,7 @@ class Preprocessor {
     buf.clear();
     arg_rages.clear();
     macro_stack.clear();
+    stringStorage.clear();
 
     while (!tkz.eof()) {
       Token token = tkz.read_token();
@@ -243,7 +312,6 @@ class Preprocessor {
     }
   }
 
- private:
   inline void push_process_macro(std::string_view macro_name) {
     macro_stack.push_back(macro_name);
   }
@@ -276,40 +344,72 @@ class Preprocessor {
                     TokenListTail output) {
     TokenListTail preexpanion{buffer};
     const Token macro_token = input.front();
-const char *a = STR(\\);
+
     MacroExpansionTokeniser macro_tkz{macro_stamp.expansion};
+    Tag last_tag = tag::eof;
+    bool need_check = false;
+
     while (!macro_tkz.eof()) {
       Token token = macro_tkz.read_token();
-      if (token.tag == tag::arg) {
+      // check catenation
+
+      if (tag::is_macro_arg(token.tag)) {
         const size_t arg_ibegin = arg_chunk[token.details.index] + 1;
         const size_t arg_iend = arg_chunk[token.details.index + 1];
-        if (true /*not concat or stringify*/) {
+        const IndexRange arg_tokens{input, arg_ibegin, arg_iend};
+
+        if (token.tag == tag::arg) {
+
           preprocess_tokens(input.slice(arg_ibegin), arg_iend - arg_ibegin,
                             output.base(), preexpanion);
-        } else if (false /*stringify*/) {
-          std::string stringised{'"'};
-          for (const auto& arg_tok : IndexRange(input, arg_ibegin, arg_iend)) {
-            for (const char c : arg_tok.get_text()) {
-              if (c == '"') stringised += '\\';
-              stringised += c;
+
+        } else if (token.tag == tag::arg_str) {
+          // estimate size
+          size_t estim_size = 2;
+          for (const auto& arg_tok : arg_tokens) estim_size += arg_tok.size;
+          // create string in storage
+          std::string& stringised = stringStorage.emplace_back();
+          // init string
+          stringised.reserve(estim_size);
+          // stringify all tokens
+          stringised += '"';
+          for (const auto& arg_tok : arg_tokens) {
+            if (arg_tok.tag == tag::string_like_literal) {
+              for (const char c : arg_tok.get_text()) {
+                if (c == '"' || c == '\\') stringised += '\\';
+                stringised += c;
+              }
+            } else {
+              stringised += arg_tok.get_text();
             }
           }
           stringised += '"';
-          // preexpanion.push_back(stringised);
-          // stringify all tokens
-        } else if (false /*concat*/) {
-          for (const auto& arg_tok : IndexRange(input, arg_ibegin, arg_iend)) {
-            preexpanion.push_back(arg_tok);
-          }
+          // push token
+          last_tag = tag::string_like_literal;
+          preexpanion.push_back(
+              make_token(stringised, last_tag, macro_token.start_pos));
+          need_check = true;
+        } else if (token.tag == tag::arg_raw) {
           // copy all tokens as are
+          for (const auto& arg_tok : arg_tokens) preexpanion.push_back(arg_tok);
+          if (!arg_tokens.empty()) last_tag = arg_tokens.back().tag;
+          need_check = true;
         }
+        if (!preexpanion.empty()) last_tag = preexpanion.back().tag;
         continue;
       }
+
+      if (need_check && incompatible(last_tag, token.tag)) {
+        preexpanion.push_back(make_token(" ", last_tag, macro_token.start_pos));
+      }
+      need_check = false;
+
       token.start_pos.line = macro_token.start_pos.line;
       token.start_pos.column += macro_token.start_pos.column;
       token.end_pos.line += macro_token.start_pos.line;
       token.end_pos.column += macro_token.start_pos.column;
       preexpanion.push_back(token);
+      last_tag = token.tag;
     }
     // clear applied args
     push_process_macro(macro_token.get_text());

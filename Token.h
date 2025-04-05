@@ -23,7 +23,7 @@ enum class Kind : uint8_t {
   // auxionry tokens for custom kinds
   aux = 8,
   // Token owning allocated string
-  owning = 16,
+  macro_arg = 16,
   // concatenated token holds pointer to structure with 2 tokens
   catenation = 32,
 };
@@ -32,11 +32,18 @@ inline static constexpr Tag group(char id, Kind category) {
   return (static_cast<Tag>(category) << 8U)  //
          | static_cast<Tag>(static_cast<uint8_t>(id));
 }
-inline static constexpr Tag raw(char id) { return group(id, Kind::raw); }
-inline static constexpr Tag aux(char id) { return group(id, Kind::aux); }
-
+inline static constexpr char markerof(Tag tag) {
+  return static_cast<char>(tag & 0xFF);
+}
 inline static constexpr Kind kindof(Tag tag) {
   return static_cast<Kind>(tag >> 8U);
+}
+
+inline static constexpr Tag raw(char marker) {
+  return group(marker, Kind::raw);
+}
+inline static constexpr Tag aux(char marker) {
+  return group(marker, Kind::aux);
 }
 
 inline static constexpr bool is_extra(Tag tag) {
@@ -47,6 +54,9 @@ inline static constexpr bool is_raw(Tag tag) {
 }
 inline static constexpr bool is_ppline(Tag tag) {
   return kindof(tag) == Kind::ppline;
+}
+inline static constexpr bool is_macro_arg(Tag tag) {
+  return kindof(tag) == Kind::macro_arg;
 }
 
 // basically character mapping to enum like constants:
@@ -76,6 +86,8 @@ static constexpr Tag line_continuation   = group('z', Kind::extra);
 
 static constexpr Tag number              = group('0', Kind::grouped);
 static constexpr Tag identifier          = group('a', Kind::grouped);
+// static constexpr Tag dollar              = group('$', Kind::grouped);
+
 static constexpr Tag string_like_literal = group('"', Kind::grouped);
 static constexpr Tag raw_string_literal  = group('R', Kind::grouped);
 static constexpr Tag char_literal        = group('\'', Kind::grouped);
@@ -97,9 +109,9 @@ static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 static constexpr Tag code                = group('C', Kind::aux);
 static constexpr Tag other               = group('O', Kind::aux);
 
-static constexpr Tag arg                 = group('A', Kind::aux);
-static constexpr Tag arg_raw             = group('R', Kind::aux);
-static constexpr Tag arg_str             = group('S', Kind::aux);
+static constexpr Tag arg                 = group('a', Kind::macro_arg);
+static constexpr Tag arg_raw             = group('r', Kind::macro_arg);
+static constexpr Tag arg_str             = group('s', Kind::macro_arg);
 
 // clang-format on
 
@@ -146,7 +158,7 @@ struct Token {
 //     .end_pos = left.end_pos};
 // }
 
-constexpr Token code_token(std::string_view text, Position start_pos) {
+constexpr Token make_token(std::string_view text, Tag tag, Position start_pos) {
   return Token{.tag = tag::code,
                .details = {0},
                .size = static_cast<uint32_t>(text.size()),
