@@ -1,7 +1,4 @@
-#define Macro(a) a   \
-   b
+#define CATH(a, b) a##b
+#define CAT(a, b) CATH(a, b)
 
-const char *c = Macro(1);
-
-#define CAT(a, b) a##b 1
-
+CAT(CAT(a, b), c)

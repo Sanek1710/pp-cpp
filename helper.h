@@ -295,7 +295,7 @@ class indentos : public std::streambuf {
   }
 
  public:
-  explicit indentos(std::ostream& os, bool newline = false)
+  explicit indentos(std::ostream& os, bool newline = true)
       : rdbuf(os.rdbuf()), newline(newline), os(os) {
     os.rdbuf(this);
   }

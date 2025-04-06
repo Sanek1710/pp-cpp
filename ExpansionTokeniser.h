@@ -28,6 +28,7 @@ class MacroExpansionTokeniser : private Tokeniser {
     Token token;
     token.start = cur.it;
     token.start_pos = cur.to_position();
+    token.details = {0};
     token.tag = skip_next();
     if (token.tag == tag::arg) {
       cur.it = std::from_chars(cur.it, end, token.details.index).ptr;

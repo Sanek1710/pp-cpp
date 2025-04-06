@@ -47,9 +47,31 @@ int user_test() {
   return 0;
 }
 
+
+int small_test() {
+  std::string src = read_file(ROOT "pp.test/small.cpp");
+  // std::string src = read_file(ROOT "helper.h");
+  // src += read_file(ROOT "preprocess.cpp");
+  timeit;
+  Preprocessor pre;
+  TokenPrinter printer{std::cerr, true};
+  std::string out;
+  for (const auto out_tok : pre.process_code(src, out)) {
+    // printer.print(out_tok);
+    // out_tok.print(std::cerr);
+    // std::cerr << "\n";
+  }
+  print_source(out);
+
+  std::cerr << "\n\n";
+
+  return 0;
+}
+
 int main(int argc, char* argv[]) {
   // user_test();
-  // perf_test();
+  perf_test();
+  small_test();
 }
 
 int main_cli(int argc, char* argv[]) {
