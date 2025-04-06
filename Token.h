@@ -24,8 +24,8 @@ enum class Kind : uint8_t {
   aux = 8,
   // Token owning allocated string
   macro_arg = 16,
-  // concatenated token holds pointer to structure with 2 tokens
-  catenation = 32,
+  // punctuators
+  punct = 32,
 };
 
 inline static constexpr Tag group(char id, Kind category) {
@@ -58,6 +58,9 @@ inline static constexpr bool is_ppline(Tag tag) {
 inline static constexpr bool is_macro_arg(Tag tag) {
   return kindof(tag) == Kind::macro_arg;
 }
+inline static constexpr bool is_punct(Tag tag) {
+  return kindof(tag) == Kind::punct;
+}
 
 // basically character mapping to enum like constants:
 // `any space         -> ' ', except from '\n'`
@@ -78,6 +81,10 @@ inline static constexpr bool is_macro_arg(Tag tag) {
 // clang-format off
 static constexpr Tag eof                 = group('\0', Kind::raw);
 
+static constexpr Tag punct1              = group('1', Kind::punct);
+static constexpr Tag punct2              = group('2', Kind::punct);
+
+// should not be considered as tokens by pp logic
 static constexpr Tag space               = group(' ', Kind::extra);
 static constexpr Tag newline             = group('\n', Kind::extra);
 static constexpr Tag line_comment        = group('c', Kind::extra);
@@ -127,13 +134,19 @@ union TokenDetails {
   };
 };
 
+// end_pos is never used, why to even store it?
+// end pos can be calculated by traversing text, if reeealy needed
+#define ENDPOS
+
 struct Token {
   Tag tag;
   TokenDetails details;
   uint32_t size = 0;
   positer start = nullptr;
   Position start_pos;
+#ifdef ENDPOS
   Position end_pos;
+#endif
 
   inline constexpr std::string_view get_text() const {
     return std::string_view(start, size);
@@ -158,11 +171,32 @@ struct Token {
 //     .end_pos = left.end_pos};
 // }
 
-constexpr Token make_token(std::string_view text, Tag tag, Position start_pos) {
-  return Token{.tag = tag::code,
-               .details = {0},
-               .size = static_cast<uint32_t>(text.size()),
-               .start = text.data(),
-               .start_pos = start_pos,
-               .end_pos = start_pos};
+
+static constexpr bool oneof(char c, std::string_view char_set) {
+  return char_set.rfind(c) != std::string_view::npos;
+};
+
+inline constexpr bool cats_operator(char mlhs, char mrhs) {
+  switch (mrhs) {
+    // clang-format off
+    case '#': return mlhs == '#'; // ppline
+    case '%': return oneof(mlhs, ".<");
+    case '&': return mlhs == '&';
+    case '*': return mlhs == '/';
+    case '+': [[fallthrough]];
+    case '-': [[fallthrough]];
+    case '.': [[fallthrough]];
+    case '/': return mlhs == mrhs;
+    case ':': return oneof(mlhs, ":%<");
+    case '<': return mlhs == '<';
+    case '=': return oneof(mlhs, "!%&*+-/<=>|^");
+    case '>': return oneof(mlhs, ":%->");
+    case '|': return mlhs == '|';
+    // clang-format on
+    default:
+      break;
+  }
+  // rest do not make any known operators
+  // except trigrams but eh
+  return false;
 }

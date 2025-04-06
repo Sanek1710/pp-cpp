@@ -13,10 +13,11 @@ struct MacroInfo {
   bool is_variadic = false;
   bool is_functional = false;
 };
+struct DirectiveTokenImage;
 
-struct IncludeTokenImage;
-struct DefineTokenImage;
-struct UndefTokenImage;
+struct IncludeView;
+struct DefineView;
+struct UndefView;
 
 struct DirectiveTokenImage {
   void print(std::ostream& os) const;
@@ -27,13 +28,9 @@ struct DirectiveTokenImage {
     details = {0};
   }
 
-  template <typename TokenImageType>
-  const TokenImageType& as() const {
-    static_assert(std::is_base_of_v<DirectiveTokenImage, TokenImageType>);
-    static_assert(sizeof(DirectiveTokenImage) == sizeof(TokenImageType));
-
-    return static_cast<const TokenImageType&>(*this);
-  }
+  const IncludeView& as_include() const { return as<IncludeView>(); }
+  const DefineView& as_define() const { return as<DefineView>(); }
+  const UndefView& as_undef() const { return as<UndefView>(); }
 
  protected:
   enum Kind { Include, Define, Undef, Undefined };
@@ -46,16 +43,25 @@ struct DirectiveTokenImage {
   Details details = {0};
   TokenList tokens;
 
+  template <typename TokenImageType>
+  const TokenImageType& as() const {
+    static_assert(std::is_base_of_v<DirectiveTokenImage, TokenImageType>);
+    static_assert(sizeof(DirectiveTokenImage) == sizeof(TokenImageType));
+    return static_cast<const TokenImageType&>(*this);
+  }
+
   friend class Tokeniser;
 };
 
-struct IncludeTokenImage : public DirectiveTokenImage {
+struct IncludeView : public DirectiveTokenImage {
   Token include_str() const { return base_token; }
 };
-struct UndefTokenImage : public DirectiveTokenImage {
+
+struct UndefView : public DirectiveTokenImage {
   Token name() const { return base_token; }
 };
-struct DefineTokenImage : public DirectiveTokenImage {
+
+struct DefineView : public DirectiveTokenImage {
   Token name() const { return base_token; }
   MacroInfo info() const { return details.macroInfo; }
   inline auto args_view() const {

@@ -17,7 +17,7 @@ std::ostream& operator<<(std::ostream& os, const Position& pos) {
             << "]";
 }
 
-void DefineTokenImage::print(std::ostream& os) const {
+void DefineView::print(std::ostream& os) const {
   os << "#define " << base_token.get_text();
   if (info().is_functional) {
     os << "(";

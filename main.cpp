@@ -48,8 +48,8 @@ int user_test() {
 }
 
 int main(int argc, char* argv[]) {
-  perf_test();
   // user_test();
+  // perf_test();
 }
 
 int main_cli(int argc, char* argv[]) {
@@ -87,16 +87,16 @@ testit(compile_macro_expansion) {
           {"CNSTINBOOL", " constexpr inline bool"},  //
           {"farg", "f1 farg($0a)"},                  //
           {"f", "f0 f()"},                           //
-          {"abeta", "f1 alpha$0rgamma"},             //
+          {"abeta", "f1 alpha##$0r##gamma"},         //
           {"SELF1", "f2 ($0a, $1a)"},                //
-          {"CAT1", "f2 $0r$1r"},                     //
+          {"CAT1", "f2 $0r##$1r"},                   //
           {"STR1", "f1 $0s"},                        //
           {"STR1", "f1 $0s"},                        //
           {"CATSTR1", "f2 $0a$1s"},                  //
-          {"CATSTR2", "f2 $0r$1s"},                  //
-          {"CATSTR3", "f2 $0r$1s"},                  //
-          {"CATSTR4", "f2 $0s$1s"},                  //
-          {"CATSTR5", "f2 $0r$1r"},                  //
+          {"CATSTR2", "f2 $0r##$1s"},                //
+          {"CATSTR3", "f2 $0r##$1s"},                //
+          {"CATSTR4", "f2 $0s##$1s"},                //
+          {"CATSTR5", "f2 $0r##$1r"},                //
           {"EMPTY", " "},                            //
           {"EMPTYF", "f0 "},                         //
           {"SELF2", "f2 $0a, $1a"},                  //
@@ -107,7 +107,7 @@ testit(compile_macro_expansion) {
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
+      const DefineView& defineImage = tokenImage.as_define();
       std::string_view name = defineImage.name().get_text();
       std::string act = compile_macro_expansion(defineImage);
       defineImage.print(std::cerr);
@@ -158,7 +158,7 @@ untestit(tokenise_macro_expansion) {
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
+      const DefineView& defineImage = tokenImage.as_define();
       std::string_view name = defineImage.name().get_text();
       std::string compile = compile_macro_expansion(defineImage);
 
@@ -174,4 +174,27 @@ untestit(tokenise_macro_expansion) {
     token = tkz.read_token();
   }
   // exit(0);
+}
+
+untestit(compl ) {
+  static_assert(incompatible(tag::identifier, tag::identifier));
+
+  const Tag tags[]{
+      tag::raw('!'), tag::raw('.'),   tag::raw(':'),
+      tag::raw('%'), tag::raw('&'),   tag::raw('*'),
+      tag::raw('+'), tag::raw('-'),   tag::raw('/'),
+      tag::raw('<'), tag::raw('='),   tag::raw('>'),
+      tag::raw('|'), tag::raw('^'),   tag::raw('`'),
+      tag::raw('('), tag::raw(')'),   tag::raw(','),
+      tag::raw(';'), tag::raw('?'),   tag::raw('@'),
+      tag::raw('['), tag::raw(']'),   tag::raw('{'),
+      tag::raw('}'), tag::raw('~'),   tag::string_like_literal,
+      tag::number,   tag::identifier,
+  };
+  for (auto l : tags) {
+    for (auto r : tags) {
+      std::cerr << (incompatible(l, r) ? '+' : ' ') << "|";
+    }
+    std::cerr << "\n";
+  }
 }

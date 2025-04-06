@@ -51,7 +51,9 @@ CATSTR4(L,2) // "L""2"
 CATSTR5(L,2) // L2
 
 
-
+constexpr auto s = STR1(Hello worldie
+( a )             U 
+wow);
 
 
 CNSTINBOOL is_space/*bigbigibigbigibigibgb*/(char c) {  //

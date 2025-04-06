@@ -3,6 +3,7 @@
 #include <charconv>
 
 #include "Cursor.h"
+#include "Position.h"
 #include "Token.h"
 
 class MacroExpansionTokeniser : private Tokeniser {
@@ -21,7 +22,7 @@ class MacroExpansionTokeniser : private Tokeniser {
   }
 
  public:
-  MacroExpansionTokeniser(std::string_view src) : Tokeniser(src, tokenImage) {}
+  MacroExpansionTokeniser(std::string_view src, Position start_pos = {0, 0}) : Tokeniser(src, tokenImage, start_pos) {}
 
   inline Token read_token() {
     Token token;
@@ -33,7 +34,9 @@ class MacroExpansionTokeniser : private Tokeniser {
       token.tag = arg_tag_marker_to_arg_tag(*cur.it++);
     }
     token.size = cur.it - token.start;
+#ifdef ENDPOS
     token.end_pos = cur.to_position();
+#endif
     return token;
   }
 
@@ -44,7 +47,15 @@ class MacroExpansionTokeniser : private Tokeniser {
       if (*cur.it == '$') return tag::raw(*cur.it++);
       return tag::arg;
     }
-    return skip_common<false>(cur, end);
+    if (*cur.it == '#') { /*5*/
+      ++cur.it;
+      if (cur.it != end && *cur.it == '#') {
+        ++cur.it;
+        return tag::pp_op_cat;
+      }
+      return tag::pp_op_str;
+    }
+    return tag_ppcommon(cur, end);
   }
 
   inline bool eof() const { return Tokeniser::eof(); }

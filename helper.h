@@ -219,6 +219,9 @@ inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
 #define once for (static bool _done = false; !_done; _done = true)
 #define never for (; false;)
 
+#define ostreamop(T, name) \
+  std::ostream& operator<<(std::ostream& os, const T& name)
+
 #define WOW(...) \
   do it now __VA_ARGS__
 #define CATTER(ab) #ab##cd

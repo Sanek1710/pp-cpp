@@ -28,6 +28,7 @@ struct MacroStamp {
   }
 
   std::string_view expansion;
+  // FileID fileId;
   MacroInfo info;
 };
 
@@ -43,7 +44,7 @@ inline constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
   return tag::arg;
 }
 
-inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
+inline std::string compile_macro_expansion(const DefineView& macro) {
   std::string out;
 
   // Write macro type prefix
@@ -73,6 +74,7 @@ inline std::string compile_macro_expansion(const DefineTokenImage& macro) {
       }
       need_space = false;
       last_tag = tag::pp_op_cat;
+      out += "##";
       continue;
     }
 

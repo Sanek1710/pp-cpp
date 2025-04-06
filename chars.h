@@ -12,6 +12,10 @@ constexpr inline bool is_space(char c) {  //
   return c == ' ' || '\t' <= c && c <= '\r';
 }
 
+constexpr inline bool is_blank(char c) {  //
+  return c == ' ' || c == '\t';
+}
+
 constexpr inline bool is_digit(char c) {
   switch (c) {
     case '0' ... '9':

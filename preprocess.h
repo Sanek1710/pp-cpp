@@ -9,6 +9,7 @@
 #include <string_view>
 #include <vector>
 
+#include "CodeDumper.h"
 #include "Cursor.h"
 #include "ExpansionTokeniser.h"
 #include "Macro.h"
@@ -19,6 +20,34 @@
 #include "helper.h"
 #include "util/RangeView.h"
 #include "util/util.h"
+
+constexpr Token make_token(std::string_view text, Tag tag, Position start_pos) {
+  return Token{.tag = tag,
+               .details = {0},
+               .size = static_cast<uint32_t>(text.size()),
+               .start = text.data(),
+               .start_pos = start_pos,
+#ifdef ENDPOS
+               .end_pos = start_pos
+#endif
+  };
+}
+
+inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
+  text += lhs.get_text();
+  text += rhs.get_text();
+  // TODO: deduce tag from both tags
+  constexpr const auto cat_tags = [](Tag lhs, Tag rhs) { return lhs; };
+  return Token{.tag = cat_tags(lhs.tag, rhs.tag),
+               .details = {0},
+               .size = static_cast<uint32_t>(text.size()),
+               .start = text.data(),
+               .start_pos = lhs.start_pos,
+#ifdef ENDPOS
+               .end_pos = rhs.end_pos
+#endif
+  };
+}
 
 template <typename TokeniserT>
 class TokeniserReader {
@@ -36,17 +65,57 @@ class TokeniserReader {
 
 class TokenWriter {
  public:
-  TokenWriter(std::string& output) : output(output) {}
-  void write(Token tok) {
+  TokenWriter(CodeDumper& dumper) : dumper(dumper) {}
+  void write(Token tok, bool align = true) {
+    if (align) {
+      dumper.align_dump(tok);
+    } else {
+      dumper.dump(tok);
+    }
+    last_tag = tok.tag;
     ++ntokens;
-    output += tok.get_text();
+    // output += tok.get_text();
     // output.push_back(tok);
   }
   size_t size() const { return ntokens; }
 
+  Tag last_tag = tag::space;
+
  private:
-  std::string& output;
+  CodeDumper& dumper;
   size_t ntokens = 0;
+};
+
+using TokenListSlice = IndexRange<TokenList>;
+using StringStorage = dense::segmented_vector<std::string>;
+class TokenBuffWriter {
+ public:
+  TokenBuffWriter(TokenList& buffer, StringStorage& string_storage)
+      : buffer(buffer), head(buffer.size()), string_storage(string_storage) {}
+
+  void write(Token tok) {
+    if (cat_mode) {
+      if (buffer.size() > head)
+        buffer.back() =
+            cat_tokens(buffer.back(), tok, string_storage.emplace_back());
+      cat_mode = false;
+      return;
+    }
+    buffer.push_back(tok);
+    last_tag = tok.tag;
+  }
+
+  TokenListSlice as_input() const { return {buffer, head}; }
+  inline void clear() const { buffer.resize(head); }
+  inline void set_cat(bool value = true) { cat_mode = true; }
+
+  Tag last_tag = tag::space;
+
+ private:
+  TokenList& buffer;
+  size_t head;
+  StringStorage& string_storage;
+  bool cat_mode = false;
 };
 
 inline std::ostream& operator<<(std::ostream& os,
@@ -63,79 +132,13 @@ inline std::ostream& operator<<(std::ostream& os,
   return os;
 }
 
-static constexpr bool oneof(char c, std::string_view char_set) {
-  return char_set.rfind(c) != std::string_view::npos;
-};
-
-inline constexpr bool incompatible(Tag lhs, Tag rhs) {
-  const char mrhs = tag::markerof(rhs);
-  // anything after categorised chars
-  if (!tag::is_raw(lhs)) {
-    // in most cases these are iconpatible
-    if (!tag::is_raw(rhs)) return true;
-    return lhs == tag::number && oneof(mrhs, ".+-");
-  }
-
-  // categorised chars after raw chars
-  if (!tag::is_raw(rhs)) return lhs == tag::raw('.') && rhs == tag::number;
-
-  // raw chars after raw chars
-  const char mlhs = tag::markerof(lhs);
-  switch (mrhs) {
-      // clang-format off
-      case '%': return oneof(mlhs, ".<");
-      case '&': return mlhs == '&';
-      case '*': return mlhs == '/';
-      case '+': [[fallthrough]];
-      case '-': [[fallthrough]];
-      case '.': [[fallthrough]];
-      case '/': return mlhs == mrhs;
-      case ':': return oneof(mlhs, ":%<");
-      case '<': return mlhs == '<';
-      case '=': return oneof(mlhs, "!%&*+-/<=>|^");
-      case '>': return oneof(mlhs, ":%->");
-      case '|': return mlhs == '|';
-    // clang-format on
-    default:
-      break;
-  }
-  // rest are compatible-ish
-  return false;
-}
-
-untestit(compl ) {
-  static_assert(incompatible(tag::identifier, tag::identifier));
-
-  const Tag tags[]{
-      tag::raw('!'), tag::raw('.'),   tag::raw(':'),
-      tag::raw('%'), tag::raw('&'),   tag::raw('*'),
-      tag::raw('+'), tag::raw('-'),   tag::raw('/'),
-      tag::raw('<'), tag::raw('='),   tag::raw('>'),
-      tag::raw('|'), tag::raw('^'),   tag::raw('`'),
-      tag::raw('('), tag::raw(')'),   tag::raw(','),
-      tag::raw(';'), tag::raw('?'),   tag::raw('@'),
-      tag::raw('['), tag::raw(']'),   tag::raw('{'),
-      tag::raw('}'), tag::raw('~'),   tag::string_like_literal,
-      tag::number,   tag::identifier,
-  };
-  for (auto l : tags) {
-    for (auto r : tags) {
-      std::cerr << (incompatible(l, r) ? '+' : ' ') << "|";
-    }
-    std::cerr << "\n";
-  }
-}
-
 class Preprocessor {
   using IndexList = std::vector<size_t>;
 
-  using TokenListSlice = IndexRange<TokenList>;
   using IndexListSlice = IndexRange<IndexList>;
 
   using MacroMapValue = std::string;
   using MacroMapValuePtr = MacroMapValue*;
-
-  using StringStorage = dense::segmented_vector<std::string>;
 
  public:
   std::string output;
@@ -143,8 +146,10 @@ class Preprocessor {
     Tokeniser tkz{src, tokenImage};
 
     output.clear();
-    TokenWriter writer{output};
+    CodeDumper dumper{output};
+    TokenWriter writer{dumper};
     preprocess_tkz_tokens(tkz, writer);
+    dumper.finalise();
 
     return output;
   }
@@ -153,8 +158,10 @@ class Preprocessor {
     Tokeniser tkz{src, tokenImage};
 
     output.clear();
-    TokenWriter writer{output};
+    CodeDumper dumper{output};
+    TokenWriter writer{dumper};
     preprocess_tkz_tokens(tkz, writer);
+    dumper.finalise();
 
     return output;
   }
@@ -177,7 +184,6 @@ class Preprocessor {
     IndexListSlice arg_chunk;
     MacroStamp macro_stamp;
   };
-
 
   // returns amount of valid prescanned tokens
   size_t prescan_macro(TokenListSlice input,  //
@@ -212,7 +218,6 @@ class Preprocessor {
   void preprocess_tokens(TokenListSlice input,  //
                          TokenList& buffer,     // same as input on start
                          TokenList& output) {
-                          
     while (!input.empty()) {
       switch (input.front().tag) {
         case tag::identifier: {
@@ -253,9 +258,12 @@ class Preprocessor {
         process_ppline(token.tag);
         continue;
       }
-      output.push_back(token);
+      // output.push_back(token);
       if (!tag::is_extra(token.tag)) break;
+      if (!tag::is_extra(output.back().tag))
+        output.push_back(make_token(" ", tag::space, token.start_pos));
     } while (true);
+    output.push_back(token);
     // next after extras should be '('
     // as it supposed to be macro call
     if (token.tag != tag::raw('(')) return 0;
@@ -270,6 +278,12 @@ class Preprocessor {
         process_ppline(token.tag);
         continue;
       }
+      if (tag::is_extra(token.tag)) {
+        if (!tag::is_extra(output.back().tag))
+          output.push_back(make_token(" ", tag::space, token.start_pos));
+        continue;
+      }
+
       output.push_back(token);
       if (!mark_arg_ranges(token.tag, output.size() - 1, balance)) continue;
       const size_t nargs = arg_rages.size() - args_head - 1;
@@ -294,6 +308,13 @@ class Preprocessor {
         process_ppline(token.tag);
         continue;
       }
+
+      if (tag::is_extra(token.tag)) {
+        if (!tag::is_extra(writer.last_tag))
+          writer.write(make_token(" ", tag::space, token.start_pos));
+        continue;
+      }
+
       switch (token.tag) {
         case tag::identifier: {
           const auto oMacroStamp = lookup_macro(token);
@@ -315,7 +336,7 @@ class Preprocessor {
           notignore += buf.size();
           notignore += out.size();
           buf.clear();
-          for (const auto& token : out) writer.write(token);
+          for (const auto& token : out) writer.write(token, false);
           out.clear();
           continue;
         }
@@ -352,22 +373,24 @@ class Preprocessor {
     return MacroStamp{macroIt->second};
   }
 
-
-
   void expand_macro(MacroStamp macro_stamp,                          //
                     TokenListSlice input, IndexListSlice arg_chunk,  //
                     TokenList& buffer,                               //
                     TokenList& output) {
-    size_t buffer_head = buffer.size();
+    TokenBuffWriter writer{buffer, string_storage};
+
     const Token macro_token = input.front();
 
-    MacroExpansionTokeniser macro_tkz{macro_stamp.expansion};
-    Tag last_tag = tag::eof;
-    bool need_check = false;
-
+    MacroExpansionTokeniser macro_tkz{macro_stamp.expansion,
+                                      macro_token.start_pos};
     while (!macro_tkz.eof()) {
       Token token = macro_tkz.read_token();
       // check catenation
+
+      if (token.tag == tag::pp_op_cat) {
+        writer.set_cat();
+        continue;
+      }
 
       if (tag::is_macro_arg(token.tag)) {
         const size_t arg_ibegin = arg_chunk[token.details.index] + 1;
@@ -376,7 +399,6 @@ class Preprocessor {
 
         if (token.tag == tag::arg) {
           preprocess_tokens(arg_tokens, output, buffer);
-
         } else if (token.tag == tag::arg_str) {
           // estimate size
           size_t estim_size = 2;
@@ -399,39 +421,23 @@ class Preprocessor {
           }
           stringised += '"';
           // push token
-          last_tag = tag::string_like_literal;
-          buffer.push_back(
-              make_token(stringised, last_tag, macro_token.start_pos));
-          need_check = true;
+          writer.write(make_token(stringised, tag::string_like_literal,
+                                  macro_token.start_pos));
         } else if (token.tag == tag::arg_raw) {
           // copy all tokens as are
-          for (const auto& arg_tok : arg_tokens) buffer.push_back(arg_tok);
-          if (!arg_tokens.empty()) last_tag = arg_tokens.back().tag;
-          need_check = true;
+          for (const auto& arg_tok : arg_tokens) writer.write(arg_tok);
         }
         continue;
       }
-
-      if (need_check && incompatible(last_tag, token.tag)) {
-        buffer.push_back(make_token(" ", last_tag, macro_token.start_pos));
-      }
-      need_check = false;
-
-      token.start_pos.line = macro_token.start_pos.line;
-      token.start_pos.column += macro_token.start_pos.column;
-      token.end_pos.line += macro_token.start_pos.line;
-      token.end_pos.column += macro_token.start_pos.column;
-      buffer.push_back(token);
-      last_tag = token.tag;
+      writer.write(token);
     }
     // clear applied args
     arg_rages.resize(arg_chunk.ibegin());
 
     push_process_macro(macro_token.get_text());
     {
-      TokenListSlice buff_input{buffer, buffer_head};
-      preprocess_tokens(buff_input, buffer, output);
-      buffer.resize(buffer_head);
+      preprocess_tokens(writer.as_input(), buffer, output);
+      writer.clear();
     }
     pop_process_macro(macro_token.get_text());
   }
@@ -459,21 +465,18 @@ class Preprocessor {
   inline void process_ppline(Tag tag) {
     switch (tag) {
       case tag::pp_include: {
-        const IncludeTokenImage& includeImage =
-            tokenImage.as<IncludeTokenImage>();
+        tokenImage.as_include();
         break;
       }
 
       case tag::pp_define: {
-        const DefineTokenImage& defineImage = tokenImage.as<DefineTokenImage>();
-        macro_map.emplace(defineImage.name().get_text(),
-                         compile_macro_expansion(defineImage));
+        macro_map.emplace(tokenImage.as_define().name().get_text(),
+                          compile_macro_expansion(tokenImage.as_define()));
         break;
       }
 
       case tag::pp_undef: {
-        const UndefTokenImage& undefImage = tokenImage.as<UndefTokenImage>();
-        macro_map.erase(undefImage.name().get_text());
+        macro_map.erase(tokenImage.as_undef().name().get_text());
         break;
       }
 
