@@ -5,7 +5,6 @@
 #include <ostream>
 
 #include "Position.h"
-#include "helper.h"
 
 using Tag = uint16_t;
 
@@ -115,6 +114,7 @@ static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 // aux tokens
 static constexpr Tag code                = group('C', Kind::aux);
 static constexpr Tag other               = group('O', Kind::aux);
+static constexpr Tag empty               = group('\0', Kind::aux);
 
 static constexpr Tag arg                 = group('a', Kind::macro_arg);
 static constexpr Tag arg_raw             = group('r', Kind::macro_arg);
@@ -170,7 +170,6 @@ struct Token {
 //     .start_pos = left.start_pos,
 //     .end_pos = left.end_pos};
 // }
-
 
 static constexpr bool oneof(char c, std::string_view char_set) {
   return char_set.rfind(c) != std::string_view::npos;

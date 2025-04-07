@@ -1,4 +1,2 @@
-#define CATH(a, b) a##b
-#define CAT(a, b) CATH(a, b)
-
-CAT(CAT(a, b), c)
+#define CAT1(x, y)  x##y
+CAT1(CAT1(x, y), y)

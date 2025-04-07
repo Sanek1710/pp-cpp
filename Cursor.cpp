@@ -7,4 +7,3 @@
 
 #include "Token.h"
 #include "TokenGroup.h"
-#include "helper.h"

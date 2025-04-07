@@ -17,10 +17,11 @@
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
 #include "ankerl/unordered_dense.h"
-#include "helper.h"
 #include "util/RangeView.h"
+#include "util/helper.h"
 #include "util/util.h"
 
+// #define debug
 #ifdef debug
 #define DBG(...) __VA_ARGS__
 #else
@@ -32,6 +33,18 @@ constexpr Token make_token(std::string_view text, Tag tag, Position start_pos) {
                .details = {0},
                .size = static_cast<uint32_t>(text.size()),
                .start = text.data(),
+               .start_pos = start_pos,
+#ifdef ENDPOS
+               .end_pos = start_pos
+#endif
+  };
+}
+
+constexpr Token empty_token(Position start_pos) {
+  return Token{.tag = tag::empty,
+               .details = {0},
+               .size = 0,
+               .start = "",
                .start_pos = start_pos,
 #ifdef ENDPOS
                .end_pos = start_pos
@@ -175,7 +188,6 @@ class Preprocessor {
  private:
   SegStringMap<MacroMapValue> macro_map;
   StringStorage string_storage;
-
   TokenList out;
   TokenList buf;
   IndexList arg_rages;  // TokenList independent
@@ -278,18 +290,15 @@ class Preprocessor {
     if (!macroStamp.info.is_functional) return output.size();
 
     // skip extras
-    do {
+    while (true) {
       if (tkz.eof()) return 0;
       token = tkz.read_token();
       if (tag::is_ppline(token.tag)) {
         process_ppline(token.tag);
         continue;
       }
-      // output.push_back(token);
       if (!tag::is_extra(token.tag)) break;
-      if (!tag::is_extra(output.back().tag))
-        output.push_back(make_token(" ", tag::space, token.start_pos));
-    } while (true);
+    }
     output.push_back(token);
     // next after extras should be '('
     // as it supposed to be macro call
@@ -332,11 +341,7 @@ class Preprocessor {
         continue;
       }
 
-      if (tag::is_extra(token.tag)) {
-        if (!tag::is_extra(writer.last_tag))
-          writer.write(make_token(" ", tag::space, token.start_pos));
-        continue;
-      }
+      if (tag::is_extra(token.tag)) continue;
 
       switch (token.tag) {
         case tag::identifier: {
@@ -355,6 +360,7 @@ class Preprocessor {
             preprocess_tokens(buff_input, buf, out);
           } else {
             expand_macro(*oMacroStamp, buff_input, arg_chunk, buf, out);
+            // writer.write(empty_token(token.start_pos));
           }
           notignore += buf.size();
           notignore += out.size();
@@ -403,13 +409,12 @@ class Preprocessor {
     const size_t arg_iend = arg_chunk[arg_idx + 1];
     IndexRange arg_range{src, arg_ibegin, arg_iend};
     // trim
-    // TODO: move it to arg marking
-    while (!arg_range.empty() && tag::is_extra(arg_range.back().tag)) {
+    // by design is no more than one space
+    if (!arg_range.empty() && tag::is_extra(arg_range.back().tag))
       arg_range.remove_suffix(1);
-    }
-    while (!arg_range.empty() && tag::is_extra(arg_range.front().tag)) {
+    if (!arg_range.empty() && tag::is_extra(arg_range.front().tag))
       arg_range.remove_prefix(1);
-    }
+
     return arg_range;
   }
 

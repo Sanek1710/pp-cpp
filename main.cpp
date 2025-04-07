@@ -5,6 +5,8 @@
 #include "TokenPrinter.h"
 #include "preprocess.h"
 
+#include "util/helper.h"
+
 int perf_test() {
   std::string src = read_file(ROOT "pp.test/sqliteall.c");
   std::string out;
@@ -68,11 +70,6 @@ int small_test() {
   return 0;
 }
 
-int main(int argc, char* argv[]) {
-  // user_test();
-  perf_test();
-  small_test();
-}
 
 int main_cli(int argc, char* argv[]) {
   if (argc < 2) {
@@ -219,4 +216,11 @@ untestit(compl ) {
     }
     std::cerr << "\n";
   }
+}
+
+
+int main(int argc, char* argv[]) {
+  // user_test();
+  // perf_test();
+  small_test();
 }

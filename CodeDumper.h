@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <iostream>
 #include <string_view>
 #include <utility>
 #include <vector>
@@ -10,7 +11,9 @@
 #include "PositionMap.h"
 #include "Token.h"
 #include "ankerl/unordered_dense.h"
-#include "helper.h"
+
+#include "util/helper.h"
+
 deadnote(int, naligned);
 deadnote(int, nnotaligned);
 deadnote(int, ncached);

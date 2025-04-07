@@ -9,7 +9,6 @@
 #include "Token.h"
 #include "TokenGroup.h"
 #include "chars.h"
-#include "helper.h"
 
 // Tokeniser protocol:
 // skip: skips any tag
