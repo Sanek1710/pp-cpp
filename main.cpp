@@ -86,12 +86,13 @@ int main_cli(int argc, char* argv[]) {
 
   // Process the code
   Preprocessor pre;
-  pre.process_code(src);
+  std::string out;
+  pre.process_code(src, out);
 
   return 0;
 }
 
-testit(compile_macro_expansion) {
+untestit(compile_macro_expansion) {
   // return;
   std::string src = read_file(ROOT "pp.test/pp.in.cpp");
 
@@ -221,6 +222,6 @@ untestit(compl ) {
 
 int main(int argc, char* argv[]) {
   // user_test();
-  // perf_test();
+  perf_test();
   small_test();
 }

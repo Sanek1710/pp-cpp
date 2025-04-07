@@ -68,45 +68,9 @@ inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
   };
 }
 
-template <typename TokeniserT>
-class TokeniserReader {
- public:
-  TokeniserReader(TokeniserT& tkz) : tkz(&tkz) { read(); }
-
-  Token& get() { return token; }
-  Token& read() { return token = tkz->read_token(); }
-  bool eof() const { return token.tag == tag::eof; }
-
- private:
-  TokeniserT* tkz;
-  Token token;
-};
-
-class TokenWriter {
- public:
-  TokenWriter(CodeDumper& dumper) : dumper(dumper) {}
-  void write(Token tok, bool align = true) {
-    if (align) {
-      dumper.align_dump(tok);
-    } else {
-      dumper.dump(tok);
-    }
-    last_tag = tok.tag;
-    ++ntokens;
-    // output += tok.get_text();
-    // output.push_back(tok);
-  }
-  size_t size() const { return ntokens; }
-
-  Tag last_tag = tag::space;
-
- private:
-  CodeDumper& dumper;
-  size_t ntokens = 0;
-};
-
 using TokenListSlice = IndexRange<TokenList>;
 using StringStorage = dense::segmented_vector<std::string>;
+
 class TokenBuffWriter {
  public:
   TokenBuffWriter(TokenList& buffer, StringStorage& string_storage)
@@ -114,21 +78,21 @@ class TokenBuffWriter {
 
   void write(Token tok) {
     if (cat_mode) {
-      if (buffer.size() > head)
+      if (buffer.size() > head) {
         buffer.back() =
             cat_tokens(buffer.back(), tok, string_storage.emplace_back());
+      } else {
+        buffer.push_back(tok);
+      }
       cat_mode = false;
       return;
     }
     buffer.push_back(tok);
-    last_tag = tok.tag;
   }
 
   TokenListSlice as_input() const { return {buffer, head}; }
   inline void clear() const { buffer.resize(head); }
   inline void set_cat(bool value = true) { cat_mode = true; }
-
-  Tag last_tag = tag::space;
 
  private:
   TokenList& buffer;
@@ -160,27 +124,13 @@ class Preprocessor {
   using MacroMapValuePtr = MacroMapValue*;
 
  public:
-  std::string output;
-  const auto& process_code(std::string_view src) {
-    Tokeniser tkz{src, tokenImage};
-
-    output.clear();
-    CodeDumper dumper{output};
-    TokenWriter writer{dumper};
-    preprocess_tkz_tokens(tkz, writer);
-    dumper.finalise();
-
-    return output;
-  }
-
   const auto& process_code(std::string_view src, std::string& output) {
     Tokeniser tkz{src, tokenImage};
 
     output.clear();
-    CodeDumper dumper{output};
-    TokenWriter writer{dumper};
+    TokenCodeWriter writer{output};
     preprocess_tkz_tokens(tkz, writer);
-    dumper.finalise();
+    writer.finalise();
 
     return output;
   }
@@ -331,7 +281,7 @@ class Preprocessor {
     return 0;
   }
 
-  void preprocess_tkz_tokens(Tokeniser& tkz, TokenWriter& writer) {
+  void preprocess_tkz_tokens(Tokeniser& tkz, TokenCodeWriter& writer) {
     clear();
 
     while (!tkz.eof()) {
@@ -374,14 +324,6 @@ class Preprocessor {
       }
       writer.write(token);
     }
-  }
-
-  inline void push_process_macro(std::string_view macro_name) {
-    macro_stack.push_back(macro_name);
-  }
-  inline void pop_process_macro(std::string_view macro_name) {
-    (void)macro_name;
-    macro_stack.pop_back();
   }
 
   inline bool in_process(std::string_view macro_name) const {
@@ -477,13 +419,13 @@ class Preprocessor {
     // clear applied args
     arg_rages.resize(arg_chunk.ibegin());
 
-    push_process_macro(macro_token.get_text());
+    macro_stack.push_back(macro_token.get_text());
     {
       DBG(std::cerr << "postexpand: " << writer.as_input() << "\n";)
       preprocess_tokens(writer.as_input(), buffer, output);
       writer.clear();
     }
-    pop_process_macro(macro_token.get_text());
+    macro_stack.pop_back();
   }
 
   // true on final mark

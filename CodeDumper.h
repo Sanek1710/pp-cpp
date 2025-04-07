@@ -11,7 +11,6 @@
 #include "PositionMap.h"
 #include "Token.h"
 #include "ankerl/unordered_dense.h"
-
 #include "util/helper.h"
 
 deadnote(int, naligned);
@@ -38,33 +37,13 @@ inline constexpr bool incompatible(Tag lhs, Tag rhs) {
   return cats_operator(mlhs, mrhs);
 }
 
-class CodeDumper {
+class TokenCodeWriter {
  public:
-  CodeDumper(std::string& out) : out(out) {}
+  TokenCodeWriter(std::string& out) : out(out) {}
 
-  // standard token dump with alignment
-  inline void align_dump(const Token& token) {
-    if (token.get_text() == "is_digit") {
-      std::cerr << token.get_text();
-    }
+  inline void write(const Token& token, bool align_column = true) {
     if (tag::is_extra(token.tag)) return putspace();
 
-    // getnote(szstat).stats[token.size]++;
-    if (!align(token.start_pos, true)) {
-      getnote(nnotaligned)++;
-      if (token.tag == tag::identifier) {
-        map_last_pos(token.start_pos);
-      }
-    } else {
-      getnote(naligned)++;
-    }
-
-    insert(token);
-  }
-
-  inline void dump(const Token& token) {
-    if (tag::is_extra(token.tag)) return putspace();
-    bool align_column = false;
     if (!align(token.start_pos, align_column)) {
       getnote(nnotaligned)++;
       if (token.tag == tag::identifier) {
@@ -90,11 +69,6 @@ class CodeDumper {
     last_tag = tag;
   }
 
-  inline void put_plain(char c) {
-    ++last_pos.column;
-    out += c;
-  }
-
   inline void finalise() {
     posmap.reserve(pmap.capacity());
     posmap.insert(pmap.begin(), pmap.end());
@@ -118,8 +92,8 @@ class CodeDumper {
   std::vector<std::pair<Position, Position>> pmap;
 
   inline void insert(const Token& token) {
-    // raw is always one non newline symbol
     if (incompatible(last_tag, token.tag)) putspace();
+    // raw is always one non newline symbol
     if (tag::is_raw(token.tag)) return putraw(token.tag);
     // if (token.tag == tag::operator2) {
     //   out += token.get_text();
