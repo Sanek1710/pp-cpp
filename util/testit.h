@@ -19,6 +19,18 @@
     std::cerr << "\033[33m[skip]\033[0m  act: `" << (act) << "`\n"; \
   } while (false);
 
+#define check_result_print(act, exp)                                   \
+  do {                                                                 \
+    if ((act) == (exp)) {                                              \
+      std::cerr << "\033[32m[pass]\033[0m  act: `" << (#act) << "`\n"; \
+      std::cerr << "\033[32m      \033[0m  exp: `" << (#exp) << "`\n"; \
+    } else {                                                           \
+      ++nfailed;                                                       \
+      std::cerr << "\033[31m[fail]\033[0m  act: `" << (#act) << "`\n"; \
+      std::cerr << "\033[31m      \033[0m  exp: `" << (#exp) << "`\n"; \
+    }                                                                  \
+  } while (false);
+
 #define testit_base(name, onend, modifier)                            \
   class LifetimeTest##name {                                          \
    public:                                                            \

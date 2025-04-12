@@ -52,7 +52,8 @@ CATSTR5(L,2) // L2
 
 
 constexpr auto s = STR1(Hello worldie
-( a )             U 
+( a )             U "some\
+ text"
 wow);
 
 

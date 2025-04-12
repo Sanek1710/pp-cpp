@@ -25,7 +25,9 @@
 class TokenPrinter {
  public:
   TokenPrinter(std::ostream& os, bool print_lines = false)
-      : os(os), print_lines(print_lines) {}
+      : os(os), print_lines(print_lines) {
+    on_newline();
+  }
 
   inline void print(Token token) {
     std::string_view text = token.get_text();
@@ -57,22 +59,26 @@ class TokenPrinter {
         return "\033[38;5;37m";
       if (token.tag == tag::identifier && *token.end() == '(')
         return "\033[38;5;230m";
-
       return "\033[38;5;153m";
     };
-    if (last_line != token.start_pos.line) {
-      last_line = token.start_pos.line;
-      if (print_lines)
-        os << "\033[38;5;240m" << std::setw(3)
-           << (token.start_pos.line + 1) << "│ ";
+
+    os << clr();
+    for (char c : text) {
+      os << c;
+      if (c == '\n') on_newline();
     }
-    os << clr() << text << "\033[0m";
+    os << "\033[0m";
   }
 
   std::ostream& getos() const { return os; }
 
+  void on_newline() {
+    os << "\033[38;5;240m" << std::setw(3) << (nline + 1) << "│ ";
+    ++nline;
+  }
+
  private:
-  unsigned last_line = -1;
+  unsigned nline = 0;
   bool print_lines = false;
   std::ostream& os;
 };

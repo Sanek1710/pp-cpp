@@ -82,6 +82,8 @@ static constexpr Tag eof                 = group('\0', Kind::raw);
 
 static constexpr Tag punct1              = group('1', Kind::punct);
 static constexpr Tag punct2              = group('2', Kind::punct);
+static constexpr Tag punct3              = group('3', Kind::punct);
+static constexpr Tag punct4              = group('4', Kind::punct);
 
 // should not be considered as tokens by pp logic
 static constexpr Tag space               = group(' ', Kind::extra);
@@ -129,8 +131,8 @@ using positer = std::string_view::iterator;
 union TokenDetails {
   uint16_t index;
   struct {
-    char letter;
-    bool marker;
+    bool is_expansion;
+    bool is_not_macro;
   };
 };
 
@@ -156,46 +158,3 @@ struct Token {
 
   void print(std::ostream& os) const;
 };
-
-// struct TokenCatenation {
-//   Token left;
-//   Token right;
-// };
-
-// constexpr Token cat_tokens(Token left, Token right) {
-//   return Token{.tag = tag::group(0, tag::Kind::catenation),
-//     .details = {0},
-//     .size = left.size + right.size,
-//     .start = std::make_unique(new TokenCatenation{left, right}),
-//     .start_pos = left.start_pos,
-//     .end_pos = left.end_pos};
-// }
-
-static constexpr bool oneof(char c, std::string_view char_set) {
-  return char_set.rfind(c) != std::string_view::npos;
-};
-
-inline constexpr bool cats_operator(char mlhs, char mrhs) {
-  switch (mrhs) {
-    // clang-format off
-    case '#': return mlhs == '#'; // ppline
-    case '%': return oneof(mlhs, ".<");
-    case '&': return mlhs == '&';
-    case '*': return mlhs == '/';
-    case '+': [[fallthrough]];
-    case '-': [[fallthrough]];
-    case '.': [[fallthrough]];
-    case '/': return mlhs == mrhs;
-    case ':': return oneof(mlhs, ":%<");
-    case '<': return mlhs == '<';
-    case '=': return oneof(mlhs, "!%&*+-/<=>|^");
-    case '>': return oneof(mlhs, ":%->");
-    case '|': return mlhs == '|';
-    // clang-format on
-    default:
-      break;
-  }
-  // rest do not make any known operators
-  // except trigrams but eh
-  return false;
-}

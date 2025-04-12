@@ -218,6 +218,7 @@ class Preprocessor {
         default:
           break;
       }
+      input.front().details.is_expansion = !macro_stack.empty();
       output.push_back(input.front());
       input.remove_prefix(1);
     }
@@ -315,7 +316,7 @@ class Preprocessor {
           notignore += buf.size();
           notignore += out.size();
           buf.clear();
-          for (const auto& token : out) writer.write(token, false);
+          for (const auto& token : out) writer.write(token);
           out.clear();
           continue;
         }
@@ -332,14 +333,14 @@ class Preprocessor {
   }
 
   std::optional<MacroStamp> lookup_macro(Token& token) const {
-    if (token.details.marker) return std::nullopt;
+    if (token.details.is_not_macro) return std::nullopt;
     const auto macro_name = token.get_text();
     auto macroIt = macro_map.find(macro_name);
     if (macroIt == macro_map.end()) {
-      token.details.marker = true;
+      token.details.is_not_macro = true;
       return std::nullopt;
     }
-    token.details.marker = false;
+    token.details.is_not_macro = false;
     if (in_process(macro_name)) return std::nullopt;
     return MacroStamp{macroIt->second};
   }

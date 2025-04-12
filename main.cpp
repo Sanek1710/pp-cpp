@@ -4,11 +4,12 @@
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
 #include "preprocess.h"
-
 #include "util/helper.h"
+#include "util/indentos.h"
+#include "util/testit.h"
 
 int perf_test() {
-  std::string src = read_file(ROOT "pp.test/sqliteall.c");
+  std::string src = read_file(ROOT "pp.test/sqliteall.txt");
   std::string out;
   timeit;
   repeat(5) {
@@ -49,7 +50,6 @@ int user_test() {
   return 0;
 }
 
-
 int small_test() {
   std::string src = read_file(ROOT "pp.test/small.cpp");
   // std::string src = read_file(ROOT "helper.h");
@@ -69,7 +69,6 @@ int small_test() {
 
   return 0;
 }
-
 
 int main_cli(int argc, char* argv[]) {
   if (argc < 2) {
@@ -197,7 +196,7 @@ untestit(tokenise_macro_expansion) {
 }
 
 untestit(compl ) {
-  static_assert(incompatible(tag::identifier, tag::identifier));
+  // static_assert(incompatible(tag::identifier, tag::identifier));
 
   const Tag tags[]{
       tag::raw('!'), tag::raw('.'),   tag::raw(':'),
@@ -213,15 +212,35 @@ untestit(compl ) {
   };
   for (auto l : tags) {
     for (auto r : tags) {
-      std::cerr << (incompatible(l, r) ? '+' : ' ') << "|";
+      // std::cerr << (incompatible(l, r) ? '+' : ' ') << "|";
     }
     std::cerr << "\n";
   }
 }
 
+testit(preprocess_sqlite) {
+  indentos indos{std::cerr};
+  std::string src = read_file(ROOT "pp.test/sqliteall.txt");
+  std::string pp_exp = read_file(ROOT "pp.test/act.pp.sqliteall.txt");
+  std::string pp_act;
+  Preprocessor pre;
+  pre.process_code(src, pp_act);
+  check_result_print(pp_act, pp_exp);
+  write_file(ROOT "pp.test/last.pp.sqliteall.txt", pp_act);
+}
+testit(preprocess_pptest) {
+  indentos indos{std::cerr};
+  std::string src = read_file(ROOT "pp.test/pp.test.cpp");
+  std::string pp_exp = read_file(ROOT "pp.test/1act.pp.pp.test.cpp");
+  std::string pp_act;
+  Preprocessor pre;
+  pre.process_code(src, pp_act);
+  check_result_print(pp_act, pp_exp);
+  write_file(ROOT "pp.test/2act.pp.pp.test.cpp", pp_act);
+}
 
 int main(int argc, char* argv[]) {
-  // user_test();
+  user_test();
   perf_test();
   small_test();
 }
