@@ -82,19 +82,18 @@ inline bool consume_identifier(Cursor& cur, positer end) {
 inline void skip_number(Cursor& cur, positer end) {
   cur.clear_line = false;
   for (++cur.it; cur.it != end; ++cur.it) {
-    // might be some complicated logic with [eEpP][+-] but meh
-    // next char after them has to be number anyway, so idrc
+    if (*cur.it == '+' || *cur.it == '-') {
+      const char prev = *std::prev(cur.it);
+      if (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P') continue;
+      return;
+    }
     if (!is_num_char(*cur.it)) return;
   }
 }
 
 inline void skip_line_comment(Cursor& cur, positer end) {
-  for (++ ++cur.it; cur.it != end; ++cur.it) {
-    if (*cur.it == '\n') {
-      if (*std::prev(cur.it) != '\\') return;
-      cur.enter();
-    }
-  }
+  for (++ ++cur.it; cur.it != end && *cur.it != '\n'; ++cur.it)
+    ;
 }
 inline void skip_multiline_comment(Cursor& cur, positer end) {
   if (++ ++cur.it == end) return;
@@ -115,11 +114,6 @@ inline void skip_string_literal(Cursor& cur, positer end, bool ppline) {
   for (++cur.it; cur.it != end; ++cur.it) {
     if (ppline && *cur.it == '\n') return;
     if (*cur.it == '\\') {
-      if (*std::next(cur.it) == '\n') {
-        ++cur.it;
-        cur.enter();
-        continue;
-      }
       escaped = !escaped;
       continue;
     }
@@ -197,18 +191,6 @@ inline bool consume_extras(Cursor& cur, positer end) {
         break;
       }
 
-      case '\\': {
-        const positer it1 = cur.it + 1;
-        while (it1 != end && is_space(*it1)) {
-          if (*it1 == '\n') {
-            cur.it = it1;  // '\\'
-            cur.enter();   // '\n'
-            ++cur.it;
-            break;
-          }
-        }
-        break;
-      }
       default:
         return was_extra;
     }
@@ -234,10 +216,6 @@ inline Tag tskip(Cursor& cur, size_t n, Tag tag) {
   return tag;
 }
 
-inline Tag cond_pskip(Cursor& cur, bool cond, size_t n1, size_t n2) {
-  return cond ? pskip(cur, n1) : pskip(cur, n2);
-}
-
 // main token processing unit
 template <bool ppline>
 inline Tag tag_common_template(Cursor& cur, positer end) {
@@ -252,11 +230,15 @@ inline Tag tag_common_template(Cursor& cur, positer end) {
   const char c1 = it1 == end ? 0 : *it1;
   const char c2 = it2 == end ? 0 : *it2;
   const char c3 = it3 == end ? 0 : *it3;
-  
+
   cur.clear_line = false;
   switch (c0) {
     case 0:
       return tag::eof;
+
+    case '\n':
+      if constexpr (ppline) return tag::eof;
+      return tskip(cur, 1, tag::newline);
 
     case '0' ... '9':
       skip_number(cur, end);
@@ -358,7 +340,7 @@ class Tokeniser {
 
  public:
   static constexpr uint32_t max_src_size = ~uint32_t{};
-  // try:
+  // TODO: move to handlers
   DirectiveTokenImage& tokenImage;
 
   Tokeniser(std::string_view src, DirectiveTokenImage& tokenImage,
@@ -373,10 +355,9 @@ class Tokeniser {
     }
   }
 
-  inline Token read_token() { return read<&Tokeniser::skip_next>(); }
-  inline Token read_pptoken() { return read<&Tokeniser::skip_ppnext>(); }
+  inline Token read_token() { return read<&Tokeniser::tag_next>(); }
+  inline Token read_pptoken() { return read<&Tokeniser::tag_ppnext>(); }
 
-  std::string_view get_src() const { return src; }
   inline bool eof() const { return cur.it == end; }
 
  protected:
@@ -399,29 +380,25 @@ class Tokeniser {
   }
 
   // consume patterns without tokenisation
-  inline Tag tag_include_string() {
+  inline Tag tag_if_include_string() {
     const char quot = *cur.it == '<' ? '>' :  //
                           (*cur.it == '"' ? '"' : 0);
-    if (!quot) return false;
-    for (++cur.it; cur.it != end; ++cur.it) {
-      if (*cur.it == quot || *cur.it == '\n') break;
-      if (*cur.it == '\n') {
-        if (*std::prev(cur.it) != '\\') return tag::pp_include_string;
-        cur.enter();
-      }
+    if (!quot) return tag::empty;
+    for (++cur.it; cur.it != end && *cur.it != '\n'; ++cur.it) {
+      if (*cur.it == quot) return tskip(cur, 1, tag::pp_include_string);
     }
-    if (*cur.it != '\n') ++cur.it;
     return tag::pp_include_string;
   }
-
-  inline bool consume_ellipis() {
-    if (*cur.it != '.'       //
-        || end - cur.it < 3  //
-        || cur.it[1] != '.' || cur.it[2] != '.')
-      return false;
-    cur.clear_line = false;
-    cur.it += 3;
-    return true;
+  inline Tag tag_if_identifier() {
+    if (cur.it == end || !is_word_start_char(*cur.it)) return tag::empty;
+    skip_identifier(cur, end);
+    return tag::identifier;
+  }
+  inline Tag tag_if_ellipis() {
+    if (end - cur.it < 3  //
+        || cur.it[0] != '.' || cur.it[1] != '.' || cur.it[2] != '.')
+      return tag::empty;
+    return tskip(cur, 3, tag::ellipsis);
   }
 
   inline bool consume_char(char c) {
@@ -430,23 +407,7 @@ class Tokeniser {
     return true;
   }
 
-  inline bool consume_identifier_token(Token& token) {
-    token.start = cur.it;
-    token.start_pos = cur.to_position();
-    token.tag = tag::identifier;
-    bool consumed = false;
-    if (is_word_start_char(*cur.it)) {
-      skip_identifier(cur, end);
-      consumed = true;
-    }
-    token.size = cur.it - token.start;
-#ifdef ENDPOS
-    token.end_pos = cur.to_position();
-#endif
-    return consumed;
-  }
-
-  inline Tag skip_next() {
+  inline Tag tag_next() {
     if (cur.it == end) return tag::eof;
     if (cur.clear_line && *cur.it == '#') { /*5*/
       ++cur.it;
@@ -455,28 +416,30 @@ class Tokeniser {
     return tag_common(cur, end);
   }
 
-  inline Tag skip_ppnext() { return tag_ppcommon(cur, end); }
+  inline Tag tag_ppnext() { return tag_ppcommon(cur, end); }
 
   inline bool skip_extras() { return skip_common_extras(cur, end); }
   inline bool skip_ppextras() { return skip_ppcommon_extras(cur, end); }
 
   // used to skip preprocessor lines
-  inline void skip_ppline() {
-    while (cur.it != end && *cur.it != '\n') tag_ppcommon(cur, end);
+  inline void process_ppline() {
+    while (cur.it != end && *cur.it != '\n') {
+      tokenImage.tokens.push_back(read_pptoken());
+    }
   }
 
   inline bool process_include() {
     skip_ppcommon_extras(cur, end);
-    if (cur.it == end || (*cur.it != '"' && *cur.it != '<')) return false;
-    tokenImage.base_token = read<&Tokeniser::tag_include_string>();
-    skip_ppline();
+    tokenImage.base_token = read<&Tokeniser::tag_if_include_string>();
+    if (tokenImage.base_token.tag != tag::pp_include_string) return false;
+    process_ppline();
     return true;
   }
-
   inline bool process_define() {
     skip_ppextras();
     tokenImage.clear();
-    if (!consume_identifier_token(tokenImage.base_token)) return false;
+    tokenImage.base_token = read<&Tokeniser::tag_if_identifier>();
+    if (tokenImage.base_token.tag != tag::identifier) return false;
 
     // not actual loop, just for break outs
     while (consume_char('(')) {
@@ -485,44 +448,43 @@ class Tokeniser {
       if (consume_char(')')) break;
       while (true) {
         skip_ppextras();
-        Token& last = tokenImage.tokens.emplace_back();
         ++tokenImage.details.macroInfo.nargs;
-        const bool was_arg = consume_identifier_token(last);
-        if (was_arg) skip_ppextras();
+        tokenImage.tokens.push_back(read<&Tokeniser::tag_if_identifier>());
+        if (tokenImage.tokens.back().tag == tag::identifier) skip_ppextras();
 
-        if (consume_ellipis()) {
+        if (read<&Tokeniser::tag_if_ellipis>().tag == tag::ellipsis) {
           tokenImage.details.macroInfo.is_variadic = true;
           skip_ppextras();
           if (!consume_char(')')) return false;
           break;
         }
 
-        if (!was_arg) return false;
+        if (tokenImage.tokens.back().tag != tag::identifier) return false;
         if (consume_char(')')) break;
         if (!consume_char(',')) return false;
       }
       break;
     }
     skip_ppextras();
-    while (cur.it != end && *cur.it != '\n') {
-      tokenImage.tokens.push_back(read_pptoken());
-    }
-
+    process_ppline();
     return true;
   }
   inline bool process_undef() {
     skip_ppextras();
     auto start = cur.it;
-    if (!consume_identifier_token(tokenImage.base_token)) return false;
-    skip_ppline();
+    tokenImage.base_token = read<&Tokeniser::tag_if_identifier>();
+    if (tokenImage.base_token.tag != tag::identifier) return false;
+    process_ppline();
     return true;
   }
   inline Tag process_directive() {
+    tokenImage.clear();
     do {
       skip_ppextras();
-      auto start = cur.it;
-      if (!consume_identifier(cur, end)) break;
-      std::string_view directive_name(start, cur.it - start);
+      tokenImage.directive_token = read<&Tokeniser::tag_if_identifier>();
+      if (tokenImage.directive_token.tag != tag::identifier) break;
+      const std::string_view directive_name{
+          tokenImage.directive_token.get_text()};
 
       if (directive_name == "include") {
         if (!process_include()) break;
@@ -536,11 +498,10 @@ class Tokeniser {
         if (!process_undef()) break;
         return tag::pp_undef;
       }
-      // pp_undef
-      skip_ppline();
+      process_ppline();
       return tag::pp_other_directive;
     } while (false);
-    skip_ppline();
-    return tag::pp_error;
+    process_ppline();
+    return tag::pp_invalid_directive;
   }
 };

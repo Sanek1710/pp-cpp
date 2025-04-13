@@ -7,6 +7,7 @@
 #include "util/helper.h"
 #include "util/indentos.h"
 #include "util/testit.h"
+#include "util/timer.h"
 
 int perf_test() {
   std::string src = read_file(ROOT "pp.test/sqliteall.txt");
@@ -38,11 +39,7 @@ int user_test() {
   Preprocessor pre;
   TokenPrinter printer{std::cerr, true};
   std::string out;
-  for (const auto out_tok : pre.process_code(src, out)) {
-    // printer.print(out_tok);
-    // out_tok.print(std::cerr);
-    // std::cerr << "\n";
-  }
+  pre.process_code(src, out);
   print_source(out);
 
   std::cerr << "\n\n";
@@ -58,15 +55,23 @@ int small_test() {
   Preprocessor pre;
   TokenPrinter printer{std::cerr, true};
   std::string out;
-  for (const auto out_tok : pre.process_code(src, out)) {
-    // printer.print(out_tok);
-    // out_tok.print(std::cerr);
-    // std::cerr << "\n";
-  }
+  pre.process_code(src, out);
   print_source(out);
 
   std::cerr << "\n\n";
 
+  return 0;
+}
+
+int some_test() {
+  std::string src = read_file(ROOT "somefile.cpp");
+  timeit;
+  Preprocessor pre;
+  TokenPrinter printer{std::cerr, true};
+  std::string out;
+  pre.process_code(src, out);
+  print_source(out);
+  std::cerr << "\n\n";
   return 0;
 }
 
@@ -219,6 +224,7 @@ untestit(compl ) {
 }
 
 testit(preprocess_sqlite) {
+  timeit;
   indentos indos{std::cerr};
   std::string src = read_file(ROOT "pp.test/sqliteall.txt");
   std::string pp_exp = read_file(ROOT "pp.test/act.pp.sqliteall.txt");
@@ -228,7 +234,7 @@ testit(preprocess_sqlite) {
   check_result_print(pp_act, pp_exp);
   write_file(ROOT "pp.test/last.pp.sqliteall.txt", pp_act);
 }
-testit(preprocess_pptest) {
+untestit(preprocess_pptest) {
   indentos indos{std::cerr};
   std::string src = read_file(ROOT "pp.test/pp.test.cpp");
   std::string pp_exp = read_file(ROOT "pp.test/1act.pp.pp.test.cpp");
@@ -240,7 +246,8 @@ testit(preprocess_pptest) {
 }
 
 int main(int argc, char* argv[]) {
-  user_test();
+  // user_test();
+  some_test();
   perf_test();
-  small_test();
+  // small_test();
 }

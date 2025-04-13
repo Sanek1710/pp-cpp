@@ -37088,9 +37088,9 @@ static const struct {
 sqlite_int64 rLimit;
 sqlite_int64 rXform;
 } aXformType[] = {
-  { 6, "second", 4.6427e +14,      1.0  },
-  { 6, "minute", 7.7379e +12,     60.0  },
-  { 4, "hour",   1.2897e +11,   3600.0  },
+  { 6, "second", 4.6427e+14,       1.0  },
+  { 6, "minute", 7.7379e+12,      60.0  },
+  { 4, "hour",   1.2897e+11,    3600.0  },
   { 3, "day",    5373485.0,    86400.0  },
   { 5, "month",  176546.0,   2592000.0  },
   { 4, "year",   14713.0,   31536000.0  },
@@ -43009,8 +43009,8 @@ static const et_info fmtinfo[] = {
 
 
 static const sqlite_int64 arRound[]={
-  5.0e -01,5.0e -02,5.0e -03,5.0e -04,5.0e -05,
-  5.0e -06,5.0e -07,5.0e -08,5.0e -09,5.0e -10,
+  5.0e-01, 5.0e-02, 5.0e-03, 5.0e-04, 5.0e-05,
+  5.0e-06, 5.0e-07, 5.0e-08, 5.0e-09, 5.0e-10,
 };
 
 
@@ -43446,14 +43446,14 @@ if( v==(-1) ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
 if( precision>0xfff ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
         idx = precision & 0xfff;
         rounder = arRound[idx%10];
-        while( idx>=10 ){ rounder *= 1.0e -10;idx -= 10; }
+        while( idx>=10 ){ rounder *= 1.0e-10; idx -= 10; }
         if( xtype==1       ){
 sqlite_int64     rx = (sqlite_int64)realvalue;
           sqlite3_uint64 u;
           int ex;
 {char*xxd=(char*)(&u);const char*xxs=(const char*)(&rx); int xxn=(sizeof(u));while(xxn-->0)*(xxd++)=*(xxs++);};
           ex = -1023 + (int)((u>>52)&0x7ff);
-          if( precision+(ex/3) < 15 ) rounder += realvalue*3e -16;
+          if( precision+(ex/3) < 15 ) rounder += realvalue*3e-16;
           realvalue += rounder;
         }
 
@@ -43469,7 +43469,7 @@ sqlite_int64              scale = 1.0;
           while( realvalue>=1e10*scale && exp<=350 ){ scale *= 1e10; exp+=10; }
           while( realvalue>=10.0*scale && exp<=350 ){ scale *= 10.0; exp++; }
           realvalue /= scale;
-          while( realvalue<1e -8){ realvalue *= 1e8; exp-=8; }
+          while( realvalue<1e-8 ){ realvalue *= 1e8; exp-=8; }
           while( realvalue<1.0 ){ realvalue *= 10.0; exp--; }
           if( exp>350 ){
             bufpt = buf;
@@ -46980,15 +46980,15 @@ static         u8 sqlite3StrIHash(const char *z){
 static sqlite_int64    sqlite3Pow10(int E){
 
   static const sqlite_int64    x[] = {
-    1.0e +001L,
-    1.0e +002L,
-    1.0e +004L,
-    1.0e +008L,
-    1.0e +016L,
-    1.0e +032L,
-    1.0e +064L,
-    1.0e +128L,
-    1.0e +256L
+    1.0e+001L,
+    1.0e+002L,
+    1.0e+004L,
+    1.0e+008L,
+    1.0e+016L,
+    1.0e+032L,
+    1.0e+064L,
+    1.0e+128L,
+    1.0e+256L
   };
 sqlite_int64      r = 1.0;
   int i;
@@ -47190,10 +47190,10 @@ do_atof_calc:
 sqlite_int64              scale = sqlite3Pow10(e-308);
           if( esign<0 ){
             result = s / scale;
-            result /= 1.0e +308;
+            result /= 1.0e+308;
           }else{
             result = s * scale;
-            result *= 1.0e +308;
+            result *= 1.0e+308;
           }
         }else{ assert( e>=342 );
           if( esign<0 ){
@@ -48391,12 +48391,12 @@ static         int sqlite3VListNameToNum(VList *pIn, const char *zName, int nNam
   __inline__ sqlite_uint64 sqlite3Hwtime(void){
       unsigned long long retval;
       unsigned long junk;
-      __asm__ __volatile__ ("\n\
-          1:      mftbu   %1\n\
-                  mftb    %L0\n\
-                  mftbu   %0\n\
-                  cmpw    %0,%1\n\
-                  bne     1b"
+      __asm__ __volatile__ ("\n          1:      mftbu   %1\n                  mftb    %L0\n                  mftbu   %0\n                  cmpw    %0,%1\n                  bne     1b"
+
+
+
+
+
                   : "=r" (retval), "=r" (junk));
       return retval;
   }
@@ -238489,7 +238489,7 @@ static int fts5Bm25GetData(
 
 
 sqlite_int64   idf = log( (nRow - nHit + 0.5) / (nHit + 0.5) );
-        if( idf<=0.0 ) idf = 1e -6;
+        if( idf<=0.0 ) idf = 1e-6;
         p->aIDF[i] = idf;
       }
     }

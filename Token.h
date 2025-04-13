@@ -109,7 +109,7 @@ static constexpr Tag pp_define           = group('D', Kind::ppline);
 static constexpr Tag pp_include          = group('I', Kind::ppline);
 static constexpr Tag pp_undef            = group('U', Kind::ppline);
 static constexpr Tag pp_other_directive  = group('O', Kind::ppline);
-static constexpr Tag pp_error            = group('E', Kind::ppline);
+static constexpr Tag pp_invalid_directive = group('X', Kind::ppline);
 
 static constexpr Tag pp_include_string   = group('i', Kind::ppline);
 
@@ -141,6 +141,8 @@ union TokenDetails {
 #define ENDPOS
 
 struct Token {
+  static_assert(sizeof(TokenDetails) == sizeof(uint16_t));
+
   Tag tag;
   TokenDetails details;
   uint32_t size = 0;

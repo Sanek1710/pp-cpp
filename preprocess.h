@@ -19,6 +19,7 @@
 #include "ankerl/unordered_dense.h"
 #include "util/RangeView.h"
 #include "util/helper.h"
+#include "util/timer.h"
 #include "util/util.h"
 
 // #define debug
@@ -55,7 +56,7 @@ constexpr Token empty_token(Position start_pos) {
 inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
   text += lhs.get_text();
   text += rhs.get_text();
-  // TODO: deduce tag from both tags
+  // TODONOW: deduce tag from both tags
   constexpr const auto cat_tags = [](Tag lhs, Tag rhs) { return lhs; };
   return Token{.tag = cat_tags(lhs.tag, rhs.tag),
                .details = {0},
@@ -123,16 +124,40 @@ class Preprocessor {
   using MacroMapValue = std::string;
   using MacroMapValuePtr = MacroMapValue*;
 
- public:
-  const auto& process_code(std::string_view src, std::string& output) {
-    Tokeniser tkz{src, tokenImage};
+  void prepreprocess() {
+    auto orig_it = src.begin();
+    auto it = src.begin();
+    const auto end = src.end();
 
+    for (; it != end; ++it) {
+      if (*it == '\\') {
+        auto next_it = it + 1;
+        while (next_it != end && is_blank(*next_it)) ++next_it;
+        if (*next_it == '\n') {
+          it = next_it;
+          offsets.push_back(orig_it.base());
+          continue;
+        }
+      }
+      *orig_it++ = *it;
+    }
+    src.erase(orig_it, src.end());
+    last_newline_offset = src.begin().base();
+    offsets_it = offsets.begin();
+  }
+
+ public:
+  void process_code(std::string_view src_orig, std::string& output) {
     output.clear();
+    clear();
+
+    src = src_orig;
+    prepreprocess();
+
     TokenCodeWriter writer{output};
+    Tokeniser tkz{src, tokenImage};
     preprocess_tkz_tokens(tkz, writer);
     writer.finalise();
-
-    return output;
   }
 
  private:
@@ -145,6 +170,12 @@ class Preprocessor {
   std::vector<std::string_view> macro_stack;
 
   DirectiveTokenImage tokenImage;
+
+  std::vector<positer> offsets;
+  std::vector<positer>::iterator offsets_it;
+  size_t line_offset = 0;
+  positer last_newline_offset = 0;
+  std::string src;
 
   // TODO:
   struct MacroUseView {
@@ -160,6 +191,11 @@ class Preprocessor {
     buf.clear();
     arg_rages.clear();
     macro_stack.clear();
+    offsets.clear();
+    line_offset = 0;
+    last_newline_offset = 0;
+    src.clear();
+    offsets_it = offsets.begin();
   }
 
   // returns amount of valid prescanned tokens
@@ -243,7 +279,7 @@ class Preprocessor {
     // skip extras
     while (true) {
       if (tkz.eof()) return 0;
-      token = tkz.read_token();
+      token = read_token(tkz);
       if (tag::is_ppline(token.tag)) {
         process_ppline(token.tag);
         continue;
@@ -260,7 +296,7 @@ class Preprocessor {
 
     int balance = 1;
     while (!tkz.eof()) {
-      token = tkz.read_token();
+      token = read_token(tkz);
       if (tag::is_ppline(token.tag)) {
         process_ppline(token.tag);
         continue;
@@ -283,10 +319,8 @@ class Preprocessor {
   }
 
   void preprocess_tkz_tokens(Tokeniser& tkz, TokenCodeWriter& writer) {
-    clear();
-
     while (!tkz.eof()) {
-      Token token = tkz.read_token();
+      Token token = read_token(tkz);
       if (tag::is_ppline(token.tag)) {
         process_ppline(token.tag);
         continue;
@@ -470,5 +504,18 @@ class Preprocessor {
       default:
         break;
     }
+  }
+
+  Token read_token(Tokeniser& tkz) {
+    Token token = tkz.read_token();
+    while (offsets_it != offsets.end() && token.start >= *offsets_it) {
+      ++line_offset;
+      last_newline_offset = *offsets_it++;
+    }
+    positer cur_newline_offset = token.start - token.start_pos.column;
+    token.start_pos.line += line_offset;
+    token.start_pos.column =
+        token.start - std::max(last_newline_offset, cur_newline_offset);
+    return token;
   }
 };

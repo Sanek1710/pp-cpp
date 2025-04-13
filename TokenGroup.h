@@ -28,6 +28,7 @@ struct DirectiveTokenImage {
     details = {0};
   }
 
+  Token directive() const { return directive_token; }
   const IncludeView& as_include() const { return as<IncludeView>(); }
   const DefineView& as_define() const { return as<DefineView>(); }
   const UndefView& as_undef() const { return as<UndefView>(); }
@@ -38,6 +39,7 @@ struct DirectiveTokenImage {
     MacroInfo macroInfo;
   };
 
+  Token directive_token;
   Token base_token;
   Kind kind;
   Details details = {0};

@@ -73,7 +73,8 @@ class TokenPrinter {
   std::ostream& getos() const { return os; }
 
   void on_newline() {
-    os << "\033[38;5;240m" << std::setw(3) << (nline + 1) << "│ ";
+    if (print_lines)
+      os << "\033[38;5;240m" << std::setw(3) << (nline + 1) << "│ ";
     ++nline;
   }
 
