@@ -57,7 +57,7 @@ MACRO(1,2, 3, 4);
 
 define arr 5
 
- /**/#/**/define/**/REAL_MACRO()  /* this is expansion*/ int a\
+ /**/#/**/define/**/REAL_MACRO1  /* this is expansion*/ int a\
 ;int b;/*definitely sss*/char* sss="\
 some\
 string";\

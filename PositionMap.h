@@ -30,27 +30,3 @@ struct PositionHash {
 };
 
 using PositionMap = dense::map<Position, Position, PositionHash>;
-
-// Range manipulations
-inline Position deltaPos(const Position& less, const Position& greater) {
-  Position dpos;
-  dpos.line = greater.line - less.line;
-  dpos.column = greater.column - (dpos.line ? 0 : less.column);
-  return dpos;
-}
-
-inline void addDeltaPos(Position& pos, const Position& dpos) {
-  pos.line += dpos.line;
-  pos.column = dpos.line ? 0 : pos.column;
-  pos.column += dpos.column;
-}
-
-inline void applySameDelta(Position& orig, const Position& less,
-                           const Position& greater) {
-  if (const auto dline = greater.line - less.line) {
-    orig.line += dline;
-    orig.column = greater.column;
-  } else {
-    orig.column += greater.column - less.column;
-  }
-}

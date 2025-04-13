@@ -6,25 +6,28 @@
 #include "Token.h"
 #include "util/RangeView.h"
 
-using TokenList = std::vector<Token>;
-
 struct MacroInfo {
   unsigned short nargs = 0;
   bool is_variadic = false;
   bool is_functional = false;
 };
-struct DirectiveTokenImage;
+
+struct IncludeInfo {
+  bool is_system = false;
+};
 
 struct IncludeView;
 struct DefineView;
 struct UndefView;
 
 struct DirectiveTokenImage {
+  enum Kind { Other, Include, Define, Undef, Invalid };
+
   void print(std::ostream& os) const;
 
   inline void clear() {
     tokens.clear();
-    kind = Undefined;
+    mkind = Other;
     details = {0};
   }
 
@@ -32,19 +35,21 @@ struct DirectiveTokenImage {
   const IncludeView& as_include() const { return as<IncludeView>(); }
   const DefineView& as_define() const { return as<DefineView>(); }
   const UndefView& as_undef() const { return as<UndefView>(); }
+  Kind kind() const { return mkind; }
 
  protected:
-  enum Kind { Include, Define, Undef, Undefined };
   union Details {
     MacroInfo macroInfo;
+    IncludeInfo includeInfo;
   };
 
   Token directive_token;
   Token base_token;
-  Kind kind;
+  Kind mkind;
   Details details = {0};
-  TokenList tokens;
+  std::vector<Token> tokens;
 
+ private:
   template <typename TokenImageType>
   const TokenImageType& as() const {
     static_assert(std::is_base_of_v<DirectiveTokenImage, TokenImageType>);
@@ -57,6 +62,7 @@ struct DirectiveTokenImage {
 
 struct IncludeView : public DirectiveTokenImage {
   Token include_str() const { return base_token; }
+  IncludeInfo info() const { return details.includeInfo; }
 };
 
 struct UndefView : public DirectiveTokenImage {

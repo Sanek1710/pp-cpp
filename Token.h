@@ -160,3 +160,30 @@ struct Token {
 
   void print(std::ostream& os) const;
 };
+
+#ifdef ENDPOS
+constexpr Token make_token(std::string_view text, Tag tag, Position start_pos,
+                           Position end_pos) {
+  return Token{
+      .tag = tag,
+      .details = {0},
+      .size = static_cast<uint32_t>(text.size()),
+      .start = text.data(),
+      .start_pos = start_pos,
+      .end_pos = end_pos,
+  };
+}
+#endif
+
+constexpr Token make_token(std::string_view text, Tag tag, Position start_pos) {
+  return Token{
+      .tag = tag,
+      .details = {0},
+      .size = static_cast<uint32_t>(text.size()),
+      .start = text.data(),
+      .start_pos = start_pos,
+#ifdef ENDPOS
+      .end_pos = start_pos,
+#endif
+  };
+}

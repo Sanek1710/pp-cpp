@@ -14,11 +14,6 @@
 #include "ankerl/unordered_dense.h"
 #include "util/helper.h"
 
-deadnote(int, naligned);
-deadnote(int, nnotaligned);
-deadnote(int, ncached);
-deadnote(int, notequal);
-
 class TokenCodeWriter {
  public:
   TokenCodeWriter(std::string& out) : out(out) {}
@@ -27,12 +22,8 @@ class TokenCodeWriter {
     if (tag::is_extra(token.tag)) return putspace();
 
     if (!align(token.start_pos, !token.details.is_expansion)) {
-      getnote(nnotaligned)++;
-      if (token.tag == tag::identifier) {
-        map_last_pos(token.start_pos);
-      }
-    } else {
-      getnote(naligned)++;
+      // TODO: add other token tags if you need to map them
+      if (token.tag == tag::identifier) map_position(token.start_pos);
     }
 
     insert(token);
@@ -45,24 +36,11 @@ class TokenCodeWriter {
     last_tag = tag::space;
   }
 
-  inline void putraw(Tag tag) {
-    out += tag::markerof(tag);
-    ++last_pos.column;
-    last_tag = tag;
-  }
-
-  inline void finalise() {
-    posmap.reserve(pmap.capacity());
-    posmap.insert(pmap.begin(), pmap.end());
-    notignore += posmap.bucket_count();
-  }
-
-  inline void map_last_pos(Position pos) {
-    getnote(ncached)++;
-    pmap.emplace_back(last_pos, pos);
-    // posmap.emplace(last_pos, pos);
-
-    // posmap.emplace_back(last_pos, pos);
+  PositionMap get_position_map() const {
+    PositionMap position_map;
+    position_map.reserve(position_pairs.capacity());
+    position_map.insert(position_pairs.begin(), position_pairs.end());
+    return position_map;
   }
 
  private:
@@ -70,19 +48,14 @@ class TokenCodeWriter {
   std::string& out;
   Token cache_tok;
   Tag last_tag = tag::space;
-  PositionMap posmap;
-  std::vector<std::pair<Position, Position>> pmap;
+  std::vector<std::pair<Position, Position>> position_pairs;
+
+  inline void map_position(Position pos) {
+    position_pairs.emplace_back(last_pos, pos);
+  }
 
   inline void insert(const Token& token) {
     if (needs_space(token)) putspace();
-    // raw is always one non newline symbol
-    if (tag::is_raw(token.tag)) return putraw(token.tag);
-    // if (token.tag == tag::operator2) {
-    //   out += token.get_text();
-    //   last_pos.column += 2;
-    //   last_tag = token.tag;
-    //   return;
-    // }
 
     // the most easiest way to do it correctly
     // slightly slower than smart logic with position differences
@@ -96,9 +69,6 @@ class TokenCodeWriter {
     }
 
     last_tag = token.tag;
-
-    // dumb logic with position difference:
-    // addDeltaPos(last_pos, deltaPos(token.start_pos, token.end_pos));
   }
 
   inline bool align(const Position& pos, bool align_column) {

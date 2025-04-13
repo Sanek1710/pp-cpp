@@ -1,9 +1,9 @@
 #include <unistd.h>
 
 #include "Cursor.h"
+#include "Preprocessor.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
-#include "preprocess.h"
 #include "util/helper.h"
 #include "util/indentos.h"
 #include "util/testit.h"
@@ -32,7 +32,7 @@ void print_source(std::string_view src) {
 }
 
 int user_test() {
-  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
+  std::string src = read_file(ROOT "pp.test/test.cpp");
   // std::string src = read_file(ROOT "helper.h");
   // src += read_file(ROOT "preprocess.cpp");
   timeit;
@@ -223,7 +223,7 @@ untestit(compl ) {
   }
 }
 
-testit(preprocess_sqlite) {
+untestit(preprocess_sqlite) {
   timeit;
   indentos indos{std::cerr};
   std::string src = read_file(ROOT "pp.test/sqliteall.txt");
@@ -246,8 +246,8 @@ untestit(preprocess_pptest) {
 }
 
 int main(int argc, char* argv[]) {
-  // user_test();
-  some_test();
-  perf_test();
+  user_test();
+  // some_test();
+  // perf_test();
   // small_test();
 }
