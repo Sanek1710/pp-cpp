@@ -1,6 +1,7 @@
 
 #include "Preprocessor.h"
 
+#include "ExpansionTokeniser.h"
 #include "Token.h"
 #include "util/helper.h"
 

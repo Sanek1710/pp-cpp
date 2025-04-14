@@ -8,6 +8,7 @@
 #include "Token.h"
 #include "TokenGroup.h"
 
+#include "TokenPrinter.h"
 #include "util/ctrl.h"
 
 using positer = std::string_view::iterator;
@@ -66,4 +67,18 @@ void Token::print(std::ostream& os) const {
   os << 'T';
   print_tag(os, tag);
   os << start_pos << ": -> `" << ctrl_str{get_text()} << "`\n";
+}
+
+inline std::ostream& operator<<(std::ostream& os,
+  const IndexRange<std::vector<Token>>& tokens) {
+TokenPrinter printer{os, false};
+os << "|";
+for (const auto& token : tokens) {
+if (token.tag == tag::newline) {
+os << " \\n ";
+} else {
+printer.print(token);
+}
+}
+return os;
 }

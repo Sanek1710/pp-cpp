@@ -6,6 +6,7 @@
 
 #include <cctype>
 #include <cstdint>
+
 namespace custom {
 
 constexpr inline bool is_space(char c) {  //

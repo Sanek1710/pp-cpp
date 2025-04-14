@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include "Cursor.h"
+#include "ExpansionTokeniser.h"
 #include "Preprocessor.h"
 #include "TokenGroup.h"
 #include "TokenPrinter.h"
@@ -246,8 +247,8 @@ untestit(preprocess_pptest) {
 }
 
 int main(int argc, char* argv[]) {
-  user_test();
+  // user_test();
   // some_test();
-  // perf_test();
+  perf_test();
   // small_test();
 }

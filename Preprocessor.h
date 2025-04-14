@@ -1,28 +1,17 @@
 #pragma once
 
-#include <algorithm>
-#include <cstddef>
-#include <iomanip>
-#include <optional>
-#include <ostream>
-#include <string>
+// #define debug
 #include <string_view>
 #include <vector>
 
-#include "CodeDumper.h"
 #include "Cursor.h"
-#include "ExpansionTokeniser.h"
 #include "Macro.h"
 #include "Token.h"
+#include "TokenCodeWriter.h"
 #include "TokenGroup.h"
-#include "TokenPrinter.h"
-#include "ankerl/unordered_dense.h"
 #include "util/RangeView.h"
-#include "util/helper.h"
-#include "util/timer.h"
 #include "util/util.h"
 
-// #define debug
 #ifdef debug
 #define DBG(...) __VA_ARGS__
 #else
@@ -41,20 +30,6 @@ inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
 #else
   return make_token(text, cat_tags(lhs.tag, rhs.tag), lhs.start_pos);
 #endif
-}
-
-inline std::ostream& operator<<(std::ostream& os,
-                                const IndexRange<std::vector<Token>>& tokens) {
-  TokenPrinter printer{os, false};
-  os << "|";
-  for (const auto& token : tokens) {
-    if (token.tag == tag::newline) {
-      os << " \\n ";
-    } else {
-      printer.print(token);
-    }
-  }
-  return os;
 }
 
 class Preprocessor {
