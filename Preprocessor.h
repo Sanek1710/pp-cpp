@@ -9,7 +9,7 @@
 #include "Token.h"
 #include "TokenCodeWriter.h"
 #include "TokenGroup.h"
-#include "util/RangeView.h"
+#include "util/ranges.h"
 #include "util/util.h"
 
 #ifdef debug
@@ -22,6 +22,9 @@ inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
   text += lhs.get_text();
   text += rhs.get_text();
   // TODONOW: deduce tag from both tags
+  Tokeniser tkz{text, lhs.start_pos};
+
+  tkz.read_pptoken();
   constexpr const auto cat_tags = [](Tag lhs, Tag rhs) { return lhs; };
 
 #ifdef ENDPOS
@@ -50,16 +53,7 @@ class Preprocessor {
         : buffer(buffer), head(buffer.size()), string_storage(string_storage) {}
 
     void write(Token tok) {
-      if (cat_mode) {
-        if (buffer.size() > head) {
-          buffer.back() =
-              cat_tokens(buffer.back(), tok, string_storage.emplace_back());
-        } else {
-          buffer.push_back(tok);
-        }
-        cat_mode = false;
-        return;
-      }
+      if (cat_mode) return cat_token(tok);
       buffer.push_back(tok);
     }
 
@@ -72,6 +66,18 @@ class Preprocessor {
     size_t head;
     StringStorage& string_storage;
     bool cat_mode = false;
+
+    void cat_token(Token tok) {
+      cat_mode = false;
+      if (buffer.size() <= head) return buffer.push_back(tok);
+
+      std::string& text = string_storage.emplace_back(buffer.back().get_text());
+      text += tok.get_text();
+
+      Tokeniser tkz(text, buffer.back().start_pos);
+      buffer.pop_back();
+      while (!tkz.eof()) buffer.push_back(tkz.read_pptoken());
+    }
   };
 
  public:
@@ -86,8 +92,6 @@ class Preprocessor {
   IndexList arg_rages;  // TokenList independent
 
   std::vector<std::string_view> macro_stack;
-
-  DirectiveTokenImage tokenImage;
 
   std::vector<positer> offsets;
   std::vector<positer>::iterator offsets_it;
@@ -140,5 +144,5 @@ class Preprocessor {
   Token read_token(Tokeniser& tkz);
 
   // TODO: move to handler
-  void process_ppline(Tag tag);
+  void process_ppline(const DirectiveTokenImage& directive);
 };

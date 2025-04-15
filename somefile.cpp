@@ -22,3 +22,8 @@ string\
 )"
 
 // RAW
+
+#define Y R
+#define M Y##""
+#define R M
+R

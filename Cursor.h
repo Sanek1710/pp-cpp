@@ -9,7 +9,7 @@
 #include "Position.h"
 #include "Token.h"
 #include "TokenGroup.h"
-#include "chars.h"
+#include "util/chars.h"
 
 struct Cursor {
   positer it;
@@ -36,21 +36,17 @@ struct Cursor {
   }
 };
 
-
 class Tokeniser {
   using Tagger = Tag (Tokeniser::*)();
 
+  // TODO: move to handlers
+  DirectiveTokenImage mdirective_image;
+
  public:
   static constexpr uint32_t max_src_size = ~uint32_t{};
-  // TODO: move to handlers
-  DirectiveTokenImage& tokenImage;
 
-  Tokeniser(std::string_view src, DirectiveTokenImage& tokenImage,
-            Position start_pos = {0, 0})
-      : src{src},
-        cur{src.begin(), start_pos},
-        end{src.end()},
-        tokenImage(tokenImage) {
+  Tokeniser(std::string_view src, Position start_pos = {0, 0})
+      : cur{src.begin(), start_pos}, end{src.end()} {
     if (src.size() > max_src_size) {
       src.remove_suffix(src.size() - max_src_size);
       end = src.end();
@@ -62,8 +58,11 @@ class Tokeniser {
 
   inline bool eof() const { return cur.it == end; }
 
+  inline const DirectiveTokenImage& tokenImage() const {
+    return mdirective_image;
+  }
+
  protected:
-  std::string_view src;
   Cursor cur;
   positer end;
 

@@ -3,6 +3,7 @@
 
 #include "ExpansionTokeniser.h"
 #include "Token.h"
+#include "TokenGroup.h"
 #include "util/helper.h"
 
 size_t Preprocessor::prescan_macro(TokenListSlice input,  //
@@ -84,10 +85,6 @@ size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
   while (true) {
     if (tkz.eof()) return 0;
     token = read_token(tkz);
-    if (tag::is_ppline(token.tag)) {
-      process_ppline(token.tag);
-      continue;
-    }
     if (!tag::is_extra(token.tag)) break;
   }
   output.push_back(token);
@@ -101,10 +98,6 @@ size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
   int balance = 1;
   while (!tkz.eof()) {
     token = read_token(tkz);
-    if (tag::is_ppline(token.tag)) {
-      process_ppline(token.tag);
-      continue;
-    }
     if (tag::is_extra(token.tag)) {
       if (!tag::is_extra(output.back().tag))
         output.push_back(make_token(" ", tag::space, token.start_pos));
@@ -125,10 +118,6 @@ void Preprocessor::preprocess_tkz_tokens(Tokeniser& tkz,
                                          TokenCodeWriter& writer) {
   while (!tkz.eof()) {
     Token token = read_token(tkz);
-    if (tag::is_ppline(token.tag)) {
-      process_ppline(token.tag);
-      continue;
-    }
 
     if (tag::is_extra(token.tag)) continue;
 
@@ -303,6 +292,10 @@ void Preprocessor::prepreprocess() {
 
 Token Preprocessor::read_token(Tokeniser& tkz) {
   Token token = tkz.read_token();
+  while (tag::is_ppline(token.tag)) {
+    process_ppline(tkz.tokenImage());
+    token = tkz.read_token();
+  }
   while (offsets_it != offsets.end() && token.start >= *offsets_it) {
     ++line_offset;
     last_newline_offset = *offsets_it++;
@@ -314,21 +307,21 @@ Token Preprocessor::read_token(Tokeniser& tkz) {
   return token;
 }
 
-void Preprocessor::process_ppline(Tag tag) {
-  switch (tag) {
-    case tag::pp_include: {
-      tokenImage.as_include();
+void Preprocessor::process_ppline(const DirectiveTokenImage& directive) {
+  switch (directive.kind()) {
+    case DirectiveTokenImage::Kind::Include: {
+      directive.as_include();
       break;
     }
 
-    case tag::pp_define: {
-      macro_map.emplace(tokenImage.as_define().name().get_text(),
-                        compile_macro_expansion(tokenImage.as_define()));
+    case DirectiveTokenImage::Kind::Define: {
+      macro_map.emplace(directive.as_define().name().get_text(),
+                        compile_macro_expansion(directive.as_define()));
       break;
     }
 
-    case tag::pp_undef: {
-      macro_map.erase(tokenImage.as_undef().name().get_text());
+    case DirectiveTokenImage::Kind::Undef: {
+      macro_map.erase(directive.as_undef().name().get_text());
       break;
     }
 
@@ -353,7 +346,7 @@ void Preprocessor::process_code(std::string_view src_orig,
   prepreprocess();
 
   TokenCodeWriter writer{output};
-  Tokeniser tkz{src, tokenImage};
+  Tokeniser tkz{src};
   preprocess_tkz_tokens(tkz, writer);
   notignore += writer.get_position_map().size();
 }

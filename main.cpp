@@ -26,14 +26,13 @@ int perf_test() {
 }
 
 void print_source(std::string_view src) {
-  DirectiveTokenImage ti;
-  Tokeniser tkz{src, ti};
+  Tokeniser tkz{src};
   TokenPrinter printer{std::cerr, true};
   while (!tkz.eof()) printer.print(tkz.read_token());
 }
 
 int user_test() {
-  std::string src = read_file(ROOT "pp.test/test.cpp");
+  std::string src = read_file(ROOT "pp.test/pp.in.cpp");
   // std::string src = read_file(ROOT "helper.h");
   // src += read_file(ROOT "preprocess.cpp");
   timeit;
@@ -127,12 +126,11 @@ untestit(compile_macro_expansion) {
           {"SELF2", "f2 $0a, $1a"},                  //
       };
 
-  DirectiveTokenImage tokenImage;
-  Tokeniser tkz{src, tokenImage};
+  Tokeniser tkz{src};
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineView& defineImage = tokenImage.as_define();
+      const DefineView& defineImage = tkz.tokenImage().as_define();
       std::string_view name = defineImage.name().get_text();
       std::string act = compile_macro_expansion(defineImage);
       defineImage.print(std::cerr);
@@ -178,12 +176,11 @@ untestit(tokenise_macro_expansion) {
           {"CATSTR5", "f2 $0r$1r"},                  //
       };
 
-  DirectiveTokenImage tokenImage;
-  Tokeniser tkz{src, tokenImage};
+  Tokeniser tkz{src};
   Token token = tkz.read_token();
   while (token.tag != tag::eof) {
     if (token.tag == tag::pp_define) {
-      const DefineView& defineImage = tokenImage.as_define();
+      const DefineView& defineImage = tkz.tokenImage().as_define();
       std::string_view name = defineImage.name().get_text();
       std::string compile = compile_macro_expansion(defineImage);
 
@@ -224,7 +221,7 @@ untestit(compl ) {
   }
 }
 
-untestit(preprocess_sqlite) {
+testit(preprocess_sqlite) {
   timeit;
   indentos indos{std::cerr};
   std::string src = read_file(ROOT "pp.test/sqliteall.txt");
@@ -235,7 +232,7 @@ untestit(preprocess_sqlite) {
   check_result_print(pp_act, pp_exp);
   write_file(ROOT "pp.test/last.pp.sqliteall.txt", pp_act);
 }
-untestit(preprocess_pptest) {
+testit(preprocess_pptest) {
   indentos indos{std::cerr};
   std::string src = read_file(ROOT "pp.test/pp.test.cpp");
   std::string pp_exp = read_file(ROOT "pp.test/1act.pp.pp.test.cpp");

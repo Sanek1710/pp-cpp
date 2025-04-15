@@ -79,8 +79,7 @@ int foo() {
 
 
 
-"str\\
-"
+"str\"
 
 
 Macro1;

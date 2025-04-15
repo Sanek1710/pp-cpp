@@ -7,8 +7,6 @@
 #include "Token.h"
 
 class MacroExpansionTokeniser : private Tokeniser {
-  // oh wow, so useless
-  DirectiveTokenImage tokenImage;
 
   inline static constexpr Tag arg_tag_marker_to_arg_tag(char op_tag) {
     switch (op_tag) {
@@ -24,7 +22,7 @@ class MacroExpansionTokeniser : private Tokeniser {
 
  public:
   MacroExpansionTokeniser(std::string_view src, Position start_pos = Position{})
-      : Tokeniser(src, tokenImage, start_pos) {}
+      : Tokeniser(src, start_pos) {}
 
   inline Token read_token() {
     Token token;

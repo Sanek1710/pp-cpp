@@ -358,43 +358,43 @@ bool Tokeniser::skip_ppextras() { return skip_ppcommon_extras(cur, end); }
 
 inline void Tokeniser::process_ppline() {
   while (cur.it != end && *cur.it != '\n') {
-    tokenImage.tokens.push_back(read_pptoken());
+    mdirective_image.tokens.push_back(read_pptoken());
   }
 }
 
 bool Tokeniser::process_include() {
   skip_ppcommon_extras(cur, end);
-  tokenImage.base_token = read<&Tokeniser::tag_if_include_string>();
-  if (tokenImage.base_token.tag != tag::pp_include_string) return false;
+  mdirective_image.base_token = read<&Tokeniser::tag_if_include_string>();
+  if (mdirective_image.base_token.tag != tag::pp_include_string) return false;
   process_ppline();
   return true;
 }
 
 bool Tokeniser::process_define() {
   skip_ppextras();
-  tokenImage.clear();
-  tokenImage.base_token = read<&Tokeniser::tag_if_identifier>();
-  if (tokenImage.base_token.tag != tag::identifier) return false;
+  mdirective_image.base_token = read<&Tokeniser::tag_if_identifier>();
+  if (mdirective_image.base_token.tag != tag::identifier) return false;
 
   // not actual loop, just for break outs
   while (consume_char('(')) {
-    tokenImage.details.macroInfo.is_functional = true;
+    mdirective_image.details.macroInfo.is_functional = true;
     skip_ppextras();
     if (consume_char(')')) break;
     while (true) {
       skip_ppextras();
-      ++tokenImage.details.macroInfo.nargs;
-      tokenImage.tokens.push_back(read<&Tokeniser::tag_if_identifier>());
-      if (tokenImage.tokens.back().tag == tag::identifier) skip_ppextras();
+      ++mdirective_image.details.macroInfo.nargs;
+      mdirective_image.tokens.push_back(read<&Tokeniser::tag_if_identifier>());
+      if (mdirective_image.tokens.back().tag == tag::identifier)
+        skip_ppextras();
 
       if (read<&Tokeniser::tag_if_ellipis>().tag == tag::ellipsis) {
-        tokenImage.details.macroInfo.is_variadic = true;
+        mdirective_image.details.macroInfo.is_variadic = true;
         skip_ppextras();
         if (!consume_char(')')) return false;
         break;
       }
 
-      if (tokenImage.tokens.back().tag != tag::identifier) return false;
+      if (mdirective_image.tokens.back().tag != tag::identifier) return false;
       if (consume_char(')')) break;
       if (!consume_char(',')) return false;
     }
@@ -408,41 +408,41 @@ bool Tokeniser::process_define() {
 bool Tokeniser::process_undef() {
   skip_ppextras();
   auto start = cur.it;
-  tokenImage.base_token = read<&Tokeniser::tag_if_identifier>();
-  if (tokenImage.base_token.tag != tag::identifier) return false;
+  mdirective_image.base_token = read<&Tokeniser::tag_if_identifier>();
+  if (mdirective_image.base_token.tag != tag::identifier) return false;
   process_ppline();
   return true;
 }
 
 Tag Tokeniser::process_directive() {
-  tokenImage.clear();
+  mdirective_image.clear();
   do {
     skip_ppextras();
-    tokenImage.directive_token = read<&Tokeniser::tag_if_identifier>();
-    if (tokenImage.directive_token.tag != tag::identifier) break;
+    mdirective_image.directive_token = read<&Tokeniser::tag_if_identifier>();
+    if (mdirective_image.directive_token.tag != tag::identifier) break;
     const std::string_view directive_name{
-        tokenImage.directive_token.get_text()};
+        mdirective_image.directive_token.get_text()};
 
     if (directive_name == "include") {
-      tokenImage.mkind = DirectiveTokenImage::Kind::Include;
+      mdirective_image.mkind = DirectiveTokenImage::Kind::Include;
       if (!process_include()) break;
       return tag::pp_include;
     }
     if (directive_name == "define") {
-      tokenImage.mkind = DirectiveTokenImage::Kind::Define;
+      mdirective_image.mkind = DirectiveTokenImage::Kind::Define;
       if (!process_define()) break;
       return tag::pp_define;
     }
     if (directive_name == "undef") {
-      tokenImage.mkind = DirectiveTokenImage::Kind::Undef;
+      mdirective_image.mkind = DirectiveTokenImage::Kind::Undef;
       if (!process_undef()) break;
       return tag::pp_undef;
     }
-    tokenImage.mkind = DirectiveTokenImage::Kind::Other;
+    mdirective_image.mkind = DirectiveTokenImage::Kind::Other;
     process_ppline();
     return tag::pp_other_directive;
   } while (false);
-  tokenImage.mkind = DirectiveTokenImage::Kind::Invalid;
+  mdirective_image.mkind = DirectiveTokenImage::Kind::Invalid;
   process_ppline();
   return tag::pp_invalid_directive;
 }

@@ -16,7 +16,7 @@
 #define once for (static bool _done = false; !_done; _done = true)
 #define never for (; false;)
 
-#define scval static constexpr auto 
+#define scval static constexpr auto
 
 #define ostreamop(T, name) \
   std::ostream& operator<<(std::ostream& os, const T& name)
@@ -48,7 +48,10 @@
 
 class {
   struct NotIgnoreAdder {
-    ~NotIgnoreAdder() { std::cerr << "\n\e[90mignore: " << val << "\e[0m\n"; }
+    ~NotIgnoreAdder() {
+      static volatile int storage = 0;
+      storage += val;
+    }
     mutable int val = 0;
   } val;
 
