@@ -31,7 +31,7 @@ class MacroExpansionTokeniser : private Tokeniser {
     token.details = {0};
     token.tag = skip_next();
     if (token.tag == tag::arg) {
-      cur.it = std::from_chars(cur.it, end, token.details.index).ptr;
+      cur.it = std::from_chars(cur.it, cur.end, token.details.index).ptr;
       token.tag = arg_tag_marker_to_arg_tag(*cur.it++);
     }
     token.size = cur.it - token.start;
@@ -42,7 +42,7 @@ class MacroExpansionTokeniser : private Tokeniser {
   }
 
   inline Tag skip_next() {
-    if (cur.it == end) return tag::eof;
+    if (cur.eof()) return tag::eof;
     if (*cur.it == '$') { /*5*/
       ++cur.it;
       if (*cur.it == '$') return tag::raw(*cur.it++);
@@ -50,7 +50,7 @@ class MacroExpansionTokeniser : private Tokeniser {
     }
     if (*cur.it == '#') { /*5*/
       ++cur.it;
-      if (cur.it != end && *cur.it == '#') {
+      if (!cur.eof() && *cur.it == '#') {
         ++cur.it;
         return tag::pp_op_cat;
       }

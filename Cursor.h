@@ -13,13 +13,15 @@
 
 struct Cursor {
   positer it;
+  positer end;
   // never derefer this! only for ptr arithmetics
   positer line_start_it = 0;
   unsigned nline = 0;
   bool clear_line = true;
 
-  Cursor(positer begin, Position start_pos = Position{})
+  Cursor(positer begin, positer end, Position start_pos = Position{})
       : it(begin),
+        end(end),
         nline(start_pos.line),
         line_start_it(it - start_pos.column) {}
 
@@ -28,8 +30,13 @@ struct Cursor {
     ++nline;
   }
 
+  inline char peek(size_t n = 0) { return it + n < end ? it[n] : 0; }
+
   inline unsigned line() const { return nline; }
   inline unsigned column() const { return it - line_start_it; }
+  inline bool eof() const { return it == end; }
+
+  inline unsigned size() const { return end - it; }
 
   inline Position to_position() const {
     return {.line = line(), .column = column()};
@@ -46,17 +53,17 @@ class Tokeniser {
   static constexpr uint32_t max_src_size = ~uint32_t{};
 
   Tokeniser(std::string_view src, Position start_pos = {0, 0})
-      : cur{src.begin(), start_pos}, end{src.end()} {
+      : cur{src.begin(), src.end(), start_pos} {
     if (src.size() > max_src_size) {
       src.remove_suffix(src.size() - max_src_size);
-      end = src.end();
+      cur.end = src.end();
     }
   }
 
   inline Token read_token() { return read<&Tokeniser::tag_next>(); }
   inline Token read_pptoken() { return read<&Tokeniser::tag_ppnext>(); }
 
-  inline bool eof() const { return cur.it == end; }
+  inline bool eof() const { return cur.eof(); }
 
   inline const DirectiveTokenImage& tokenImage() const {
     return mdirective_image;
@@ -64,7 +71,6 @@ class Tokeniser {
 
  protected:
   Cursor cur;
-  positer end;
 
   template <Tagger TagF>
   inline Token read() {

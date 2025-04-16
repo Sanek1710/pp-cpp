@@ -26,35 +26,35 @@ inline bool is_string_prefix(std::string_view str, bool& is_raw) {
   return false;
 }
 
-inline void skip_blank(Cursor& cur, positer end) {
+inline void skip_blank(Cursor& cur) {
   ++cur.it;
-  while (cur.it != end && is_space(*cur.it)) {
+  while (!cur.eof() && is_space(*cur.it)) {
     if (*cur.it == '\n') return;
     ++cur.it;
   }
 }
 
-inline void skip_newline(Cursor& cur, positer end) {
+inline void skip_newline(Cursor& cur) {
   cur.enter();
   cur.clear_line = true;
   ++cur.it;
 }
 
-inline void skip_identifier(Cursor& cur, positer end) {
+inline void skip_identifier(Cursor& cur) {
   cur.clear_line = false;
-  for (++cur.it; cur.it != end; ++cur.it) {
+  for (++cur.it; !cur.eof(); ++cur.it) {
     if (!is_word_char(*cur.it)) return;
   }
 }
-inline bool consume_identifier(Cursor& cur, positer end) {
+inline bool consume_identifier(Cursor& cur) {
   if (!is_word_start_char(*cur.it)) return false;
-  skip_identifier(cur, end);
+  skip_identifier(cur);
   return true;
 }
 
-inline void skip_number(Cursor& cur, positer end) {
+inline void skip_number(Cursor& cur) {
   cur.clear_line = false;
-  for (++cur.it; cur.it != end; ++cur.it) {
+  for (++cur.it; !cur.eof(); ++cur.it) {
     if (*cur.it == '+' || *cur.it == '-') {
       const char prev = *std::prev(cur.it);
       if (prev == 'e' || prev == 'E' || prev == 'p' || prev == 'P') continue;
@@ -64,14 +64,15 @@ inline void skip_number(Cursor& cur, positer end) {
   }
 }
 
-inline void skip_line_comment(Cursor& cur, positer end) {
-  for (++ ++cur.it; cur.it != end && *cur.it != '\n'; ++cur.it)
+inline void skip_line_comment(Cursor& cur) {
+  for (++ ++cur.it; !cur.eof() && *cur.it != '\n'; ++cur.it)
     ;
 }
-inline void skip_multiline_comment(Cursor& cur, positer end) {
-  if (++ ++cur.it == end) return;
+inline void skip_multiline_comment(Cursor& cur) {
+  ++ ++cur.it;
+  if (cur.eof()) return;
   if (*cur.it == '\n') cur.enter();
-  for (++cur.it; cur.it != end; ++cur.it) {
+  for (++cur.it; !cur.eof(); ++cur.it) {
     if (*cur.it == '/' && *std::prev(cur.it) == '*') {
       ++cur.it;
       return;
@@ -80,11 +81,11 @@ inline void skip_multiline_comment(Cursor& cur, positer end) {
   }
 }
 
-inline void skip_string_literal(Cursor& cur, positer end, bool ppline) {
+inline void skip_string_literal(Cursor& cur, bool ppline) {
   cur.clear_line = false;
   const char quot = *cur.it;
   bool escaped = false;
-  for (++cur.it; cur.it != end; ++cur.it) {
+  for (++cur.it; !cur.eof(); ++cur.it) {
     if (ppline && *cur.it == '\n') return;
     if (*cur.it == '\\') {
       escaped = !escaped;
@@ -99,26 +100,26 @@ inline void skip_string_literal(Cursor& cur, positer end, bool ppline) {
       break;
     }
   }
-  if (cur.it == end) return;
-  consume_identifier(cur, end);
+  if (cur.eof()) return;
+  consume_identifier(cur);
 }
 
-inline void skip_raw_string_literal(Cursor& cur, positer end, bool ppline) {
+inline void skip_raw_string_literal(Cursor& cur, bool ppline) {
   const char quot = *cur.it;
   const positer delim_start = cur.it + 1;
   positer delim_end = cur.it + 1;
-  while (delim_end != end) {
+  while (delim_end != cur.end) {
     if (*delim_end == '(') break;
     if (!std::isgraph(*delim_end)  //
         || *delim_end == ')' || *delim_end == '\\') {
-      return skip_string_literal(cur, end, ppline);
+      return skip_string_literal(cur, ppline);
     }
     ++delim_end;
   }
   const size_t delim_size = delim_end - delim_start;
   cur.it = delim_end;
-  if (cur.it == end) return;
-  for (++cur.it; cur.it != end; ++cur.it) {
+  if (cur.eof()) return;
+  for (++cur.it; !cur.eof(); ++cur.it) {
     if (*cur.it == '\n') {
       cur.enter();
       if (ppline) return;
@@ -132,34 +133,34 @@ inline void skip_raw_string_literal(Cursor& cur, positer end, bool ppline) {
       break;
     }
   }
-  if (cur.it == end) return;
-  consume_identifier(cur, end);
+  if (cur.eof()) return;
+  consume_identifier(cur);
 }
 
 template <bool ppline>
-inline bool consume_extras(Cursor& cur, positer end) {
+inline bool consume_extras(Cursor& cur) {
   bool was_extra = false;
   while (true) {
-    if (cur.it == end) return was_extra;
+    if (cur.eof()) return was_extra;
     switch (*cur.it) {
       case '\n':
         if constexpr (ppline) return was_extra;
-        skip_newline(cur, end);
+        skip_newline(cur);
         break;
 
       case ' ':
       case '\t':
       case '\v' ... '\r':
-        skip_blank(cur, end);
+        skip_blank(cur);
         break;
 
       case '/': {
         const positer it1 = cur.it + 1;
-        if (it1 == end) return was_extra;
+        if (it1 == cur.end) return was_extra;
         if (*it1 == '/') {
-          skip_line_comment(cur, end);
+          skip_line_comment(cur);
         } else if (*it1 == '*') {
-          skip_multiline_comment(cur, end);
+          skip_multiline_comment(cur);
         } else {
           return was_extra;
         }
@@ -193,18 +194,13 @@ inline Tag tag_skip(Cursor& cur, size_t n, Tag tag) {
 
 // main token processing unit
 template <bool ppline>
-inline Tag tag_common_template(Cursor& cur, positer end) {
-  if (consume_extras<ppline>(cur, end)) return tag::space;
+inline Tag tag_common_template(Cursor& cur) {
+  if (consume_extras<ppline>(cur)) return tag::space;
 
-  const positer it0 = cur.it + 0;
-  const positer it1 = cur.it + 1;
-  const positer it2 = cur.it + 2;
-  const positer it3 = cur.it + 3;
-
-  const char c0 = it0 == end ? 0 : *it0;
-  const char c1 = it1 == end ? 0 : *it1;
-  const char c2 = it2 == end ? 0 : *it2;
-  const char c3 = it3 == end ? 0 : *it3;
+  const char c0 = cur.peek(0);
+  const char c1 = cur.peek(1);
+  const char c2 = cur.peek(2);
+  const char c3 = cur.peek(3);
 
   cur.clear_line = false;
   switch (c0) {
@@ -216,23 +212,23 @@ inline Tag tag_common_template(Cursor& cur, positer end) {
       return tag_skip(cur, 1, tag::newline);
 
     case '0' ... '9':
-      skip_number(cur, end);
+      skip_number(cur);
       return tag::number;
 
     case 'a' ... 'z':
     case 'A' ... 'Z':
     case '_': {
       const positer start = cur.it;
-      skip_identifier(cur, end);
+      skip_identifier(cur);
       const size_t token_size = cur.it - start;
       bool is_raw = false;
-      if (cur.it != end                           //
+      if (!cur.eof()                              //
           && (*cur.it == '\'' || *cur.it == '"')  //
           && is_string_prefix(std::string_view{start, token_size}, is_raw)) {
         if (!is_raw) {
-          skip_string_literal(cur, end, ppline);
+          skip_string_literal(cur, ppline);
         } else if (*cur.it == '\"') {
-          skip_raw_string_literal(cur, end, ppline);
+          skip_raw_string_literal(cur, ppline);
         }
         return tag::string_like_literal;
       }
@@ -242,7 +238,7 @@ inline Tag tag_common_template(Cursor& cur, positer end) {
     case '\'':
     case '"':
       cur.clear_line = false;
-      skip_string_literal(cur, end, ppline);
+      skip_string_literal(cur, ppline);
       return tag::string_like_literal;
 
     case '#':
@@ -251,8 +247,8 @@ inline Tag tag_common_template(Cursor& cur, positer end) {
 
     case '%':
       if (c1 == ':')
-        return (c2 == '%' && c3 == ':') ? tag_skip(cur, 2, tag::pp_op_cat)
-                                        : tag_skip(cur, 1, tag::pp_op_str);
+        return (c2 == '%' && c3 == ':') ? tag_skip(cur, 4, tag::pp_op_cat)
+                                        : tag_skip(cur, 2, tag::pp_op_str);
       return c1 == '>' || c1 == '=' ? pskip(cur, 2) : pskip(cur, 1);
 
     case '-':
@@ -299,37 +295,29 @@ inline Tag tag_common_template(Cursor& cur, positer end) {
 
 }  // namespace
 
-Tag tag_common(Cursor& cur, positer end) {
-  return tag_common_template<false>(cur, end);
-}
-Tag tag_ppcommon(Cursor& cur, positer end) {
-  return tag_common_template<true>(cur, end);
-}
-bool skip_common_extras(Cursor& cur, positer end) {
-  return consume_extras<false>(cur, end);
-}
-bool skip_ppcommon_extras(Cursor& cur, positer end) {
-  return consume_extras<true>(cur, end);
-}
+Tag tag_common(Cursor& cur) { return tag_common_template<false>(cur); }
+Tag tag_ppcommon(Cursor& cur) { return tag_common_template<true>(cur); }
+bool skip_common_extras(Cursor& cur) { return consume_extras<false>(cur); }
+bool skip_ppcommon_extras(Cursor& cur) { return consume_extras<true>(cur); }
 
 Tag Tokeniser::tag_if_include_string() {
   const char quot = *cur.it == '<' ? '>' :  //
                         (*cur.it == '"' ? '"' : 0);
   if (!quot) return tag::empty;
-  for (++cur.it; cur.it != end && *cur.it != '\n'; ++cur.it) {
+  for (++cur.it; !cur.eof() && *cur.it != '\n'; ++cur.it) {
     if (*cur.it == quot) return tag_skip(cur, 1, tag::pp_include_string);
   }
   return tag::pp_include_string;
 }
 
 Tag Tokeniser::tag_if_identifier() {
-  if (cur.it == end || !is_word_start_char(*cur.it)) return tag::empty;
-  skip_identifier(cur, end);
+  if (cur.eof() || !is_word_start_char(*cur.it)) return tag::empty;
+  skip_identifier(cur);
   return tag::identifier;
 }
 
 Tag Tokeniser::tag_if_ellipis() {
-  if (end - cur.it < 3  //
+  if (cur.size() < 3  //
       || cur.it[0] != '.' || cur.it[1] != '.' || cur.it[2] != '.')
     return tag::empty;
   return tag_skip(cur, 3, tag::ellipsis);
@@ -342,28 +330,28 @@ bool Tokeniser::consume_char(char c) {
 }
 
 Tag Tokeniser::tag_next() {
-  if (cur.it == end) return tag::eof;
+  if (cur.eof()) return tag::eof;
   if (cur.clear_line && *cur.it == '#') { /*5*/
     ++cur.it;
     return process_directive();
   }
-  return tag_common(cur, end);
+  return tag_common(cur);
 }
 
-Tag Tokeniser::tag_ppnext() { return tag_ppcommon(cur, end); }
+Tag Tokeniser::tag_ppnext() { return tag_ppcommon(cur); }
 
-bool Tokeniser::skip_extras() { return skip_common_extras(cur, end); }
+bool Tokeniser::skip_extras() { return skip_common_extras(cur); }
 
-bool Tokeniser::skip_ppextras() { return skip_ppcommon_extras(cur, end); }
+bool Tokeniser::skip_ppextras() { return skip_ppcommon_extras(cur); }
 
 inline void Tokeniser::process_ppline() {
-  while (cur.it != end && *cur.it != '\n') {
+  while (!cur.eof() && *cur.it != '\n') {
     mdirective_image.tokens.push_back(read_pptoken());
   }
 }
 
 bool Tokeniser::process_include() {
-  skip_ppcommon_extras(cur, end);
+  skip_ppcommon_extras(cur);
   mdirective_image.base_token = read<&Tokeniser::tag_if_include_string>();
   if (mdirective_image.base_token.tag != tag::pp_include_string) return false;
   process_ppline();
