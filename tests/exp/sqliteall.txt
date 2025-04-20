@@ -40770,7 +40770,7 @@ static         int sqlite3MutexInit(void){
     pTo->xMutexLeave = pFrom->xMutexLeave;
     pTo->xMutexHeld = pFrom->xMutexHeld;
     pTo->xMutexNotheld = pFrom->xMutexNotheld;
-    sqlite3MemoryBarrier();
+                          ;
     pTo->xMutexAlloc = pFrom->xMutexAlloc;
   }
   assert((*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).mutex.xMutexInit);
@@ -40780,7 +40780,7 @@ static         int sqlite3MutexInit(void){
 (*(int*)sqlite3_wsd_find((void*)&(mutexIsInit), sizeof(mutexIsInit)))=1;
 
 
-  sqlite3MemoryBarrier();
+                        ;
   return rc;
 }
 
@@ -40807,7 +40807,7 @@ static         int sqlite3MutexEnd(void){
            sqlite3_mutex *((sqlite3_mutex*)8)        {
 
   if( id<=1                      && sqlite3_initialize() ) return 0;
-  if( id>1                      && sqlite3MutexInit() ) return 0;
+  if( id>1                      &&0                   ) return 0;
 
   assert((*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).mutex.xMutexAlloc);
   return(*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).mutex.xMutexAlloc(id);
@@ -48547,9 +48547,9 @@ static int rehash(Hash *pH, unsigned int new_size){
 
 
 
-  sqlite3BeginBenignMalloc();
+                            ;
   new_ht = (struct _ht *)sqlite3Malloc( new_size*sizeof(struct _ht) );
-  sqlite3EndBenignMalloc();
+                          ;
 
   if( new_ht==0 ) return 0;
   sqlite3_free(pH->ht);
@@ -54978,7 +54978,7 @@ static void unixShmBarrier(
   sqlite3_file *fd
 ){
 (void)(fd)            ;
-  sqlite3MemoryBarrier();
+                        ;
   assert( fd->pMethods->xLock==nolockLock
        || unixFileMutexNotheld((unixFile*)fd)
   );
@@ -59296,8 +59296,8 @@ static const char *winNextSystemCall(sqlite3_vfs *p, const char *zName){
   UINT nLargest = 0;
   HANDLE hHeap;
 
-  winMemAssertMagic();
-  hHeap = winMemGetHeap();
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  hHeap =win_mem_data.hHeap;
   assert( hHeap!=0 );
   assert( hHeap!=INVALID_HANDLE_VALUE );
 
@@ -59339,8 +59339,8 @@ static const char *winNextSystemCall(sqlite3_vfs *p, const char *zName){
 
                                ;
                            ;
-  winMemAssertMagic();
-  if( winMemGetHeap()!=NULL && winMemGetOwned() && sqlite3_memory_used()==0 ){
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  if(win_mem_data.hHeap!=NULL&&win_mem_data.bOwned&&sqlite3_memory_used()==0){
 
 
 
@@ -59348,16 +59348,16 @@ static const char *winNextSystemCall(sqlite3_vfs *p, const char *zName){
 
 
 
-    assert( winMemGetHeap()!=NULL );
-    assert( winMemGetOwned() );
+    assert(win_mem_data.hHeap!=NULL);
+    assert(win_mem_data.bOwned);
     assert( sqlite3_memory_used()==0 );
-    winMemShutdown(winMemGetDataPtr());
-    assert( winMemGetHeap()==NULL );
-    assert( !winMemGetOwned() );
+    winMemShutdown(&win_mem_data     );
+    assert(win_mem_data.hHeap==NULL);
+    assert( !win_mem_data.bOwned);
     assert( sqlite3_memory_used()==0 );
-    rc = winMemInit(winMemGetDataPtr());
-    assert( rc!=0         || winMemGetHeap()!=NULL );
-    assert( rc!=0         || winMemGetOwned() );
+    rc = winMemInit(&win_mem_data     );
+    assert( rc!=0         ||win_mem_data.hHeap!=NULL);
+    assert( rc!=0         ||win_mem_data.bOwned);
     assert( rc!=0         || sqlite3_memory_used()==0 );
   }else{
 
@@ -59398,7 +59398,7 @@ static const char *winNextSystemCall(sqlite3_vfs *p, const char *zName){
 
   memset(zDbgBuf, 0,((int)(4096 -sizeof(DWORD))));
   if (((int(WINAPI*)(UINT,DWORD,LPCSTR,int,LPWSTR, int))aSyscall[50].pCurrent)(
-          osAreFileApisANSI() ? CP_ACP : CP_OEMCP, 0, zBuf,
+1                             ? CP_ACP : CP_OEMCP, 0, zBuf,
           nMin, (LPWSTR)zDbgBuf,((int)(4096 -sizeof(DWORD)))/sizeof(WCHAR))<=0){
     return;
   }
@@ -59514,8 +59514,8 @@ static void *winMemMalloc(int nBytes){
   HANDLE hHeap;
   void *p;
 
-  winMemAssertMagic();
-  hHeap = winMemGetHeap();
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  hHeap =win_mem_data.hHeap;
   assert( hHeap!=0 );
   assert( hHeap!=INVALID_HANDLE_VALUE );
 
@@ -59536,8 +59536,8 @@ static void *winMemMalloc(int nBytes){
 static void winMemFree(void *pPrior){
   HANDLE hHeap;
 
-  winMemAssertMagic();
-  hHeap = winMemGetHeap();
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  hHeap =win_mem_data.hHeap;
   assert( hHeap!=0 );
   assert( hHeap!=INVALID_HANDLE_VALUE );
 
@@ -59557,8 +59557,8 @@ static void *winMemRealloc(void *pPrior, int nBytes){
   HANDLE hHeap;
   void *p;
 
-  winMemAssertMagic();
-  hHeap = winMemGetHeap();
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  hHeap =win_mem_data.hHeap;
   assert( hHeap!=0 );
   assert( hHeap!=INVALID_HANDLE_VALUE );
 
@@ -59585,8 +59585,8 @@ static int winMemSize(void *p){
   HANDLE hHeap;
   SIZE_T n;
 
-  winMemAssertMagic();
-  hHeap = winMemGetHeap();
+assert( win_mem_data.magic1==0x42b2830b ); assert( win_mem_data.magic2==0xbd4d7cf4 );;
+  hHeap =win_mem_data.hHeap;
   assert( hHeap!=0 );
   assert( hHeap!=INVALID_HANDLE_VALUE );
 
@@ -59901,7 +59901,7 @@ static char *winUtf8ToMbcs(const char *zText, int useAnsi){
 
   if( sqlite3_initialize() ) return 0;
 
-  return winMbcsToUtf8(zText, osAreFileApisANSI());
+  return winMbcsToUtf8(zText,1                   );
 }
 
 
@@ -59933,7 +59933,7 @@ static char *winUtf8ToMbcs(const char *zText, int useAnsi){
 
   if( sqlite3_initialize() ) return 0;
 
-  return winUtf8ToMbcs(zText, osAreFileApisANSI());
+  return winUtf8ToMbcs(zText,1                   );
 }
 
 
@@ -60042,7 +60042,7 @@ static int winGetLastErrorMsg(DWORD lastErrno, int nBuf, char *zBuf){
   DWORD dwLen = 0;
   char *zOut = 0;
 
-  if( osIsNT() ){
+  if((1)       ){
 
     WCHAR zTempWide[(1024)                       +1];
     dwLen =((DWORD(WINAPI*)(DWORD,LPCVOID,DWORD,DWORD,LPWSTR, DWORD,va_list*))aSyscall[15].pCurrent)(FORMAT_MESSAGE_FROM_SYSTEM|
@@ -60067,9 +60067,9 @@ static int winGetLastErrorMsg(DWORD lastErrno, int nBuf, char *zBuf){
 
     if( dwLen > 0 ){
 
-      sqlite3BeginBenignMalloc();
+                                ;
       zOut = winUnicodeToUtf8(zTempWide);
-      sqlite3EndBenignMalloc();
+                              ;
 
 
 ((HLOCAL(WINAPI*)(HLOCAL))aSyscall[46].pCurrent)(zTempWide);
@@ -60090,9 +60090,9 @@ static int winGetLastErrorMsg(DWORD lastErrno, int nBuf, char *zBuf){
                              0);
     if( dwLen > 0 ){
 
-      sqlite3BeginBenignMalloc();
-      zOut = winMbcsToUtf8(zTemp, osAreFileApisANSI());
-      sqlite3EndBenignMalloc();
+                                ;
+      zOut = winMbcsToUtf8(zTemp,1                   );
+                              ;
 
 ((HLOCAL(WINAPI*)(HLOCAL))aSyscall[46].pCurrent)(zTemp);
     }
@@ -60570,7 +60570,7 @@ static BOOL winLockFile(
   return winceLockFile(phFile, offsetLow, offsetHigh,
                        numBytesLow, numBytesHigh);
 
-  if( osIsNT() ){
+  if((1)       ){
     OVERLAPPED ovlp;
     memset(&ovlp, 0, sizeof(OVERLAPPED));
     ovlp.Offset = offsetLow;
@@ -60601,7 +60601,7 @@ static BOOL winUnlockFile(
   return winceUnlockFile(phFile, offsetLow, offsetHigh,
                          numBytesLow, numBytesHigh);
 
-  if( osIsNT() ){
+  if((1)       ){
     OVERLAPPED ovlp;
     memset(&ovlp, 0, sizeof(OVERLAPPED));
     ovlp.Offset = offsetLow;
@@ -61204,7 +61204,7 @@ pFile->h, pSize, *pSize, sqlite3ErrName(rc))            ;
 static int winGetReadLock(winFile *pFile){
   int res;
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ-LOCK file=%p, lock=%d\n", pFile->h, pFile->locktype);
-  if( osIsNT() ){
+  if((1)       ){
 
 
 
@@ -61240,7 +61240,7 @@ static int winUnlockReadLock(winFile *pFile){
   int res;
   DWORD lastErrno;
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ-UNLOCK file=%p, lock=%d\n", pFile->h, pFile->locktype);
-  if( osIsNT() ){
+  if((1)       ){
     res = winUnlockFile(&pFile->h,((0x40000000)+2),0,510       , 0);
   }
 
@@ -61909,9 +61909,9 @@ sqlite3_io_error_benign=(0)     ;
       }
       if( deleteFlag ){
 sqlite3_io_error_benign=(1)     ;
-        sqlite3BeginBenignMalloc();
+                                  ;
         winDelete(pVfs, p->zFilename, 0);
-        sqlite3EndBenignMalloc();
+                                ;
 sqlite3_io_error_benign=(0)     ;
       }
       *pp = p->pNext;
@@ -62228,7 +62228,7 @@ static void winShmBarrier(
   sqlite3_file *fd
 ){
 (void)(fd)            ;
-  sqlite3MemoryBarrier();
+                        ;
   winShmEnterMutex();
   winShmLeaveMutex();
 }
@@ -62713,12 +62713,12 @@ static winVfsAppData winNolockAppData = {
 
 static char *winConvertToUtf8Filename(const void *zFilename){
   char *zConverted = 0;
-  if( osIsNT() ){
+  if((1)       ){
     zConverted = winUnicodeToUtf8(zFilename);
   }
 
   else{
-    zConverted = winMbcsToUtf8(zFilename, osAreFileApisANSI());
+    zConverted = winMbcsToUtf8(zFilename,1                   );
   }
 
 
@@ -62734,12 +62734,12 @@ static char *winConvertToUtf8Filename(const void *zFilename){
 
 static void *winConvertFromUtf8Filename(const char *zFilename){
   void *zConverted = 0;
-  if( osIsNT() ){
+  if((1)       ){
     zConverted = winUtf8ToUnicode(zFilename);
   }
 
   else{
-    zConverted = winUtf8ToMbcs(zFilename, osAreFileApisANSI());
+    zConverted = winUtf8ToMbcs(zFilename,1                   );
   }
 
 
@@ -62758,7 +62758,7 @@ static int winMakeEndInDirSep(int nBuf, char *zBuf){
       if((((zBuf[nLen-1]) == '/') || ((zBuf[nLen-1]) == '\\'))){
         return 1;
       }else if( nLen+1<nBuf ){
-        zBuf[nLen] = winGetDirSep();
+        zBuf[nLen] ='\\'           ;
         zBuf[nLen+1] = '\0';
         return 1;
       }
@@ -62884,7 +62884,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEMP-FILENAME rc=SQLITE_IOERR_NOMEM\n"
           return sqlite3IoerrnomemError(__LINE__);
         }
         if( cygwin_conv_path(
-                osIsNT() ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A, zDir,
+(1)                      ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A, zDir,
                 zConverted, nMax+1)<0 ){
           sqlite3_free(zConverted);
           sqlite3_free(zBuf);
@@ -62914,7 +62914,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEMP-FILENAME rc=SQLITE_IOERR_NOMEM\n"
     }
   }
 
-  else if( osIsNT() ){
+  else if((1)       ){
     char *zMulti;
     LPWSTR zWidePath = sqlite3MallocZero( nMax*sizeof(WCHAR) );
     if( !zWidePath ){
@@ -62956,7 +62956,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEMP-FILENAME rc=SQLITE_IOERR_GETTEMPP
       return winLogErrorAtLine((10 | (25<<8)),((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)(),
 "winGetTempname3",0,__LINE__)                 ;
     }
-    zUtf8 = winMbcsToUtf8(zMbcsPath, osAreFileApisANSI());
+    zUtf8 = winMbcsToUtf8(zMbcsPath,1                   );
     if( zUtf8 ){
       sqlite3_snprintf(nMax, zBuf, "%s", zUtf8);
       sqlite3_free(zUtf8);
@@ -63023,7 +63023,7 @@ static int winIsDir(const void *zConverted){
   int rc = 0;
   DWORD lastErrno;
 
-  if( osIsNT() ){
+  if((1)       ){
     int cnt = 0;
     WIN32_FILE_ATTRIBUTE_DATA sAttrData;
     memset(&sAttrData, 0, sizeof(sAttrData));
@@ -63220,7 +63220,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, rc=SQLITE_CANTOPEN_ISDIR
   dwFlagsAndAttributes |= FILE_FLAG_RANDOM_ACCESS;
 
 
-  if( osIsNT() ){
+  if((1)       ){
 
     CREATEFILE2_EXTENDED_PARAMETERS extendedParameters;
     extendedParameters.dwSize = sizeof(CREATEFILE2_EXTENDED_PARAMETERS);
@@ -63239,9 +63239,9 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, rc=SQLITE_CANTOPEN_ISDIR
       if( h!=INVALID_HANDLE_VALUE ) break;
       if( isReadWrite ){
         int rc2, isRO = 0;
-        sqlite3BeginBenignMalloc();
+                                  ;
         rc2 = winAccess(pVfs, zName,2                  , &isRO);
-        sqlite3EndBenignMalloc();
+                                ;
         if( rc2==0         && isRO ) break;
       }
     }while( winRetryIoerr(&cnt, &lastErrno) );
@@ -63256,9 +63256,9 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, rc=SQLITE_CANTOPEN_ISDIR
       if( h!=INVALID_HANDLE_VALUE ) break;
       if( isReadWrite ){
         int rc2, isRO = 0;
-        sqlite3BeginBenignMalloc();
+                                  ;
         rc2 = winAccess(pVfs, zName,2                  , &isRO);
-        sqlite3EndBenignMalloc();
+                                ;
         if( rc2==0         && isRO ) break;
       }
     }while( winRetryIoerr(&cnt, &lastErrno) );
@@ -63276,9 +63276,9 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, rc=SQLITE_CANTOPEN_ISDIR
       if( h!=INVALID_HANDLE_VALUE ) break;
       if( isReadWrite ){
         int rc2, isRO = 0;
-        sqlite3BeginBenignMalloc();
+                                  ;
         rc2 = winAccess(pVfs, zName,2                  , &isRO);
-        sqlite3EndBenignMalloc();
+                                ;
         if( rc2==0         && isRO ) break;
       }
     }while( winRetryIoerr(&cnt, &lastErrno) );
@@ -63397,7 +63397,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("DELETE name=%s, syncDir=%d\n", zFilena
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("DELETE name=%s, rc=SQLITE_IOERR_NOMEM\n", zFilename);
     return sqlite3IoerrnomemError(__LINE__);
   }
-  if( osIsNT() ){
+  if((1)       ){
     do {
 
       WIN32_FILE_ATTRIBUTE_DATA sAttrData;
@@ -63505,7 +63505,7 @@ zFilename, flags, pResOut)            ;
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("ACCESS name=%s, rc=SQLITE_IOERR_NOMEM\n", zFilename);
     return sqlite3IoerrnomemError(__LINE__);
   }
-  if( osIsNT() ){
+  if((1)       ){
     int cnt = 0;
     WIN32_FILE_ATTRIBUTE_DATA sAttrData;
     memset(&sAttrData, 0, sizeof(sAttrData));
@@ -63657,7 +63657,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
       return sqlite3IoerrnomemError(__LINE__);
     }
     if( cygwin_conv_path(
-            (osIsNT() ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A) |
+            ((1)      ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A) |
             CCP_RELATIVE, zRelative, zOut, pVfs->mxPathname+1)<0 ){
       sqlite3_free(zOut);
       return winLogErrorAtLine((14 | (4<<8)),(DWORD)errno,
@@ -63669,7 +63669,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
         return sqlite3IoerrnomemError(__LINE__);
       }
       sqlite3_snprintf(((nFull)<(pVfs->mxPathname)?(nFull):(pVfs->mxPathname)),zFull,"%s%c%s",
-                       sqlite3_data_directory, winGetDirSep(), zUtf8);
+                       sqlite3_data_directory,'\\'           , zUtf8);
       sqlite3_free(zUtf8);
       sqlite3_free(zOut);
     }
@@ -63679,7 +63679,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
       return sqlite3IoerrnomemError(__LINE__);
     }
     if( cygwin_conv_path(
-            (osIsNT() ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A),
+            ((1)      ? CCP_POSIX_TO_WIN_W : CCP_POSIX_TO_WIN_A),
             zRelative, zOut, pVfs->mxPathname+1)<0 ){
       sqlite3_free(zOut);
       return winLogErrorAtLine((14 | (4<<8)),(DWORD)errno,
@@ -63710,7 +63710,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
 
 
     sqlite3_snprintf(((nFull)<(pVfs->mxPathname)?(nFull):(pVfs->mxPathname)),zFull,"%s%c%s",
-                     sqlite3_data_directory, winGetDirSep(), zRelative);
+                     sqlite3_data_directory,'\\'           , zRelative);
   }else{
     sqlite3_snprintf(((nFull)<(pVfs->mxPathname)?(nFull):(pVfs->mxPathname)),zFull,"%s",zRelative);
   }
@@ -63732,14 +63732,14 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
 
 
     sqlite3_snprintf(((nFull)<(pVfs->mxPathname)?(nFull):(pVfs->mxPathname)),zFull,"%s%c%s",
-                     sqlite3_data_directory, winGetDirSep(), zRelative);
+                     sqlite3_data_directory,'\\'           , zRelative);
     return 0        ;
   }
   zConverted = winConvertFromUtf8Filename(zRelative);
   if( zConverted==0 ){
     return sqlite3IoerrnomemError(__LINE__);
   }
-  if( osIsNT() ){
+  if((1)       ){
     LPWSTR zTemp;
     nByte =((DWORD(WINAPI*)(LPCWSTR,DWORD,LPWSTR, LPWSTR*))aSyscall[25].pCurrent)((LPCWSTR)zConverted,0,0,0);
     if( nByte==0 ){
@@ -63787,7 +63787,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
 "winFullPathname4",zRelative,__LINE__)                 ;
     }
     sqlite3_free(zConverted);
-    zOut = winMbcsToUtf8(zTemp, osAreFileApisANSI());
+    zOut = winMbcsToUtf8(zTemp,1                   );
     sqlite3_free(zTemp);
   }
 
@@ -63845,7 +63845,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("DLOPEN name=%s, handle=%p\n", zFilenam
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("DLOPEN name=%s, handle=%p\n", zFilename, (void*)0);
     return 0;
   }
-  if( osIsNT() ){
+  if((1)       ){
 
     h =((HMODULE(WINAPI*)(LPCWSTR, DWORD))aSyscall[69].pCurrent)((LPCWSTR)zConverted,0);
 
@@ -66815,7 +66815,7 @@ static int pcache1InitBulk(PCache1 *pCache){
   if(((*(struct PCacheGlobal*)sqlite3_wsd_find((void*)&(pcache1_g), sizeof(pcache1_g)))).nInitPage==0)return 0;
 
   if( pCache->nMax<3 ) return 0;
-  sqlite3BeginBenignMalloc();
+                            ;
   if(((*(struct PCacheGlobal*)sqlite3_wsd_find((void*)&(pcache1_g), sizeof(pcache1_g)))).nInitPage>0){
     szBulk = pCache->szAlloc * (i64)((*(struct PCacheGlobal*)sqlite3_wsd_find((void*)&(pcache1_g), sizeof(pcache1_g)))).nInitPage;
   }else{
@@ -66825,7 +66825,7 @@ static int pcache1InitBulk(PCache1 *pCache){
     szBulk = pCache->szAlloc*(i64)pCache->nMax;
   }
   zBulk = pCache->pBulk = sqlite3Malloc( szBulk );
-  sqlite3EndBenignMalloc();
+                          ;
   if( zBulk ){
     int nBulk = sqlite3MallocSize(zBulk)/pCache->szAlloc;
     do{
@@ -66959,9 +66959,9 @@ static PgHdr1 *pcache1AllocPage(PCache1 *pCache, int benignMalloc){
     assert( pCache->pGroup==&((*(struct PCacheGlobal*)sqlite3_wsd_find((void*)&(pcache1_g), sizeof(pcache1_g)))).grp);
 assert((pCache->pGroup)->mutex==0)   ;
 
-    if( benignMalloc ){ sqlite3BeginBenignMalloc(); }
+    if( benignMalloc ){                           ; }
     pPg = pcache1Alloc(pCache->szAlloc);
-    if( benignMalloc ){ sqlite3EndBenignMalloc(); }
+    if( benignMalloc ){                         ; }
 
 assert((pCache->pGroup)->mutex==0)   ;
 
@@ -67058,9 +67058,9 @@ static void pcache1ResizeHash(PCache1 *p){
   }
 
 assert((p->pGroup)->mutex==0) ;
-  if( p->nHash ){ sqlite3BeginBenignMalloc(); }
+  if( p->nHash ){                           ; }
   apNew = (PgHdr1 **)sqlite3MallocZero(sizeof(PgHdr1 *)*nNew);
-  if( p->nHash ){ sqlite3EndBenignMalloc(); }
+  if( p->nHash ){                         ; }
 assert((p->pGroup)->mutex==0) ;
   if( apNew ){
     for(i=0; i<p->nHash; i++){
@@ -70617,9 +70617,9 @@ static void pagerUnlockAndRollback(Pager *pPager){
   if( pPager->eState!=6           && pPager->eState!=0          ){
     assert( assert_pager_state(pPager) );
     if( pPager->eState>=2                   ){
-      sqlite3BeginBenignMalloc();
+                                ;
       sqlite3PagerRollback(pPager);
-      sqlite3EndBenignMalloc();
+                              ;
     }else if( !pPager->exclusiveMode ){
       assert( pPager->eState==1            );
       pager_end_transaction(pPager, 0, 0);
@@ -72568,8 +72568,8 @@ static         int sqlite3PagerClose(Pager *pPager, sqlite3 *db){
   u8 *pTmp = (u8*)pPager->pTmpSpace;
   assert( db ||((pPager)->pWal!=0) ==0 );
   assert( assert_pager_state(pPager) );
-  disable_simulated_io_errors();
-  sqlite3BeginBenignMalloc();
+                               ;
+                            ;
   pagerFreeMapHdrs(pPager);
 
   pPager->exclusiveMode = 0;
@@ -72606,8 +72606,8 @@ static         int sqlite3PagerClose(Pager *pPager, sqlite3 *db){
     }
     pagerUnlockAndRollback(pPager);
   }
-  sqlite3EndBenignMalloc();
-  enable_simulated_io_errors();
+                          ;
+                              ;
 if( sqlite3PagerTrace ){ printf ("CLOSE %d\n", (((int)(intptr_t)(pPager->fd)))); };
 if( sqlite3IoTrace ){ sqlite3IoTrace ("CLOSE %p\n", pPager); }
   sqlite3OsClose(pPager->jfd);
@@ -73566,12 +73566,12 @@ static int hasHotJournal(Pager *pPager, int *pExists){
 
 
         if( nPage==0 && !jrnlOpen ){
-          sqlite3BeginBenignMalloc();
+                                    ;
           if( pagerLockDb(pPager,2             )==0         ){
             sqlite3OsDelete(pVfs, pPager->zJournal, 0);
             if( !pPager->exclusiveMode ) pagerUnlockDb(pPager,1           );
           }
-          sqlite3EndBenignMalloc();
+                                  ;
         }else{
 
 
@@ -73989,14 +73989,14 @@ static int getPageNormal(
 
 
 
-        sqlite3BeginBenignMalloc();
+                                  ;
         if( pgno<=pPager->dbOrigSize ){
 rc =                       sqlite3BitvecSet(pPager->pInJournal, pgno);
 if( rc==7 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
         }
 rc =                     addToSavepointBitvecs(pPager, pgno);
 if( rc==7 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
-        sqlite3EndBenignMalloc();
+                                ;
       }
       memset(pPg->pData, 0, pPager->pageSize);
 if( sqlite3IoTrace ){ sqlite3IoTrace ("ZERO %p %d\n", pPager, pgno); };
@@ -78409,12 +78409,12 @@ __atomic_store_n((&pInfo->nBackfill),(mxSafeFrame),__ATOMIC_RELAXED);
 static void walLimitSize(Wal *pWal, i64 nMax){
   i64 sz;
   int rx;
-  sqlite3BeginBenignMalloc();
+                            ;
   rx = sqlite3OsFileSize(pWal->pWalFd, &sz);
   if( rx==0         && (sz > nMax ) ){
     rx = sqlite3OsTruncate(pWal->pWalFd, nMax);
   }
-  sqlite3EndBenignMalloc();
+                          ;
   if( rx ){
     sqlite3_log(rx, "cannot limit WAL size: %s", pWal->zWalName);
   }
@@ -78476,9 +78476,9 @@ static         int 0
     walIndexClose(pWal, isDelete);
     sqlite3OsClose(pWal->pWalFd);
     if( isDelete ){
-      sqlite3BeginBenignMalloc();
+                                ;
       sqlite3OsDelete(pWal->pVfs, pWal->zWalName, 0);
-      sqlite3EndBenignMalloc();
+                              ;
     }
 if(sqlite3WalTrace) printf ("WAL%p: closed\n", pWal);
     sqlite3_free((void *)pWal->apWiData);
@@ -81529,11 +81529,11 @@ static         sqlite3_uint64 0                                {
 
 int corruptPageError(int lineno, MemPage *p){
   char *zMsg;
-  sqlite3BeginBenignMalloc();
+                            ;
   zMsg = sqlite3_mprintf("database corruption page %d of %s",
       (int)p->pgno, sqlite3PagerFilename(p->pBt->pPager, 0)
   );
-  sqlite3EndBenignMalloc();
+                          ;
   if( zMsg ){
     sqlite3ReportError(11            , lineno, zMsg);
   }
@@ -97351,7 +97351,7 @@ static         void sqlite3VdbePrintOp(FILE *pOut, int pc, VdbeOp *pOp){
   sqlite3 dummyDb;
   static const char *zFormat1 = "%4d %-13s %4d %4d %4d %-13s %.2X %s\n";
   if( pOut==0 ) pOut = stdout;
-  sqlite3BeginBenignMalloc();
+                            ;
   dummyDb.mallocFailed = 1;
   zP4 = sqlite3VdbeDisplayP4(&dummyDb, pOp);
 
@@ -97370,7 +97370,7 @@ static         void sqlite3VdbePrintOp(FILE *pOut, int pc, VdbeOp *pOp){
   fflush(pOut);
   sqlite3_free(zP4);
   sqlite3_free(zCom);
-  sqlite3EndBenignMalloc();
+                          ;
 }
 
 
@@ -98383,16 +98383,16 @@ static int vdbeCommit(sqlite3 *db, Vdbe *p){
 
 
 
-    disable_simulated_io_errors();
-    sqlite3BeginBenignMalloc();
+                                 ;
+                              ;
     for(i=0; i<db->nDb; i++){
       Btree *pBt = db->aDb[i].pBt;
       if( pBt ){
         sqlite3BtreeCommitPhaseTwo(pBt, 1);
       }
     }
-    sqlite3EndBenignMalloc();
-    enable_simulated_io_errors();
+                            ;
+                                ;
 
                          ;
   }
@@ -98759,10 +98759,10 @@ static         int sqlite3VdbeTransferError(Vdbe *p){
   int rc = p->rc;
   if( p->zErrMsg ){
     db->bBenignMalloc++;
-    sqlite3BeginBenignMalloc();
+                              ;
     if( db->pErr==0 ) db->pErr = sqlite3ValueNew(db);
     sqlite3ValueSetStr(db->pErr, -1, p->zErrMsg,1           ,((sqlite3_destructor_type)-1));
-    sqlite3EndBenignMalloc();
+                            ;
     db->bBenignMalloc--;
   }else if( db->pErr ){
     sqlite3ValueSetNull(db->pErr);
@@ -103970,7 +103970,7 @@ if( p->rc!=0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
   if(__atomic_load_n((&db->u1.isInterrupted),__ATOMIC_RELAXED))goto abort_due_to_interrupt;
                           ;
 
-  sqlite3BeginBenignMalloc();
+                            ;
   if( p->pc==0
    && (p->db->flags & (((u64)(0x0200000)<<32)|((u64)(0x1000000)<<32)|((u64)(0x0400000)<<32)))!=0
   ){
@@ -103994,7 +103994,7 @@ if( p->rc!=0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
     }
     if( p->db->flags &((u64)(0x0400000)<<32))printf("VDBE Trace:\n");
   }
-  sqlite3EndBenignMalloc();
+                          ;
 
   for(pOp=&aOp[p->pc]; 1; pOp++){
 
@@ -140191,7 +140191,7 @@ static         void sqlite3RegisterBuiltinFunctions(void){
 
   sqlite3AlterFunctions();
 
-  sqlite3WindowFunctions();
+                          ;
   sqlite3RegisterDateTimeFunctions();
   sqlite3RegisterJsonFunctions();
   sqlite3InsertBuiltinFuncs(aBuiltinFunc,((int)(sizeof(aBuiltinFunc)/sizeof(aBuiltinFunc[0]))));
@@ -187183,7 +187183,7 @@ static int (*const sqlite3BuiltinExtensions[])(sqlite3*) = {
 
 
   if((*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).isInit){
-    sqlite3MemoryBarrier();
+                          ;
     return 0        ;
   }
 
@@ -187195,7 +187195,7 @@ static int (*const sqlite3BuiltinExtensions[])(sqlite3*) = {
 
 
 
-  rc = sqlite3MutexInit();
+  rc =0                  ;
   if( rc ) return rc;
 
 
@@ -187271,7 +187271,7 @@ static int (*const sqlite3BuiltinExtensions[])(sqlite3*) = {
     if( rc==0         ){
       sqlite3PCacheBufferSetup((*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).pPage,
 (*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).szPage,(*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).nPage);
-      sqlite3MemoryBarrier();
+                            ;
 (*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).isInit=1;
 
       bRunExtraInit = 1;
@@ -187371,7 +187371,7 @@ sqlite3_api->reset_auto_extension();
 
   }
   if((*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).isMutexInit){
-    sqlite3MutexEnd();
+                     ;
 (*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).isMutexInit=0;
   }
 
@@ -187732,9 +187732,9 @@ sqlite3_api->free(db->lookaside.pStart);
     sz = 0;
     pStart = 0;
   }else if( pBuf==0 ){
-    sqlite3BeginBenignMalloc();
+                              ;
     pStart = sqlite3Malloc( szAlloc );
-    sqlite3EndBenignMalloc();
+                            ;
     if( pStart ) szAlloc = sqlite3MallocSize(pStart);
   }else{
     pStart = pBuf;
@@ -188389,7 +188389,7 @@ static         void sqlite3RollbackAll(sqlite3 *db, int tripCode){
   int inTrans = 0;
   int schemaChange;
   assert(((void)(db->mutex),1)          );
-  sqlite3BeginBenignMalloc();
+                            ;
 
 
 
@@ -188410,7 +188410,7 @@ static         void sqlite3RollbackAll(sqlite3 *db, int tripCode){
     }
   }
                          ;
-  sqlite3EndBenignMalloc();
+                          ;
 
   if( schemaChange ){
     sqlite3ExpirePreparedStatements(db, 0);
@@ -189328,9 +189328,9 @@ static         int sqlite3WalDefaultHook(
   int nFrame
 ){
   if( nFrame>=((int)(intptr_t)(pClientData)) ){
-    sqlite3BeginBenignMalloc();
+                              ;
 sqlite3_api->wal_checkpoint(db,zDb);
-    sqlite3EndBenignMalloc();
+                            ;
   }
   return 0        ;
 }
@@ -191954,7 +191954,7 @@ static void checkListProperties(sqlite3 *db){
 
 static void removeFromBlockedList(sqlite3 *db){
   sqlite3 **pp;
-  assertMutexHeld();
+assert( ((void)(((sqlite3_mutex*)8)),1) );
   for(pp=&sqlite3BlockedList; *pp; pp = &(*pp)->pNextBlocked){
     if( *pp==db ){
       *pp = (*pp)->pNextBlocked;
@@ -191969,7 +191969,7 @@ static void removeFromBlockedList(sqlite3 *db){
 
 static void addToBlockedList(sqlite3 *db){
   sqlite3 **pp;
-  assertMutexHeld();
+assert( ((void)(((sqlite3_mutex*)8)),1) );
   for(
     pp=&sqlite3BlockedList;
     *pp && (*pp)->xUnlockNotify!=db->xUnlockNotify;
@@ -191991,7 +191991,7 @@ static void enterMutex(void){
 
 
 static void leaveMutex(void){
-  assertMutexHeld();
+assert( ((void)(((sqlite3_mutex*)8)),1) );
                         ;
                                                                   ;
 }
@@ -192123,7 +192123,7 @@ static         void                                       {
         nArg = 0;
       }
 
-      sqlite3BeginBenignMalloc();
+                                ;
       assert( aArg==aDyn || (aDyn==0 && aArg==aStatic) );
       assert( nArg<=(int)((int)(sizeof(aStatic)/sizeof(aStatic[0])))||aArg==aDyn);
       if( (!aDyn && nArg==(int)((int)(sizeof(aStatic)/sizeof(aStatic[0]))))
@@ -192164,7 +192164,7 @@ sqlite3_api->free     (aDyn);
           nArg = 0;
         }
       }
-      sqlite3EndBenignMalloc();
+                              ;
 
       aArg[nArg++] = p->pUnlockArg;
       xUnlockNotify = p->xUnlockNotify;

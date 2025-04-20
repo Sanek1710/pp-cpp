@@ -37,11 +37,10 @@ class DirectiveDumper : public DirectiveHandler<DirectiveDumper> {
   void handle(DirectiveTokenImage& directive_image) {}
 };
 
-
 template <typename Iter>
 std::ostream& operator<<(std::ostream& os, Range<Iter> range) {
   os << "[";
-  for (auto val: range) {
+  for (auto val : range) {
     os << val << ", ";
   }
   return os << "]";
@@ -49,14 +48,13 @@ std::ostream& operator<<(std::ostream& os, Range<Iter> range) {
 template <typename Container>
 std::ostream& operator<<(std::ostream& os, IndexRange<Container> range) {
   os << "[";
-  for (auto val: range) {
+  for (auto val : range) {
     os << val << ", ";
   }
   return os << "]";
 }
 
 class Preprocessor {
-
   using IndexList = std::vector<size_t>;
   using IndexListSlice = IndexRange<IndexList>;
 
@@ -146,5 +144,5 @@ class Preprocessor {
   // TODO: move to handler
   void process_ppline(const DirectiveTokenImage& directive);
 
-  void fit_va_args(size_t expected, size_t actual);
+  bool fit_args(MacroInfo info, TokenList& src, size_t args_head);
 };

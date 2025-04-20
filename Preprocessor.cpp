@@ -4,6 +4,9 @@
 #include <string_view>
 
 #include "ExpansionTokeniser.h"
+#include "MacroStamp.h"
+#include "tkz/Token.h"
+#include "tkz/TokenGroup.h"
 #include "util/indentos.h"
 #include "util/rwfile.h"
 
@@ -44,21 +47,39 @@ class TokenBuffWriter {
 
 }  // namespace
 
-void Preprocessor::fit_va_args(size_t expected, size_t actual) {
-  const size_t last_index = arg_rages.back();
-  auto begin = arg_rages.end() - actual;
-  if (actual < expected) {
-    --arg_rages.back();
-    arg_rages.push_back(last_index);
-  } else if (actual > expected) {
-    arg_rages.erase(arg_rages.end() - actual + expected - 1, arg_rages.end());
-    arg_rages.push_back(last_index);
+bool Preprocessor::fit_args(MacroInfo info, TokenList& src, size_t args_head) {
+  const size_t nactual = arg_rages.size() - args_head - 1;
+
+  if (info.is_variadic) {
+    const size_t last_index = arg_rages.back();
+    if (nactual < info.nargs - 1) return false;
+    if (nactual == info.nargs - 1) {
+      --arg_rages.back();
+      arg_rages.push_back(last_index);
+      return true;
+    } else if (nactual > info.nargs) {
+      arg_rages.erase(arg_rages.end() - nactual + info.nargs - 1,
+                      arg_rages.end());
+      arg_rages.push_back(last_index);
+    }
+    return true;
   }
+  if (info.nargs == 0) {
+    if (nactual == 0) return true;
+    if (nactual != 1) return false;
+    const size_t arg_ibegin = arg_rages[args_head] + 1;
+    const size_t arg_iend = arg_rages[args_head + 1];
+    for (const auto& tok : TokenListSlice(src, arg_ibegin, arg_iend)) {
+      if (!tag::is_extra(tok.tag)) return false;
+    }
+    return true;
+  }
+  return (info.nargs == nactual);
 }
 
 size_t Preprocessor::prescan_macro(TokenListSlice input,  //
-                                   MacroStamp macroStamp) {
-  if (!macroStamp.info.is_functional) return 1;
+                                   MacroStamp macro_stamp) {
+  if (!macro_stamp.info.is_functional) return 1;
   // token 0 is macroname
   auto it = input.begin();
   const auto end = input.end();
@@ -76,11 +97,7 @@ size_t Preprocessor::prescan_macro(TokenListSlice input,  //
   int balance = 1;
   for (++it; it < end; ++it) {
     if (!mark_arg_ranges(it->tag, it.index(), balance)) continue;
-    const size_t nargs = arg_rages.size() - args_head - 1;
-    if (!macroStamp.is_valid_call(nargs)) break;
-    if (macroStamp.info.is_variadic) {
-      fit_va_args(macroStamp.info.nargs, nargs);
-    }
+    if (!fit_args(macro_stamp.info, input.base(), args_head)) break;
     return it + 1 - input.begin();
   }
   // invalid macro use: eof
@@ -117,10 +134,10 @@ void Preprocessor::preprocess_tokens(
 }
 size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
                                        TokenList& output,  //
-                                       MacroStamp macroStamp) {
+                                       MacroStamp macro_stamp) {
   output.clear();
   output.push_back(token);
-  if (!macroStamp.info.is_functional) return output.size();
+  if (!macro_stamp.info.is_functional) return output.size();
 
   // skip extras
   while (true) {
@@ -147,11 +164,7 @@ size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
 
     output.push_back(token);
     if (!mark_arg_ranges(token.tag, output.size() - 1, balance)) continue;
-    const size_t nargs = arg_rages.size() - args_head - 1;
-    if (!macroStamp.is_valid_call(nargs)) break;
-    if (macroStamp.info.is_variadic) {
-      fit_va_args(macroStamp.info.nargs, nargs);
-    }
+    if (!fit_args(macro_stamp.info, output, args_head)) break;
     return output.size();
   }
   // invalid macro use

@@ -32,10 +32,10 @@ add_test(
 )
 
 add_test(
-  NAME small 
-  COMMAND pptest ${INPUT}/small.cpp
-  -e ${EXPECTED}/small.cpp
-  -o ${OUTPUT}/small.cpp
+  NAME va-args 
+  COMMAND pptest ${INPUT}/va-args.cpp
+  -e ${EXPECTED}/va-args.cpp
+  -o ${OUTPUT}/va-args.cpp
 )
 
 

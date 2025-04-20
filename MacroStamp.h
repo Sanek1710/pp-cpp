@@ -20,11 +20,6 @@ struct MacroStamp {
     expansion = std::string_view(it, content.end() - it);
   }
 
-  inline bool is_valid_call(unsigned short nargs_input) const {
-    return info.is_variadic ? info.nargs - 1 <= nargs_input
-                            : info.nargs == nargs_input;
-  }
-
   std::string_view expansion;
   // FileID fileId;
   MacroInfo info;
