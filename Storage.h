@@ -5,20 +5,13 @@
 #include <shared_mutex>
 #include <string>
 
-#include "FileID.h"
-#include "MacroMap.h"
+#include "CompiledMacro.h"
 #include "util/bytesize.h"
 #include "util/util.h"
 
-inline std::ostream& operator<<(std::ostream& os, const MacroMap& macro_map) {
-  for (const auto& [name, expansion] : macro_map) {
-    os << "  " << name << ": " << expansion << "\n";
-  }
-  return os;
-}
+using FileID = unsigned;
 
 class Storage {
-
   struct MacroView {
     std::string_view name;
     std::string_view expansion;
@@ -32,9 +25,9 @@ class Storage {
     auto& entry = storage.emplace(fileid, MacroViewList{}).first->second;
     entry.clear();
     entry.reserve(macro_map.size());
-    for (const auto& [name, expansion] : macro_map) {
+    for (const auto& [name, compiled] : macro_map) {
       entry.push_back(MacroView{.name = emplace_string(name),
-                                .expansion = emplace_string(expansion)});
+                                .expansion = emplace_string(compiled.raw())});
     }
   }
 
@@ -80,7 +73,7 @@ class Storage {
   SegStringSet strings;
   mutable std::shared_mutex mutex;
 
-  std::string_view emplace_string(const std::string& str) {
+  std::string_view emplace_string(std::string_view str) {
     return *strings.emplace(str).first;
   }
 };

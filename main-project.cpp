@@ -8,8 +8,7 @@
 #include <system_error>
 #include <vector>
 
-#include "MacroStamp.h"
-#include "FileID.h"
+#include "CompiledMacro.h"
 #include "Preprocessor.h"
 #include "Storage.h"
 #include "TokenPrinter.h"

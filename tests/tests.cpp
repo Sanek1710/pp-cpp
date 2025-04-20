@@ -5,7 +5,7 @@
 #include <tuple>
 #include <unordered_map>
 
-#include "ExpansionTokeniser.h"
+#include "CompiledMacro.h"
 #include "Preprocessor.h"
 #include "TokenPrinter.h"
 #include "tkz/TokenGroup.h"
@@ -132,7 +132,7 @@ test(compile_macro_expansion) {
     if (token.tag == tag::pp_define) {
       const DefineView& defineImage = tkz.tokenImage().as_define();
       std::string_view name = defineImage.name().get_text();
-      std::string act = compile_macro_expansion(defineImage);
+      std::string act = CompiledMacro{defineImage}.take();
       defineImage.print(std::cerr);
       std::cerr << "\n";
 
@@ -186,9 +186,9 @@ test(tokenise_macro_expansion) {
     if (token.tag == tag::pp_define) {
       const DefineView& defineImage = tkz.tokenImage().as_define();
       std::string_view name = defineImage.name().get_text();
-      std::string compile = compile_macro_expansion(defineImage);
+      auto compile = CompiledMacro{defineImage};
 
-      MacroExpansionTokeniser macro_tkz{compile};
+      CompiledMacroTokeniser macro_tkz{compile.get_stamp()};
 
       token = macro_tkz.read_token();
       while (token.tag != tag::eof) {

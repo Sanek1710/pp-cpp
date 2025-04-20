@@ -10,7 +10,11 @@ add_compile_definitions(PRIVATE ROOT="${PROJECT_SOURCE_DIR}/")
 add_subdirectory(third-party)
 
 add_subdirectory(tkz)
-add_library(preprocessor Printable.cpp Preprocessor.cpp)
+add_library(preprocessor 
+  Printable.cpp 
+  Preprocessor.cpp 
+  CompiledMacro.cpp
+)
 target_link_libraries(preprocessor tkz unordered_dense)
 
 add_executable(main main.cpp)

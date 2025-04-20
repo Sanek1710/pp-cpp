@@ -3,8 +3,6 @@
 
 #include <string_view>
 
-#include "ExpansionTokeniser.h"
-#include "MacroStamp.h"
 #include "tkz/Token.h"
 #include "tkz/TokenGroup.h"
 #include "util/indentos.h"
@@ -217,7 +215,7 @@ std::optional<MacroStamp> Preprocessor::lookup_macro(Token& token) const {
 
   if (auto macro_it = macro_map.find(macro_name); macro_it != macro_map.end()) {
     token.details.is_not_macro = false;
-    return MacroStamp{macro_it->second};
+    return macro_it->second.get_stamp();
   }
 
   if (auto macro_it = context_macro_map.find(macro_name);
@@ -225,7 +223,7 @@ std::optional<MacroStamp> Preprocessor::lookup_macro(Token& token) const {
     token.details.is_not_macro = false;
     // add to local map?
     // macro_map.emplace(macro_it->first, macro_it->second);
-    return MacroStamp{macro_it->second};
+    return macro_it->second.get_stamp();
   }
   token.details.is_not_macro = true;
   return std::nullopt;
@@ -256,8 +254,7 @@ void Preprocessor::expand_macro(MacroStamp macro_stamp,  //
 
   const Token macro_token = input.front();
 
-  MacroExpansionTokeniser macro_tkz{macro_stamp.expansion,
-                                    macro_token.start_pos};
+  CompiledMacroTokeniser macro_tkz{macro_stamp, macro_token.start_pos};
   while (!macro_tkz.eof()) {
     Token token = macro_tkz.read_token();
     // check catenation
@@ -376,7 +373,7 @@ void Preprocessor::process_ppline(const DirectiveTokenImage& directive) {
 
     case DirectiveTokenImage::Kind::Define: {
       macro_map.emplace(directive.as_define().name().get_text(),
-                        compile_macro_expansion(directive.as_define()));
+                        directive.as_define());
       break;
     }
 

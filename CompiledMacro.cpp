@@ -1,31 +1,14 @@
-#pragma once
 
-#include <algorithm>
+#include "CompiledMacro.h"
+
 #include <charconv>
 #include <string_view>
 
-#include "tkz/Token.h"
 #include "tkz/TokenGroup.h"
 
-// Helper struct to parse macro information
-struct MacroStamp {
-  MacroStamp(std::string_view content) {
-    auto it = content.begin();
-    info.is_variadic = *it == 'v';
-    info.is_functional = *it != ' ';
-    if (info.is_functional) {
-      it = std::from_chars(++it, content.end(), info.nargs).ptr;
-    }
-    ++it;
-    expansion = std::string_view(it, content.end() - it);
-  }
+namespace {
 
-  std::string_view expansion;
-  // FileID fileId;
-  MacroInfo info;
-};
-
-inline constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
+static constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
   switch (op_tag) {
     case tag::pp_op_str:
       return tag::arg_str;
@@ -35,19 +18,20 @@ inline constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
       break;
   }
   return tag::arg;
-}
+};
 
-inline std::string compile_macro_expansion(const DefineView& macro) {
+}  // namespace
+
+CompiledMacro::CompiledMacro(const DefineView& macro) {
   static constexpr std::string_view VA_ARGS_NAME = "__VA_ARGS__";
 
-  std::string out;
-
-  // Write macro type prefix
+  // TODO: is that even needed?
+  // just add info to all the structures?
   if (macro.info().is_functional) {
-    out += macro.info().is_variadic ? 'v' : 'f';
-    out += std::to_string(macro.info().nargs);
+    compiled += macro.info().is_variadic ? variadic_marker : functional_marker;
+    compiled += std::to_string(macro.info().nargs);
   }
-  out += ' ';
+  compiled += info_delimiter;
 
   bool need_space = false;
   Tag last_tag = tag::space;
@@ -64,12 +48,12 @@ inline std::string compile_macro_expansion(const DefineView& macro) {
 
     if (tok.tag == tag::pp_op_cat) {
       if (tag::is_macro_arg(last_tag)) {
-        if (out.back() == tag::markerof(tag::arg))
-          out.back() = tag::markerof(tag::arg_raw);
+        if (compiled.back() == tag::markerof(tag::arg))
+          compiled.back() = tag::markerof(tag::arg_raw);
       }
       need_space = false;
       last_tag = tag::pp_op_cat;
-      out += "##";
+      compiled += "##";
       continue;
     }
 
@@ -79,7 +63,7 @@ inline std::string compile_macro_expansion(const DefineView& macro) {
       continue;
     }
 
-    if (need_space && out.back() != ' ') out += ' ';
+    if (need_space && compiled.back() != ' ') compiled += ' ';
     need_space = false;
 
     // what if arg
@@ -99,21 +83,30 @@ inline std::string compile_macro_expansion(const DefineView& macro) {
 
       // actual arg
       if (arg_it != args.end()) {
-        out += '$';
-        out += std::to_string(arg_it - args.begin());
+        compiled += '$';
+        compiled += std::to_string(arg_it - args.begin());
         last_tag = pp_op_to_arg_tag(last_tag);
-        out += tag::markerof(last_tag);
+        compiled += tag::markerof(last_tag);
         continue;
       }
     }
 
-    if (tok.tag == tag::raw('$')) out += '$';
-    out += tok.get_text();
+    if (tok.tag == tag::raw('$')) compiled += '$';
+    compiled += tok.get_text();
     last_tag = tok.tag;
   }
-  // if (need_space && out.back() != ' ' && tag::is_macro_arg(last_tag))
-  //   out += ' ';
-  // Clean up trailing space
-  // if (!out.empty() && out.back() == ' ') out.pop_back();
-  return out;
+}
+
+MacroStamp CompiledMacro::get_stamp() const {
+  MacroInfo info;
+  std::string_view compiled_view = raw();
+  auto it = compiled_view.begin();
+  info.is_variadic = *it == variadic_marker;
+  info.is_functional = *it != info_delimiter;
+  if (info.is_functional) {
+    it = std::from_chars(++it, compiled_view.end(), info.nargs).ptr;
+  }
+  ++it;
+  return MacroStamp{.expansion = std::string_view(it, compiled_view.end() - it),
+                    .info = info};
 }

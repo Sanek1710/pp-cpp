@@ -5,8 +5,7 @@
 #include <string_view>
 #include <vector>
 
-#include "MacroMap.h"
-#include "MacroStamp.h"
+#include "CompiledMacro.h"
 #include "TokenCodeWriter.h"
 #include "tkz/Cursor.h"
 #include "tkz/Token.h"
@@ -74,8 +73,8 @@ class Preprocessor {
   MacroMap& context() { return context_macro_map; }
 
   void merge_context() {
-    for (auto& [name, expansion] : macro_map)
-      context_macro_map[name] = std::move(expansion);
+    for (auto& [name, compiled] : macro_map)
+      context_macro_map.emplace(std::move(name), std::move(compiled));
     macro_map.clear();
   }
 
@@ -107,7 +106,7 @@ class Preprocessor {
 
   // returns amount of valid prescanned macro related tokens
   size_t prescan_macro(TokenListSlice input,  //
-                       MacroStamp macroStamp);
+                       MacroStamp macro_stamp);
   void preprocess_tokens(TokenListSlice input,  //
                          TokenList& buffer,     // same as input on start
                          TokenList& output);
@@ -116,7 +115,7 @@ class Preprocessor {
 
   size_t prescan_tkz_macro(Token token, Tokeniser& tkz,  //
                            TokenList& output,            //
-                           MacroStamp macroStamp);
+                           MacroStamp macro_stamp);
   void preprocess_tkz_tokens(Tokeniser& tkz, TokenCodeWriter& writer);
 
   // macro expansion methods
