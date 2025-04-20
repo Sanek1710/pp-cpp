@@ -84,6 +84,7 @@ static constexpr Tag punct1              = group('1', Kind::punct);
 static constexpr Tag punct2              = group('2', Kind::punct);
 static constexpr Tag punct3              = group('3', Kind::punct);
 static constexpr Tag punct4              = group('4', Kind::punct);
+static constexpr Tag ellipsis            = group('e', Kind::punct);
 
 // should not be considered as tokens by pp logic
 static constexpr Tag space               = group(' ', Kind::extra);
@@ -99,7 +100,6 @@ static constexpr Tag identifier          = group('a', Kind::grouped);
 static constexpr Tag string_like_literal = group('"', Kind::grouped);
 static constexpr Tag raw_string_literal  = group('R', Kind::grouped);
 static constexpr Tag char_literal        = group('\'', Kind::grouped);
-static constexpr Tag ellipsis            = group('e', Kind::grouped);
 
 static constexpr Tag pp_op_str           = group('1', Kind::ppline);
 static constexpr Tag pp_op_cat           = group('2', Kind::ppline);

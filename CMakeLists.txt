@@ -19,8 +19,8 @@ target_link_libraries(preprocessor tkz unordered_dense)
 add_executable(main main.cpp)
 target_link_libraries(main preprocessor)
 
+enable_testing()
 add_subdirectory(tests)
-
 
 add_executable(storage Storage.cpp)
 target_link_libraries(storage unordered_dense)

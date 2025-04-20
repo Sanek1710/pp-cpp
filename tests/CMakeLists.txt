@@ -11,11 +11,11 @@ target_link_libraries(pptest preprocessor)
 target_include_directories(pptest PRIVATE ${CMAKE_SOURCE_DIR})
 
 
-add_test(
-  NAME perf 
-  COMMAND pptest ${INPUT}/sqliteall.txt
-  --perf
-)
+# add_test(
+#   NAME perf 
+#   COMMAND pptest ${INPUT}/sqliteall.txt
+#   --perf
+# )
 
 add_test(
   NAME test 

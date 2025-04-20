@@ -43,8 +43,8 @@ int out_test(const std::string& filename, const std::string& outfilename,
 
   std::string exp = read_file(expfilename);
   std::cerr << "[input] " << filename << "\n";
-  std::cerr << "  [act] " << outfilename << "\n";
   std::cerr << "  [exp] " << expfilename << "\n";
+  std::cerr << "  [act] " << outfilename << "\n";
 
   if (out == exp) return 0;
   return -1;
