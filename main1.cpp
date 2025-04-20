@@ -99,33 +99,6 @@ testit(preprocess_sqlite) {
   write_file(ROOT "pp.test/last.pp.sqliteall.txt", pp_act);
 }
 
-// int main(int argc, char* argv[]) {
-//   SegStringMap<std::string> macro_storage;
-//   Storage storage;
-//   Preprocessor pp;
-//   std::string src;
-//   std::string out;
-
-//   {
-//     std::string filename =
-//         "/home/user/playground/pp-cpp/BCM/in.cpp";
-        
-//     timeit;
-//     FileID file_id = 0;
-//     {
-//       {
-//         untimeit;
-//         read_file(filename, src);
-//       }
-//       std::cerr << "\n" << filename << "\n";
-//       pp.process_code(src, out);
-//       ++file_id;
-//     }
-//   }
-
-//   return 0;
-// }
-
 int main(int argc, char* argv[]) {
   std::string project_path = "/home/user/playground/pp-cpp/.tmp/OpenBCM";
   std::vector<std::string> filenames = walk(project_path);

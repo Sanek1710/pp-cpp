@@ -56,7 +56,7 @@ test(sqlite) {
 }
 
 test(perf) {
-  std::string src = read_file(ROOT "pp.test/sqliteall.txt");
+  std::string src = read_file(TEST_DIR "pp.test/sqliteall.txt");
   std::string out;
   timeit;
   repeat(5) {
