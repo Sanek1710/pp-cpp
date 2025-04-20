@@ -19,28 +19,6 @@
 #include "util/rwfile.h"
 #include "util/timer.h"
 
-void print_source(std::string_view src) {
-  Tokeniser tkz{src};
-  TokenPrinter printer{std::cerr, true};
-  while (!tkz.eof()) printer.print(tkz.read_token());
-}
-
-
-testit(small_test) {
-  std::string src = read_file(ROOT "pp.test/small.cpp");
-  // std::string src = read_file(ROOT "helper.h");
-  // src += read_file(ROOT "preprocess.cpp");
-  timeit;
-  Preprocessor pre;
-  TokenPrinter printer{std::cerr, true};
-  std::string out;
-  pre.process_code(src, out);
-  print_source(out);
-
-  std::cerr << "\n\n";
-
-}
-
 std::vector<std::string> walk(std::filesystem::path project_path) {
   const static std::vector<std::string> extensions{
       ".c", ".cc", ".cpp", ".c++", ".cp", ".cxx", ".h", ".hpp"};
@@ -85,18 +63,6 @@ std::vector<std::string> walk(std::filesystem::path project_path) {
   std::cerr << "total size : " << ByteSize{total_file_size} << "\n";
 
   return filenames;
-}
-
-testit(preprocess_sqlite) {
-  timeit;
-  indentos indos{std::cerr};
-  std::string src = read_file(ROOT "pp.test/sqliteall.txt");
-  std::string pp_exp = read_file(ROOT "pp.test/act.pp.sqliteall.txt");
-  std::string pp_act;
-  Preprocessor pre;
-  pre.process_code(src, pp_act);
-  check_result_print(pp_act, pp_exp);
-  write_file(ROOT "pp.test/last.pp.sqliteall.txt", pp_act);
 }
 
 int main(int argc, char* argv[]) {

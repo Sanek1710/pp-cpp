@@ -19,6 +19,11 @@ target_link_libraries(preprocessor tkz unordered_dense)
 add_executable(main main.cpp)
 target_link_libraries(main preprocessor)
 
+add_executable(main-project main-project.cpp)
+target_link_libraries(main-project preprocessor)
+
+
+
 enable_testing()
 add_subdirectory(tests)
 

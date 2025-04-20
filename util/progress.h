@@ -7,7 +7,7 @@ class ProgrssBar {
   // inline static std::string loading = "⠛⠙⠹⠸⠼⠴⠶⠦⠧⠇⠏⠋";
   inline static std::string loading =
       "##################################################"
-      "..................................................";
+      "--------------------------------------------------";
   inline static const size_t loading_size = loading.size() / 2;
   inline static const size_t mark_percentage = 100 / loading_size;
 
@@ -31,8 +31,10 @@ class ProgrssBar {
     size_t nmarks = last_percentage / mark_percentage;
     std::string_view loading_view{loading.data() + loading_size - nmarks,
                                   loading_size};
-    std::cerr << start << "[" << loading_view << "] " << last_percentage << "% "
-              << timer.elapsed() << " ms" << end;
+    size_t ms = timer.elapsed();
+    size_t est_ms_left = ms * 100 / (last_percentage + 1);
+    std::cerr << start << "[" << loading_view << "] " << last_percentage << "% ("
+              << ms << " ms / " << est_ms_left << " ms)" << end;
   }
 };
 
