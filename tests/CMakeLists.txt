@@ -6,16 +6,17 @@ set(EXPECTED ${TEST_DIR}/exp)
 set(OUTPUT ${TEST_DIR}/.tmp)
 
 
+add_executable(tests tests.cpp)
+target_link_libraries(tests preprocessor)
+target_include_directories(tests PRIVATE ${CMAKE_SOURCE_DIR})
+
 add_executable(pptest pptest.cpp)
 target_link_libraries(pptest preprocessor)
 target_include_directories(pptest PRIVATE ${CMAKE_SOURCE_DIR})
 
-
-# add_test(
-#   NAME perf 
-#   COMMAND pptest ${INPUT}/sqliteall.txt
-#   --perf
-# )
+add_test(NAME range COMMAND test range)
+add_test(NAME slice COMMAND test slice)
+add_test(NAME compile_macro_expansion COMMAND test compile_macro_expansion)
 
 add_test(
   NAME test 
@@ -38,14 +39,12 @@ add_test(
   -o ${OUTPUT}/va-args.cpp
 )
 
-
 add_test(
   NAME sqlite 
   COMMAND pptest ${INPUT}/sqliteall.txt
   -e ${EXPECTED}/sqliteall.txt
   -o ${OUTPUT}/sqliteall.txt
 )
-
 
 add_test(
   NAME spacing 
@@ -59,4 +58,11 @@ add_test(
   COMMAND pptest ${INPUT}/define-raw-comment.cpp
   -e ${EXPECTED}/define-raw-comment.cpp
   -o ${OUTPUT}/define-raw-comment.cpp
+)
+
+# performance test runs the last
+add_test(
+  NAME performance 
+  COMMAND pptest ${INPUT}/sqliteall.txt
+  --perf
 )

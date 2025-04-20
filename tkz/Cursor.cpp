@@ -125,12 +125,12 @@ inline void skip_raw_string_literal(Cursor& cur, bool ppline) {
   if (cur.eof()) return;
   for (++cur.it; !cur.eof(); ++cur.it) {
     if (*cur.it == '\n') {
-      cur.enter();
       if (ppline) return;
+      cur.enter();
       continue;
     }
     if (*cur.it == quot                             //
-        && *(cur.it - delim_size - 1) == '('        //
+        && *(cur.it - delim_size - 1) == ')'        //
         && std::equal(cur.it - delim_size, cur.it,  //
                       delim_start, delim_end)) {
       ++cur.it;

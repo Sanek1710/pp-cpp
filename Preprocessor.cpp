@@ -402,7 +402,6 @@ void Preprocessor::process_code(std::string& src, std::string& output) {
   clear();
 
   prepreprocess(src);
-  write_file(ROOT "BCM/pre.out.cpp", src);
 
   TokenCodeWriter writer{output};
   Tokeniser tkz{src};
