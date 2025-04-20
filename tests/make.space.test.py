@@ -57,6 +57,9 @@ exps = [
   "|=",
   "||",
   "~",
+  "a",
+  "0",
+  "\"\""
 ]
 
 defines = [
@@ -81,7 +84,7 @@ pc = subprocess.Popen(["g++", "-E", in_fname],
                       stdout=subprocess.PIPE)
 stdout, stderr = pc.communicate()
 
-outries = stdout.decode().split('\n')[7:]
+outries = stdout.decode().split('\n')[7:-1]
 
 chunks = []
 it = iter(outries)

@@ -38,6 +38,8 @@ inline constexpr Tag pp_op_to_arg_tag(Tag op_tag) {
 }
 
 inline std::string compile_macro_expansion(const DefineView& macro) {
+  static constexpr std::string_view VA_ARGS_NAME = "__VA_ARGS__";
+
   std::string out;
 
   // Write macro type prefix
@@ -48,7 +50,7 @@ inline std::string compile_macro_expansion(const DefineView& macro) {
   out += ' ';
 
   bool need_space = false;
-  Tag last_tag = tag::other;
+  Tag last_tag = tag::space;
 
   const auto args = macro.args_view();
   for (const Token& tok : macro.expansion_view()) {
@@ -90,7 +92,7 @@ inline std::string compile_macro_expansion(const DefineView& macro) {
           [&](const Token& arg) { return arg.get_text() == text; });
 
       // or __VA_ARGS__ if expected
-      if (macro.info().is_variadic && text == "__VA_ARGS__" &&
+      if (macro.info().is_variadic && text == VA_ARGS_NAME &&
           args.back().get_text().empty()) {
         arg_it = std::prev(args.end());
       }

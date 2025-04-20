@@ -9,9 +9,6 @@ add_compile_definitions(PRIVATE ROOT="${PROJECT_SOURCE_DIR}/")
 
 add_subdirectory(third-party)
 
-add_executable(perftest perftest.cpp)
-target_link_libraries(perftest unordered_dense)
-
 add_subdirectory(tkz)
 add_library(preprocessor Printable.cpp Preprocessor.cpp)
 target_link_libraries(preprocessor tkz unordered_dense)
@@ -26,6 +23,3 @@ target_link_libraries(main-project preprocessor)
 
 enable_testing()
 add_subdirectory(tests)
-
-add_executable(storage Storage.cpp)
-target_link_libraries(storage unordered_dense)

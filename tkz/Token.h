@@ -137,7 +137,7 @@ union TokenDetails {
 };
 
 // end_pos is never used, why to even store it?
-// end pos can be calculated by traversing text, if reeealy needed
+// end pos can be calculated by traversing text
 #define ENDPOS
 
 struct Token {
@@ -155,8 +155,6 @@ struct Token {
   inline constexpr std::string_view get_text() const {
     return std::string_view(start, size);
   }
-  inline constexpr positer begin() const { return start; }
-  inline constexpr positer end() const { return start + size; }
 
   void print(std::ostream& os) const;
 };

@@ -34223,17 +34223,17 @@ static const char * const sqlite3azCompileOpt[] = {
 
 
 
-  "ALLOW_COVERING_INDEX_SCAN=" "SQLITE_ALLOW_COVERING_INDEX_SCAN"            ,
+  "ALLOW_COVERING_INDEX_SCAN=""SQLITE_ALLOW_COVERING_INDEX_SCAN"             ,
 
 
 
   "ALLOW_URI_AUTHORITY",
 
 
-  "ATOMIC_INTRINSICS=" "1"                                   ,
+  "ATOMIC_INTRINSICS=""1"                                    ,
 
 
-  "BITMASK_TYPE=" "SQLITE_BITMASK_TYPE"            ,
+  "BITMASK_TYPE=""SQLITE_BITMASK_TYPE"             ,
 
 
   "BUG_COMPATIBLE_20160819",
@@ -34245,11 +34245,11 @@ static const char * const sqlite3azCompileOpt[] = {
   "CHECK_PAGES",
 
 
-  "COMPILER=clang-" "__clang_major__"             "."
+  "COMPILER=clang-""__clang_major__"              "."
 "__clang_minor__"                                 "."
 "__clang_patchlevel__"                                ,
 
-  "COMPILER=msvc-" "_MSC_VER"            ,
+  "COMPILER=msvc-""_MSC_VER"             ,
 
   "COMPILER=gcc-" __VERSION__,
 
@@ -34266,66 +34266,66 @@ static const char * const sqlite3azCompileOpt[] = {
   "DEFAULT_AUTOVACUUM",
 
 
-  "DEFAULT_CACHE_SIZE=" "-2000"                                ,
+  "DEFAULT_CACHE_SIZE=""-2000"                                 ,
 
 
   "DEFAULT_CKPTFULLFSYNC",
 
 
-  "DEFAULT_FILE_FORMAT=" "4"                                     ,
+  "DEFAULT_FILE_FORMAT=""4"                                      ,
 
 
-  "DEFAULT_FILE_PERMISSIONS=" "SQLITE_DEFAULT_FILE_PERMISSIONS"            ,
+  "DEFAULT_FILE_PERMISSIONS=""SQLITE_DEFAULT_FILE_PERMISSIONS"             ,
 
 
   "DEFAULT_FOREIGN_KEYS",
 
 
-  "DEFAULT_JOURNAL_SIZE_LIMIT=" "-1"                                           ,
+  "DEFAULT_JOURNAL_SIZE_LIMIT=""-1"                                            ,
 
 
-  "DEFAULT_LOCKING_MODE=" "SQLITE_DEFAULT_LOCKING_MODE"            ,
+  "DEFAULT_LOCKING_MODE=""SQLITE_DEFAULT_LOCKING_MODE"             ,
 
 
   "DEFAULT_LOOKASIDE=" CTIMEOPT_VAL2_(SQLITE_DEFAULT_LOOKASIDE),
 
 
 
-  "DEFAULT_MEMSTATUS=" "1"                                   ,
+  "DEFAULT_MEMSTATUS=""1"                                    ,
 
 
 
-  "DEFAULT_MMAP_SIZE=" "0"                                   ,
+  "DEFAULT_MMAP_SIZE=""0"                                    ,
 
 
-  "DEFAULT_PAGE_SIZE=" "65536"                               ,
+  "DEFAULT_PAGE_SIZE=""65536"                                ,
 
 
-  "DEFAULT_PCACHE_INITSZ=" "20"                                      ,
+  "DEFAULT_PCACHE_INITSZ=""20"                                       ,
 
 
-  "DEFAULT_PROXYDIR_PERMISSIONS=" "SQLITE_DEFAULT_PROXYDIR_PERMISSIONS"            ,
+  "DEFAULT_PROXYDIR_PERMISSIONS=""SQLITE_DEFAULT_PROXYDIR_PERMISSIONS"             ,
 
 
   "DEFAULT_RECURSIVE_TRIGGERS",
 
 
-  "DEFAULT_ROWEST=" "SQLITE_DEFAULT_ROWEST"            ,
+  "DEFAULT_ROWEST=""SQLITE_DEFAULT_ROWEST"             ,
 
 
-  "DEFAULT_SECTOR_SIZE=" "4096"                                  ,
+  "DEFAULT_SECTOR_SIZE=""4096"                                   ,
 
 
-  "DEFAULT_SYNCHRONOUS=" "3"                                     ,
+  "DEFAULT_SYNCHRONOUS=""3"                                      ,
 
 
-  "DEFAULT_WAL_AUTOCHECKPOINT=" "1000"                                         ,
+  "DEFAULT_WAL_AUTOCHECKPOINT=""1000"                                          ,
 
 
-  "DEFAULT_WAL_SYNCHRONOUS=" "3"                                         ,
+  "DEFAULT_WAL_SYNCHRONOUS=""3"                                          ,
 
 
-  "DEFAULT_WORKER_THREADS=" "0"                                        ,
+  "DEFAULT_WORKER_THREADS=""0"                                         ,
 
 
   "DIRECT_OVERFLOW_READ",
@@ -34352,10 +34352,10 @@ static const char * const sqlite3azCompileOpt[] = {
   "DISABLE_SKIPAHEAD_DISTINCT",
 
 
-  "DQS=" "0"                     ,
+  "DQS=""0"                      ,
 
 
-  "ENABLE_8_3_NAMES=" "SQLITE_ENABLE_8_3_NAMES"            ,
+  "ENABLE_8_3_NAMES=""SQLITE_ENABLE_8_3_NAMES"             ,
 
 
   "ENABLE_API_ARMOR",
@@ -34370,7 +34370,7 @@ static const char * const sqlite3azCompileOpt[] = {
   "ENABLE_BYTECODE_VTAB",
 
 
-  "ENABLE_CEROD=" "SQLITE_ENABLE_CEROD"            ,
+  "ENABLE_CEROD=""SQLITE_ENABLE_CEROD"             ,
 
 
   "ENABLE_COLUMN_METADATA",
@@ -34427,7 +34427,7 @@ static const char * const sqlite3azCompileOpt[] = {
   "ENABLE_LOAD_EXTENSION",
 
 
-  "ENABLE_LOCKING_STYLE=" "0"                                      ,
+  "ENABLE_LOCKING_STYLE=""0"                                       ,
 
 
   "ENABLE_MATH_FUNCTIONS",
@@ -34520,13 +34520,13 @@ static const char * const sqlite3azCompileOpt[] = {
   "EXTRA_IFNULLROW",
 
 
-  "EXTRA_INIT=" "SQLITE_EXTRA_INIT"            ,
+  "EXTRA_INIT=""SQLITE_EXTRA_INIT"             ,
 
 
-  "EXTRA_SHUTDOWN=" "SQLITE_EXTRA_SHUTDOWN"            ,
+  "EXTRA_SHUTDOWN=""SQLITE_EXTRA_SHUTDOWN"             ,
 
 
-  "FTS3_MAX_EXPR_DEPTH=" "SQLITE_FTS3_MAX_EXPR_DEPTH"            ,
+  "FTS3_MAX_EXPR_DEPTH=""SQLITE_FTS3_MAX_EXPR_DEPTH"             ,
 
 
   "FTS5_ENABLE_TEST_MI",
@@ -34539,7 +34539,7 @@ static const char * const sqlite3azCompileOpt[] = {
 
 
 
-  "HOMEGROWN_RECURSIVE_MUTEX=" "1"                                           ,
+  "HOMEGROWN_RECURSIVE_MUTEX=""1"                                            ,
 
 
 
@@ -34555,7 +34555,7 @@ static const char * const sqlite3azCompileOpt[] = {
   "INT64_TYPE",
 
 
-  "INTEGRITY_CHECK_ERROR_MAX=" "SQLITE_INTEGRITY_CHECK_ERROR_MAX"            ,
+  "INTEGRITY_CHECK_ERROR_MAX=""SQLITE_INTEGRITY_CHECK_ERROR_MAX"             ,
 
 
   "LIKE_DOESNT_MATCH_BLOBS",
@@ -34567,64 +34567,64 @@ static const char * const sqlite3azCompileOpt[] = {
   "LOG_CACHE_SPILL",
 
 
-  "MALLOC_SOFT_LIMIT=" "1024"                                ,
+  "MALLOC_SOFT_LIMIT=""1024"                                 ,
 
 
-  "MAX_ATTACHED=" "10"                             ,
+  "MAX_ATTACHED=""10"                              ,
 
 
-  "MAX_COLUMN=" "2000"                         ,
+  "MAX_COLUMN=""2000"                          ,
 
 
-  "MAX_COMPOUND_SELECT=" "500"                                   ,
+  "MAX_COMPOUND_SELECT=""500"                                    ,
 
 
-  "MAX_DEFAULT_PAGE_SIZE=" "65536"                                   ,
+  "MAX_DEFAULT_PAGE_SIZE=""65536"                                    ,
 
 
-  "MAX_EXPR_DEPTH=" "1000"                             ,
+  "MAX_EXPR_DEPTH=""1000"                              ,
 
 
-  "MAX_FUNCTION_ARG=" "127"                                ,
+  "MAX_FUNCTION_ARG=""127"                                 ,
 
 
-  "MAX_LENGTH=" "1000000000"                   ,
+  "MAX_LENGTH=""1000000000"                    ,
 
 
-  "MAX_LIKE_PATTERN_LENGTH=" "50000"                                     ,
+  "MAX_LIKE_PATTERN_LENGTH=""50000"                                      ,
 
 
-  "MAX_MEMORY=" "SQLITE_MAX_MEMORY"            ,
+  "MAX_MEMORY=""SQLITE_MAX_MEMORY"             ,
 
 
-  "MAX_MMAP_SIZE=" "0"                               ,
+  "MAX_MMAP_SIZE=""0"                                ,
 
 
-  "MAX_MMAP_SIZE_=" "SQLITE_MAX_MMAP_SIZE_"            ,
+  "MAX_MMAP_SIZE_=""SQLITE_MAX_MMAP_SIZE_"             ,
 
 
-  "MAX_PAGE_COUNT=" "1073741823"                       ,
+  "MAX_PAGE_COUNT=""1073741823"                        ,
 
 
-  "MAX_PAGE_SIZE=" "65536"                           ,
+  "MAX_PAGE_SIZE=""65536"                            ,
 
 
-  "MAX_SCHEMA_RETRY=" "SQLITE_MAX_SCHEMA_RETRY"            ,
+  "MAX_SCHEMA_RETRY=""SQLITE_MAX_SCHEMA_RETRY"             ,
 
 
-  "MAX_SQL_LENGTH=" "1000000000"                       ,
+  "MAX_SQL_LENGTH=""1000000000"                        ,
 
 
-  "MAX_TRIGGER_DEPTH=" "1000"                                ,
+  "MAX_TRIGGER_DEPTH=""1000"                                 ,
 
 
-  "MAX_VARIABLE_NUMBER=" "32766"                                 ,
+  "MAX_VARIABLE_NUMBER=""32766"                                  ,
 
 
-  "MAX_VDBE_OP=" "250000000"                     ,
+  "MAX_VDBE_OP=""250000000"                      ,
 
 
-  "MAX_WORKER_THREADS=" "0"                                    ,
+  "MAX_WORKER_THREADS=""0"                                     ,
 
 
   "MEMDEBUG",
@@ -34814,7 +34814,7 @@ static const char * const sqlite3azCompileOpt[] = {
 
 
 
-  "OMIT_TRACE=" "1"                            ,
+  "OMIT_TRACE=""1"                             ,
 
 
 
@@ -34849,7 +34849,7 @@ static const char * const sqlite3azCompileOpt[] = {
 
 
 
-  "POWERSAFE_OVERWRITE=" "1"                                     ,
+  "POWERSAFE_OVERWRITE=""1"                                      ,
 
 
 
@@ -34871,16 +34871,16 @@ static const char * const sqlite3azCompileOpt[] = {
   "SMALL_STACK",
 
 
-  "SORTER_PMASZ=" "SQLITE_SORTER_PMASZ"            ,
+  "SORTER_PMASZ=""SQLITE_SORTER_PMASZ"             ,
 
 
   "SOUNDEX",
 
 
-  "STAT4_SAMPLES=" "SQLITE_STAT4_SAMPLES"            ,
+  "STAT4_SAMPLES=""SQLITE_STAT4_SAMPLES"             ,
 
 
-  "STMTJRNL_SPILL=" "SQLITE_STMTJRNL_SPILL"            ,
+  "STMTJRNL_SPILL=""SQLITE_STMTJRNL_SPILL"             ,
 
 
   "SUBSTR_COMPATIBILITY",
@@ -34895,15 +34895,15 @@ static const char * const sqlite3azCompileOpt[] = {
   "TCL",
 
 
-  "TEMP_STORE=" "3"                            ,
+  "TEMP_STORE=""3"                             ,
 
 
   "TEST",
 
 
-  "THREADSAFE=" "0"                            ,
+  "THREADSAFE=""0"                             ,
 
-  "THREADSAFE=" "THREADSAFE"            ,
+  "THREADSAFE=""THREADSAFE"             ,
 
   "THREADSAFE=1",
 
@@ -48708,193 +48708,193 @@ static         void *sqlite3HashInsert(Hash *pH, const char *pKey, void *data){
 
 static         const char *sqlite3OpcodeName(int i){
  static const char *const azName[] = {
-              "Savepoint" "\0" ""          ,
-              "AutoCommit" "\0" ""         ,
-              "Transaction" "\0" ""        ,
-              "Checkpoint" "\0" ""         ,
-              "JournalMode" "\0" ""        ,
-              "Vacuum" "\0" ""             ,
-              "VFilter" "\0" "iplan=r[P3] zplan='P4'"            ,
-              "VUpdate" "\0" "data=r[P3@P2]"            ,
-              "Init" "\0" "Start at P2"               ,
-              "Goto" "\0" ""               ,
-              "Gosub" "\0" ""              ,
-              "InitCoroutine" "\0" ""      ,
-              "Yield" "\0" ""              ,
-              "MustBeInt" "\0" ""          ,
-              "Jump" "\0" ""               ,
-              "Once" "\0" ""               ,
-              "If" "\0" ""                 ,
-              "IfNot" "\0" ""              ,
-              "IsType" "\0" "if typeof(P1.P3) in P5 goto P2"             ,
-              "Not" "\0" "r[P2]= !r[P1]"                ,
-              "IfNullRow" "\0" "if P1.nullRow then r[P3]=NULL, goto P2"          ,
-              "SeekLT" "\0" "key=r[P3@P4]"             ,
-              "SeekLE" "\0" "key=r[P3@P4]"             ,
-              "SeekGE" "\0" "key=r[P3@P4]"             ,
-              "SeekGT" "\0" "key=r[P3@P4]"             ,
-              "IfNotOpen" "\0" "if( !csr[P1] ) goto P2"          ,
-              "IfNoHope" "\0" "key=r[P3@P4]"           ,
-              "NoConflict" "\0" "key=r[P3@P4]"         ,
-              "NotFound" "\0" "key=r[P3@P4]"           ,
-              "Found" "\0" "key=r[P3@P4]"              ,
-              "SeekRowid" "\0" "intkey=r[P3]"          ,
-              "NotExists" "\0" "intkey=r[P3]"          ,
-              "Last" "\0" ""               ,
-              "IfSmaller" "\0" ""          ,
-              "SorterSort" "\0" ""         ,
-              "Sort" "\0" ""               ,
-              "Rewind" "\0" ""             ,
-              "SorterNext" "\0" ""         ,
-              "Prev" "\0" ""               ,
-              "Next" "\0" ""               ,
-              "IdxLE" "\0" "key=r[P3@P4]"              ,
-              "IdxGT" "\0" "key=r[P3@P4]"              ,
-              "IdxLT" "\0" "key=r[P3@P4]"              ,
-              "Or" "\0" "r[P3]=(r[P1] || r[P2])"                 ,
-              "And" "\0" "r[P3]=(r[P1] && r[P2])"                ,
-              "IdxGE" "\0" "key=r[P3@P4]"              ,
-              "RowSetRead" "\0" "r[P3]=rowset(P1)"         ,
-              "RowSetTest" "\0" "if r[P3] in rowset(P1) goto P2"         ,
-              "Program" "\0" ""            ,
-              "FkIfZero" "\0" "if fkctr[P1]==0 goto P2"           ,
-              "IsNull" "\0" "if r[P1]==NULL goto P2"             ,
-              "NotNull" "\0" "if r[P1]!=NULL goto P2"            ,
-              "Ne" "\0" "IF r[P3]!=r[P1]"                 ,
-              "Eq" "\0" "IF r[P3]==r[P1]"                 ,
-              "Gt" "\0" "IF r[P3]>r[P1]"                 ,
-              "Le" "\0" "IF r[P3]<=r[P1]"                 ,
-              "Lt" "\0" "IF r[P3]<r[P1]"                 ,
-              "Ge" "\0" "IF r[P3]>=r[P1]"                 ,
-              "ElseEq" "\0" ""             ,
-              "IfPos" "\0" "if r[P1]>0 then r[P1]-=P3, goto P2"              ,
-              "IfNotZero" "\0" "if r[P1]!=0 then r[P1]--, goto P2"          ,
-              "DecrJumpZero" "\0" "if (--r[P1])==0 goto P2"       ,
-              "IncrVacuum" "\0" ""         ,
-              "VNext" "\0" ""              ,
-              "Filter" "\0" "if key(P3@P4) not in filter(P1) goto P2"             ,
-              "PureFunc" "\0" "r[P3]=func(r[P2@NP])"           ,
-              "Function" "\0" "r[P3]=func(r[P2@NP])"           ,
-              "Return" "\0" ""             ,
-              "EndCoroutine" "\0" ""       ,
-              "HaltIfNull" "\0" "if r[P3]=null halt"         ,
-              "Halt" "\0" ""               ,
-              "Integer" "\0" "r[P2]=P1"            ,
-              "Int64" "\0" "r[P2]=P4"              ,
-              "String" "\0" "r[P2]='P4' (len=P1)"             ,
-              "BeginSubrtn" "\0" "r[P2]=NULL"        ,
-              "Null" "\0" "r[P2..P3]=NULL"               ,
-              "SoftNull" "\0" "r[P1]=NULL"           ,
-              "Blob" "\0" "r[P2]=P4 (len=P1)"               ,
-              "Variable" "\0" "r[P2]=parameter(P1,P4)"           ,
-              "Move" "\0" "r[P2@P3]=r[P1@P3]"               ,
-              "Copy" "\0" "r[P2@P3+1]=r[P1@P3+1]"               ,
-              "SCopy" "\0" "r[P2]=r[P1]"              ,
-              "IntCopy" "\0" "r[P2]=r[P1]"            ,
-              "FkCheck" "\0" ""            ,
-              "ResultRow" "\0" "output=r[P1@P2]"          ,
-              "CollSeq" "\0" ""            ,
-              "AddImm" "\0" "r[P1]=r[P1]+P2"             ,
-              "RealAffinity" "\0" ""       ,
-              "Cast" "\0" "affinity(r[P1])"               ,
-              "Permutation" "\0" ""        ,
-              "Compare" "\0" "r[P1@P3] <-> r[P2@P3]"            ,
-              "IsTrue" "\0" "r[P2] = coalesce(r[P1]==TRUE,P3) ^ P4"             ,
-              "ZeroOrNull" "\0" "r[P2] = 0 OR NULL"         ,
-              "Offset" "\0" "r[P3] = sqlite_offset(P1)"             ,
-              "Column" "\0" "r[P3]=PX cursor P1 column P2"             ,
-              "TypeCheck" "\0" "typecheck(r[P1@P2])"          ,
-              "Affinity" "\0" "affinity(r[P1@P2])"           ,
-              "MakeRecord" "\0" "r[P3]=mkrec(r[P1@P2])"         ,
-              "Count" "\0" "r[P2]=count()"              ,
-              "ReadCookie" "\0" ""         ,
-              "SetCookie" "\0" ""          ,
-              "ReopenIdx" "\0" "root=P2 iDb=P3"          ,
-              "BitAnd" "\0" "r[P3]=r[P1]&r[P2]"             ,
-              "BitOr" "\0" "r[P3]=r[P1]|r[P2]"              ,
-              "ShiftLeft" "\0" "r[P3]=r[P2]<<r[P1]"          ,
-              "ShiftRight" "\0" "r[P3]=r[P2]>>r[P1]"         ,
-              "Add" "\0" "r[P3]=r[P1]+r[P2]"                ,
-              "Subtract" "\0" "r[P3]=r[P2]-r[P1]"           ,
-              "Multiply" "\0" "r[P3]=r[P1]*r[P2]"           ,
-              "Divide" "\0" "r[P3]=r[P2]/r[P1]"             ,
-              "Remainder" "\0" "r[P3]=r[P2]%r[P1]"          ,
-              "Concat" "\0" "r[P3]=r[P2]+r[P1]"             ,
-              "OpenRead" "\0" "root=P2 iDb=P3"           ,
-              "OpenWrite" "\0" "root=P2 iDb=P3"          ,
-              "BitNot" "\0" "r[P2]= ~r[P1]"             ,
-              "OpenDup" "\0" ""            ,
-              "OpenAutoindex" "\0" "nColumn=P2"      ,
-              "String8" "\0" "r[P2]='P4'"            ,
-              "OpenEphemeral" "\0" "nColumn=P2"      ,
-              "SorterOpen" "\0" ""         ,
-              "SequenceTest" "\0" "if( cursor[P1].ctr++ ) pc = P2"       ,
-              "OpenPseudo" "\0" "P3 columns in r[P2]"         ,
-              "Close" "\0" ""              ,
-              "ColumnsUsed" "\0" ""        ,
-              "SeekScan" "\0" "Scan-ahead up to P1 rows"           ,
-              "SeekHit" "\0" "set P2<=seekHit<=P3"            ,
-              "Sequence" "\0" "r[P2]=cursor[P1].ctr++"           ,
-              "NewRowid" "\0" "r[P2]=rowid"           ,
-              "Insert" "\0" "intkey=r[P3] data=r[P2]"             ,
-              "RowCell" "\0" ""            ,
-              "Delete" "\0" ""             ,
-              "ResetCount" "\0" ""         ,
-              "SorterCompare" "\0" "if key(P1)!=trim(r[P3],P4) goto P2"      ,
-              "SorterData" "\0" "r[P2]=data"         ,
-              "RowData" "\0" "r[P2]=data"            ,
-              "Rowid" "\0" "r[P2]=PX rowid of P1"              ,
-              "NullRow" "\0" ""            ,
-              "SeekEnd" "\0" ""            ,
-              "IdxInsert" "\0" "key=r[P2]"          ,
-              "SorterInsert" "\0" "key=r[P2]"       ,
-              "IdxDelete" "\0" "key=r[P2@P3]"          ,
-              "DeferredSeek" "\0" "Move P3 to P1.rowid if needed"       ,
-              "IdxRowid" "\0" "r[P2]=rowid"           ,
-              "FinishSeek" "\0" ""         ,
-              "Destroy" "\0" ""            ,
-              "Clear" "\0" ""              ,
-              "ResetSorter" "\0" ""        ,
-              "CreateBtree" "\0" "r[P2]=root iDb=P1 flags=P3"        ,
-              "SqlExec" "\0" ""            ,
-              "ParseSchema" "\0" ""        ,
-              "LoadAnalysis" "\0" ""       ,
-              "DropTable" "\0" ""          ,
-              "DropIndex" "\0" ""          ,
-              "Real" "\0" "r[P2]=P4"               ,
-              "DropTrigger" "\0" ""        ,
-              "IntegrityCk" "\0" ""        ,
-              "RowSetAdd" "\0" "rowset(P1)=r[P2]"          ,
-              "Param" "\0" ""              ,
-              "FkCounter" "\0" "fkctr[P1]+=P2"          ,
-              "MemMax" "\0" "r[P1]=max(r[P1],r[P2])"             ,
-              "OffsetLimit" "\0" "if r[P1]>0 then r[P2]=r[P1]+max(0,r[P3]) else r[P2]=(-1)"        ,
-              "AggInverse" "\0" "accum=r[P3] inverse(r[P2@P5])"         ,
-              "AggStep" "\0" "accum=r[P3] step(r[P2@P5])"            ,
-              "AggStep1" "\0" "accum=r[P3] step(r[P2@P5])"           ,
-              "AggValue" "\0" "r[P3]=value N=P2"           ,
-              "AggFinal" "\0" "accum=r[P1] N=P2"           ,
-              "Expire" "\0" ""             ,
-              "CursorLock" "\0" ""         ,
-              "CursorUnlock" "\0" ""       ,
-              "TableLock" "\0" "iDb=P1 root=P2 write=P3"          ,
-              "VBegin" "\0" ""             ,
-              "VCreate" "\0" ""            ,
-              "VDestroy" "\0" ""           ,
-              "VOpen" "\0" ""              ,
-              "VInitIn" "\0" "r[P2]=ValueList(P1,P3)"            ,
-              "VColumn" "\0" "r[P3]=vcolumn(P2)"            ,
-              "VRename" "\0" ""            ,
-              "Pagecount" "\0" ""          ,
-              "MaxPgcnt" "\0" ""           ,
-              "ClrSubtype" "\0" "r[P1].subtype = 0"         ,
-              "FilterAdd" "\0" "filter(P1) += key(P3@P4)"          ,
-              "Trace" "\0" ""              ,
-              "CursorHint" "\0" ""         ,
-              "ReleaseReg" "\0" "release r[P1@P2] mask P3"         ,
-              "Noop" "\0" ""               ,
-              "Explain" "\0" ""            ,
-              "Abortable" "\0" ""          ,
+              "Savepoint""\0" ""           ,
+              "AutoCommit""\0" ""          ,
+              "Transaction""\0" ""         ,
+              "Checkpoint""\0" ""          ,
+              "JournalMode""\0" ""         ,
+              "Vacuum""\0" ""              ,
+              "VFilter""\0" "iplan=r[P3] zplan='P4'"             ,
+              "VUpdate""\0" "data=r[P3@P2]"             ,
+              "Init""\0" "Start at P2"                ,
+              "Goto""\0" ""                ,
+              "Gosub""\0" ""               ,
+              "InitCoroutine""\0" ""       ,
+              "Yield""\0" ""               ,
+              "MustBeInt""\0" ""           ,
+              "Jump""\0" ""                ,
+              "Once""\0" ""                ,
+              "If""\0" ""                  ,
+              "IfNot""\0" ""               ,
+              "IsType""\0" "if typeof(P1.P3) in P5 goto P2"              ,
+              "Not""\0" "r[P2]= !r[P1]"                 ,
+              "IfNullRow""\0" "if P1.nullRow then r[P3]=NULL, goto P2"           ,
+              "SeekLT""\0" "key=r[P3@P4]"              ,
+              "SeekLE""\0" "key=r[P3@P4]"              ,
+              "SeekGE""\0" "key=r[P3@P4]"              ,
+              "SeekGT""\0" "key=r[P3@P4]"              ,
+              "IfNotOpen""\0" "if( !csr[P1] ) goto P2"           ,
+              "IfNoHope""\0" "key=r[P3@P4]"            ,
+              "NoConflict""\0" "key=r[P3@P4]"          ,
+              "NotFound""\0" "key=r[P3@P4]"            ,
+              "Found""\0" "key=r[P3@P4]"               ,
+              "SeekRowid""\0" "intkey=r[P3]"           ,
+              "NotExists""\0" "intkey=r[P3]"           ,
+              "Last""\0" ""                ,
+              "IfSmaller""\0" ""           ,
+              "SorterSort""\0" ""          ,
+              "Sort""\0" ""                ,
+              "Rewind""\0" ""              ,
+              "SorterNext""\0" ""          ,
+              "Prev""\0" ""                ,
+              "Next""\0" ""                ,
+              "IdxLE""\0" "key=r[P3@P4]"               ,
+              "IdxGT""\0" "key=r[P3@P4]"               ,
+              "IdxLT""\0" "key=r[P3@P4]"               ,
+              "Or""\0" "r[P3]=(r[P1] || r[P2])"                  ,
+              "And""\0" "r[P3]=(r[P1] && r[P2])"                 ,
+              "IdxGE""\0" "key=r[P3@P4]"               ,
+              "RowSetRead""\0" "r[P3]=rowset(P1)"          ,
+              "RowSetTest""\0" "if r[P3] in rowset(P1) goto P2"          ,
+              "Program""\0" ""             ,
+              "FkIfZero""\0" "if fkctr[P1]==0 goto P2"            ,
+              "IsNull""\0" "if r[P1]==NULL goto P2"              ,
+              "NotNull""\0" "if r[P1]!=NULL goto P2"             ,
+              "Ne""\0" "IF r[P3]!=r[P1]"                  ,
+              "Eq""\0" "IF r[P3]==r[P1]"                  ,
+              "Gt""\0" "IF r[P3]>r[P1]"                  ,
+              "Le""\0" "IF r[P3]<=r[P1]"                  ,
+              "Lt""\0" "IF r[P3]<r[P1]"                  ,
+              "Ge""\0" "IF r[P3]>=r[P1]"                  ,
+              "ElseEq""\0" ""              ,
+              "IfPos""\0" "if r[P1]>0 then r[P1]-=P3, goto P2"               ,
+              "IfNotZero""\0" "if r[P1]!=0 then r[P1]--, goto P2"           ,
+              "DecrJumpZero""\0" "if (--r[P1])==0 goto P2"        ,
+              "IncrVacuum""\0" ""          ,
+              "VNext""\0" ""               ,
+              "Filter""\0" "if key(P3@P4) not in filter(P1) goto P2"              ,
+              "PureFunc""\0" "r[P3]=func(r[P2@NP])"            ,
+              "Function""\0" "r[P3]=func(r[P2@NP])"            ,
+              "Return""\0" ""              ,
+              "EndCoroutine""\0" ""        ,
+              "HaltIfNull""\0" "if r[P3]=null halt"          ,
+              "Halt""\0" ""                ,
+              "Integer""\0" "r[P2]=P1"             ,
+              "Int64""\0" "r[P2]=P4"               ,
+              "String""\0" "r[P2]='P4' (len=P1)"              ,
+              "BeginSubrtn""\0" "r[P2]=NULL"         ,
+              "Null""\0" "r[P2..P3]=NULL"                ,
+              "SoftNull""\0" "r[P1]=NULL"            ,
+              "Blob""\0" "r[P2]=P4 (len=P1)"                ,
+              "Variable""\0" "r[P2]=parameter(P1,P4)"            ,
+              "Move""\0" "r[P2@P3]=r[P1@P3]"                ,
+              "Copy""\0" "r[P2@P3+1]=r[P1@P3+1]"                ,
+              "SCopy""\0" "r[P2]=r[P1]"               ,
+              "IntCopy""\0" "r[P2]=r[P1]"             ,
+              "FkCheck""\0" ""             ,
+              "ResultRow""\0" "output=r[P1@P2]"           ,
+              "CollSeq""\0" ""             ,
+              "AddImm""\0" "r[P1]=r[P1]+P2"              ,
+              "RealAffinity""\0" ""        ,
+              "Cast""\0" "affinity(r[P1])"                ,
+              "Permutation""\0" ""         ,
+              "Compare""\0" "r[P1@P3] <-> r[P2@P3]"             ,
+              "IsTrue""\0" "r[P2] = coalesce(r[P1]==TRUE,P3) ^ P4"              ,
+              "ZeroOrNull""\0" "r[P2] = 0 OR NULL"          ,
+              "Offset""\0" "r[P3] = sqlite_offset(P1)"              ,
+              "Column""\0" "r[P3]=PX cursor P1 column P2"              ,
+              "TypeCheck""\0" "typecheck(r[P1@P2])"           ,
+              "Affinity""\0" "affinity(r[P1@P2])"            ,
+              "MakeRecord""\0" "r[P3]=mkrec(r[P1@P2])"          ,
+              "Count""\0" "r[P2]=count()"               ,
+              "ReadCookie""\0" ""          ,
+              "SetCookie""\0" ""           ,
+              "ReopenIdx""\0" "root=P2 iDb=P3"           ,
+              "BitAnd""\0" "r[P3]=r[P1]&r[P2]"              ,
+              "BitOr""\0" "r[P3]=r[P1]|r[P2]"               ,
+              "ShiftLeft""\0" "r[P3]=r[P2]<<r[P1]"           ,
+              "ShiftRight""\0" "r[P3]=r[P2]>>r[P1]"          ,
+              "Add""\0" "r[P3]=r[P1]+r[P2]"                 ,
+              "Subtract""\0" "r[P3]=r[P2]-r[P1]"            ,
+              "Multiply""\0" "r[P3]=r[P1]*r[P2]"            ,
+              "Divide""\0" "r[P3]=r[P2]/r[P1]"              ,
+              "Remainder""\0" "r[P3]=r[P2]%r[P1]"           ,
+              "Concat""\0" "r[P3]=r[P2]+r[P1]"              ,
+              "OpenRead""\0" "root=P2 iDb=P3"            ,
+              "OpenWrite""\0" "root=P2 iDb=P3"           ,
+              "BitNot""\0" "r[P2]= ~r[P1]"              ,
+              "OpenDup""\0" ""             ,
+              "OpenAutoindex""\0" "nColumn=P2"       ,
+              "String8""\0" "r[P2]='P4'"             ,
+              "OpenEphemeral""\0" "nColumn=P2"       ,
+              "SorterOpen""\0" ""          ,
+              "SequenceTest""\0" "if( cursor[P1].ctr++ ) pc = P2"        ,
+              "OpenPseudo""\0" "P3 columns in r[P2]"          ,
+              "Close""\0" ""               ,
+              "ColumnsUsed""\0" ""         ,
+              "SeekScan""\0" "Scan-ahead up to P1 rows"            ,
+              "SeekHit""\0" "set P2<=seekHit<=P3"             ,
+              "Sequence""\0" "r[P2]=cursor[P1].ctr++"            ,
+              "NewRowid""\0" "r[P2]=rowid"            ,
+              "Insert""\0" "intkey=r[P3] data=r[P2]"              ,
+              "RowCell""\0" ""             ,
+              "Delete""\0" ""              ,
+              "ResetCount""\0" ""          ,
+              "SorterCompare""\0" "if key(P1)!=trim(r[P3],P4) goto P2"       ,
+              "SorterData""\0" "r[P2]=data"          ,
+              "RowData""\0" "r[P2]=data"             ,
+              "Rowid""\0" "r[P2]=PX rowid of P1"               ,
+              "NullRow""\0" ""             ,
+              "SeekEnd""\0" ""             ,
+              "IdxInsert""\0" "key=r[P2]"           ,
+              "SorterInsert""\0" "key=r[P2]"        ,
+              "IdxDelete""\0" "key=r[P2@P3]"           ,
+              "DeferredSeek""\0" "Move P3 to P1.rowid if needed"        ,
+              "IdxRowid""\0" "r[P2]=rowid"            ,
+              "FinishSeek""\0" ""          ,
+              "Destroy""\0" ""             ,
+              "Clear""\0" ""               ,
+              "ResetSorter""\0" ""         ,
+              "CreateBtree""\0" "r[P2]=root iDb=P1 flags=P3"         ,
+              "SqlExec""\0" ""             ,
+              "ParseSchema""\0" ""         ,
+              "LoadAnalysis""\0" ""        ,
+              "DropTable""\0" ""           ,
+              "DropIndex""\0" ""           ,
+              "Real""\0" "r[P2]=P4"                ,
+              "DropTrigger""\0" ""         ,
+              "IntegrityCk""\0" ""         ,
+              "RowSetAdd""\0" "rowset(P1)=r[P2]"           ,
+              "Param""\0" ""               ,
+              "FkCounter""\0" "fkctr[P1]+=P2"           ,
+              "MemMax""\0" "r[P1]=max(r[P1],r[P2])"              ,
+              "OffsetLimit""\0" "if r[P1]>0 then r[P2]=r[P1]+max(0,r[P3]) else r[P2]=(-1)"         ,
+              "AggInverse""\0" "accum=r[P3] inverse(r[P2@P5])"          ,
+              "AggStep""\0" "accum=r[P3] step(r[P2@P5])"             ,
+              "AggStep1""\0" "accum=r[P3] step(r[P2@P5])"            ,
+              "AggValue""\0" "r[P3]=value N=P2"            ,
+              "AggFinal""\0" "accum=r[P1] N=P2"            ,
+              "Expire""\0" ""              ,
+              "CursorLock""\0" ""          ,
+              "CursorUnlock""\0" ""        ,
+              "TableLock""\0" "iDb=P1 root=P2 write=P3"           ,
+              "VBegin""\0" ""              ,
+              "VCreate""\0" ""             ,
+              "VDestroy""\0" ""            ,
+              "VOpen""\0" ""               ,
+              "VInitIn""\0" "r[P2]=ValueList(P1,P3)"             ,
+              "VColumn""\0" "r[P3]=vcolumn(P2)"             ,
+              "VRename""\0" ""             ,
+              "Pagecount""\0" ""           ,
+              "MaxPgcnt""\0" ""            ,
+              "ClrSubtype""\0" "r[P1].subtype = 0"          ,
+              "FilterAdd""\0" "filter(P1) += key(P3@P4)"           ,
+              "Trace""\0" ""               ,
+              "CursorHint""\0" ""          ,
+              "ReleaseReg""\0" "release r[P1@P2] mask P3"          ,
+              "Noop""\0" ""                ,
+              "Explain""\0" ""             ,
+              "Abortable""\0" ""           ,
   };
   return azName[i];
 }
@@ -55689,7 +55689,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN    %-3d %s\n", h, zFilename);
     if( zLockFile==0 ){
       rc =sqlite3NomemError(__LINE__);
     }else{
-      sqlite3_snprintf(nFilename, zLockFile, "%s" ".lock"       , zFilename);
+      sqlite3_snprintf(nFilename, zLockFile, "%s"".lock"        , zFilename);
     }
     pNew->lockingContext = zLockFile;
   }
@@ -55807,7 +55807,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
       sqlite3_randomness(sizeof(r), &r);
       assert( nBuf>2 );
       zBuf[nBuf-2] = 0;
-      sqlite3_snprintf(nBuf, zBuf, "%s/"SQLITE_TEMP_FILE_PREFIX "%llx%c",
+      sqlite3_snprintf(nBuf, zBuf, "%s/"SQLITE_TEMP_FILE_PREFIX"%llx%c",
                        zDir, r, 0);
       if( zBuf[nBuf-2]!=0 || (iLimit++)>10 ){
         rc =1            ;
@@ -125404,7 +125404,7 @@ static void renameTestSchema(
   pParse->colNamesSet = 1;
   sqlite3NestedParse(pParse,
       "SELECT 1 "
-      "FROM \"%w\"." "sqlite_master"     " "
+      "FROM \"%w\".""sqlite_master"      " "
       "WHERE name NOT LIKE 'sqliteX_%%' ESCAPE 'X'"
       " AND sql NOT LIKE 'create virtual%%'"
       " AND sqlite_rename_test(%Q, sql, type, name, %d, %Q, %d)=NULL ",
@@ -125415,7 +125415,7 @@ static void renameTestSchema(
   if( bTemp==0 ){
     sqlite3NestedParse(pParse,
         "SELECT 1 "
-        "FROM temp." "sqlite_master"     " "
+        "FROM temp.""sqlite_master"      " "
         "WHERE name NOT LIKE 'sqliteX_%%' ESCAPE 'X'"
         " AND sql NOT LIKE 'create virtual%%'"
         " AND sqlite_rename_test(%Q, sql, type, name, 1, %Q, %d)=NULL ",
@@ -125433,14 +125433,14 @@ static void renameTestSchema(
 
 static void renameFixQuotes(Parse *pParse, const char *zDb, int bTemp){
   sqlite3NestedParse(pParse,
-      "UPDATE \"%w\"." "sqlite_master"
+      "UPDATE \"%w\".""sqlite_master"
       " SET sql = sqlite_rename_quotefix(%Q, sql)"
       "WHERE name NOT LIKE 'sqliteX_%%' ESCAPE 'X'"
       " AND sql NOT LIKE 'create virtual%%'" , zDb, zDb
   );
   if( bTemp==0 ){
     sqlite3NestedParse(pParse,
-      "UPDATE temp." "sqlite_master"
+      "UPDATE temp.""sqlite_master"
       " SET sql = sqlite_rename_quotefix('temp', sql)"
       "WHERE name NOT LIKE 'sqliteX_%%' ESCAPE 'X'"
       " AND sql NOT LIKE 'create virtual%%'"
@@ -125558,7 +125558,7 @@ static         void sqlite3AlterRenameTable(
 
 
   sqlite3NestedParse(pParse,
-      "UPDATE \"%w\"." "sqlite_master"     " SET "
+      "UPDATE \"%w\".""sqlite_master"      " SET "
       "sql = sqlite_rename_table(%Q, type, name, sql, %Q, %Q, %d) "
       "WHERE (type!='index' OR tbl_name=%Q COLLATE nocase)"
       "AND   name NOT LIKE 'sqliteX_%%' ESCAPE 'X'"
@@ -125568,7 +125568,7 @@ static         void sqlite3AlterRenameTable(
 
 
   sqlite3NestedParse(pParse,
-      "UPDATE %Q." "sqlite_master"     " SET "
+      "UPDATE %Q.""sqlite_master"      " SET "
           "tbl_name = %Q, "
           "name = CASE "
             "WHEN type='table' THEN %Q "
@@ -125759,7 +125759,7 @@ static         void sqlite3AlterFinishAddColumn(Parse *pParse, Token *pColDef){
     assert(((pTab)->eTabType==0)  );
     assert(((pNew)->eTabType==0)  );
     sqlite3NestedParse(pParse,
-        "UPDATE \"%w\"." "sqlite_master"     " SET "
+        "UPDATE \"%w\".""sqlite_master"      " SET "
           "sql = printf('%%.%ds, ',sql) || %Q"
           " || substr(sql,1+length(printf('%%.%ds',sql))) "
         "WHERE type = 'table' AND name = %Q",
@@ -125993,7 +125993,7 @@ static         void sqlite3AlterRenameColumn(
   assert( pNew->n>0 );
   bQuote =(sqlite3CtypeMap[(unsigned char)(pNew->z[0])]&0x80);
   sqlite3NestedParse(pParse,
-      "UPDATE \"%w\"." "sqlite_master"     " SET "
+      "UPDATE \"%w\".""sqlite_master"      " SET "
       "sql = sqlite_rename_column(sql, type, name, %Q, %Q, %d, %Q, %d, %d) "
       "WHERE name NOT LIKE 'sqliteX_%%' ESCAPE 'X' "
       " AND (type != 'index' OR tbl_name = %Q)",
@@ -126003,7 +126003,7 @@ static         void sqlite3AlterRenameColumn(
   );
 
   sqlite3NestedParse(pParse,
-      "UPDATE temp." "sqlite_master"     " SET "
+      "UPDATE temp.""sqlite_master"      " SET "
       "sql = sqlite_rename_column(sql, type, name, %Q, %Q, %d, %Q, %d, 1) "
       "WHERE type IN ('trigger', 'view')",
       zDb, pTab->zName, iCol, zNew, bQuote
@@ -127528,7 +127528,7 @@ static         void sqlite3AlterDropColumn(Parse *pParse, SrcList *pSrc, const T
   renameTestSchema(pParse, zDb, iDb==1, "", 0);
   renameFixQuotes(pParse, zDb, iDb==1);
   sqlite3NestedParse(pParse,
-      "UPDATE \"%w\"." "sqlite_master"     " SET "
+      "UPDATE \"%w\".""sqlite_master"      " SET "
       "sql = sqlite_drop_column(%d, sql, %d) "
       "WHERE (type=='table' AND tbl_name=%Q COLLATE nocase)"
       , zDb, iDb, iCol, pTab->zName
@@ -133348,7 +133348,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
 
 
     sqlite3NestedParse(pParse,
-      "UPDATE %Q." "sqlite_master"
+      "UPDATE %Q.""sqlite_master"
       " SET type='%s', name=%Q, tbl_name=%Q, rootpage=#%d, sql=%Q"
       " WHERE rowid=#%d",
       db->aDb[iDb].zDbSName,
@@ -133733,7 +133733,7 @@ static void destroyRootPage(Parse *pParse, int iTable, int iDb){
 
 
   sqlite3NestedParse(pParse,
-     "UPDATE %Q." "sqlite_master"
+     "UPDATE %Q.""sqlite_master"
      " SET rootpage=%d WHERE #%d AND rootpage=#%d",
      pParse->db->aDb[iDb].zDbSName, iTable, r1, r1);
 
@@ -133868,7 +133868,7 @@ static         void sqlite3CodeDropTable(Parse *pParse, Table *pTab, int iDb, in
 
 
   sqlite3NestedParse(pParse,
-      "DELETE FROM %Q." "sqlite_master"
+      "DELETE FROM %Q.""sqlite_master"
       " WHERE tbl_name=%Q and type!='trigger'",
       pDb->zDbSName, pTab->zName);
   if( !isView && !((pTab)->eTabType==1)){
@@ -134891,7 +134891,7 @@ if( hasColumn(pIndex->aiColumn,pIndex->nKeyCol,x) ){ sqlite3CoverageCounter += (
 
 
       sqlite3NestedParse(pParse,
-         "INSERT INTO %Q." "sqlite_master"     " VALUES('index',%Q,%Q,#%d,%Q);",
+         "INSERT INTO %Q.""sqlite_master"      " VALUES('index',%Q,%Q,#%d,%Q);",
          db->aDb[iDb].zDbSName,
          pIndex->zName,
          pTab->zName,
@@ -135077,7 +135077,7 @@ static         void sqlite3DropIndex(Parse *pParse, SrcList *pName, int ifExists
   if( v ){
     sqlite3BeginWriteOperation(pParse, 1, iDb);
     sqlite3NestedParse(pParse,
-       "DELETE FROM %Q." "sqlite_master"     " WHERE name=%Q AND type='index'",
+       "DELETE FROM %Q.""sqlite_master"      " WHERE name=%Q AND type='index'",
        db->aDb[iDb].zDbSName, pIndex->zName
     );
     sqlite3ClearStatTables(pParse, iDb, "idx", pIndex->zName);
@@ -160046,7 +160046,7 @@ static         void sqlite3FinishTrigger(
     z = sqlite3DbStrNDup(db, (char*)pAll->z, pAll->n);
 if( z==0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
     sqlite3NestedParse(pParse,
-       "INSERT INTO %Q." "sqlite_master"
+       "INSERT INTO %Q.""sqlite_master"
        " VALUES('trigger',%Q,%Q,0,'CREATE TRIGGER %q')",
        db->aDb[iDb].zDbSName, zName,
        pTrig->table, z);
@@ -160361,7 +160361,7 @@ static         void                                                        {
 
   if( (v = sqlite3GetVdbe(pParse))!=0 ){
     sqlite3NestedParse(pParse,
-       "DELETE FROM %Q." "sqlite_master"     " WHERE name=%Q AND type='trigger'",
+       "DELETE FROM %Q.""sqlite_master"      " WHERE name=%Q AND type='trigger'",
        db->aDb[iDb].zDbSName, pTrigger->zName
     );
     sqlite3ChangeCookie(pParse, iDb);
@@ -163732,7 +163732,7 @@ static         void sqlite3VtabFinishParse(Parse *pParse, Token *pEnd){
 
     iDb = sqlite3SchemaToIndex(db, pTab->pSchema);
     sqlite3NestedParse(pParse,
-      "UPDATE %Q." "sqlite_master"     " "
+      "UPDATE %Q.""sqlite_master"      " "
          "SET type='table', name=%Q, tbl_name=%Q, rootpage=0, sql=%Q "
        "WHERE rowid=#%d",
       db->aDb[iDb].zDbSName,
@@ -257252,9 +257252,9 @@ static int fts5VocabInitVtab(
   char **pzErr
 ){
   const char *azSchema[] = {
-    "CREATE TABlE vocab(" "term, col, doc, cnt"  ")",
-    "CREATE TABlE vocab(" "term, doc, cnt"       ")",
-    "CREATE TABlE vocab(" "term, doc, col, offset" ")"
+    "CREATE TABlE vocab(""term, col, doc, cnt"   ")",
+    "CREATE TABlE vocab(""term, doc, cnt"        ")",
+    "CREATE TABlE vocab(""term, doc, col, offset"")"
   };
 
   Fts5VocabTable *pRet = 0;

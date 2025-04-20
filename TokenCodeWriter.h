@@ -100,14 +100,20 @@ class TokenCodeWriter {
     // anything after categorised chars
     if (!tag::is_raw(last_tag) && !tag::is_punct(last_tag)) {
       // in most cases these are iconpatible
-      if (!tag::is_raw(token.tag) && !tag::is_punct(token.tag)) return true;
+      if (!tag::is_raw(token.tag) && !tag::is_punct(token.tag)) {
+        if (last_tag == tag::string_like_literal &&
+                (token.tag == tag::number ||
+                 token.tag == tag::string_like_literal) ||
+            last_tag == tag::number && token.tag == tag::string_like_literal)
+          return false;
+        return true;
+      }
       return last_tag == tag::number && oneof(crhs, ".+-");
     }
 
     // categorised chars after raw chars
     if (!tag::is_raw(token.tag) && !tag::is_punct(token.tag))
-      return (last_tag == tag::raw('.') || last_tag == tag::ellipsis) &&
-             token.tag == tag::number;
+      return last_tag == tag::raw('.') && token.tag == tag::number;
 
     // raw chars after raw chars
 
