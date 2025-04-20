@@ -4,8 +4,7 @@
 #include <cstddef>
 #include <vector>
 
-#include "Cursor.h"
-#include "Token.h"
+#include "tkz/Cursor.h"
 
 template <class T>
 class TokenReader {

@@ -1,10 +1,60 @@
 
 #include "Preprocessor.h"
 
+#include <string_view>
+
 #include "ExpansionTokeniser.h"
-#include "Token.h"
-#include "TokenGroup.h"
-#include "util/helper.h"
+#include "util/indentos.h"
+#include "util/rwfile.h"
+
+namespace {
+
+class TokenBuffWriter {
+ public:
+  TokenBuffWriter(TokenList& buffer, StringStorage& string_storage)
+      : buffer(buffer), head(buffer.size()), string_storage(string_storage) {}
+
+  void write(Token tok) {
+    if (cat_mode) return cat_token(tok);
+    buffer.push_back(tok);
+  }
+
+  TokenListSlice as_input() const { return {buffer, head}; }
+  inline void clear() const { buffer.resize(head); }
+  inline void set_cat(bool value = true) { cat_mode = true; }
+
+ private:
+  TokenList& buffer;
+  size_t head;
+  StringStorage& string_storage;
+  bool cat_mode = false;
+
+  void cat_token(Token tok) {
+    cat_mode = false;
+    if (buffer.size() <= head) return buffer.push_back(tok);
+
+    std::string& text = string_storage.emplace_back(buffer.back().get_text());
+    text += tok.get_text();
+
+    Tokeniser tkz(text, buffer.back().start_pos);
+    buffer.pop_back();
+    while (!tkz.eof()) buffer.push_back(tkz.read_pptoken());
+  }
+};
+
+}  // namespace
+
+void Preprocessor::fit_va_args(size_t expected, size_t actual) {
+  const size_t last_index = arg_rages.back();
+  auto begin = arg_rages.end() - actual;
+  if (actual < expected) {
+    --arg_rages.back();
+    arg_rages.push_back(last_index);
+  } else if (actual > expected) {
+    arg_rages.erase(arg_rages.end() - actual + expected - 1, arg_rages.end());
+    arg_rages.push_back(last_index);
+  }
+}
 
 size_t Preprocessor::prescan_macro(TokenListSlice input,  //
                                    MacroStamp macroStamp) {
@@ -28,6 +78,9 @@ size_t Preprocessor::prescan_macro(TokenListSlice input,  //
     if (!mark_arg_ranges(it->tag, it.index(), balance)) continue;
     const size_t nargs = arg_rages.size() - args_head - 1;
     if (!macroStamp.is_valid_call(nargs)) break;
+    if (macroStamp.info.is_variadic) {
+      fit_va_args(macroStamp.info.nargs, nargs);
+    }
     return it + 1 - input.begin();
   }
   // invalid macro use: eof
@@ -39,10 +92,6 @@ void Preprocessor::preprocess_tokens(
     TokenListSlice input,  //
     TokenList& buffer,     // same as input on start
     TokenList& output) {
-  DBG(indentos ios{std::cerr};)
-  size_t dbg_buf_head = buffer.size();
-  size_t dbg_out_head = out.size();
-  DBG(std::cerr << "preprocess_tokens: " << input << "\n";)
   while (!input.empty()) {
     switch (input.front().tag) {
       case tag::identifier: {
@@ -56,7 +105,6 @@ void Preprocessor::preprocess_tokens(
                      IndexListSlice{arg_rages, args_head},  //
                      buffer, output);
         input.remove_prefix(nprescanned);
-        DBG(std::cerr << "removed prefix: " << input << "\n";)
         continue;
       }
       default:
@@ -66,13 +114,6 @@ void Preprocessor::preprocess_tokens(
     output.push_back(input.front());
     input.remove_prefix(1);
   }
-
-  DBG(std::cerr << (&buffer == &out ? "->" : "  ");
-      std::cerr << "buffer: " << IndexRange(buffer, 0, dbg_buf_head)
-                << IndexRange(buffer, dbg_buf_head) << "\n";
-      std::cerr << (&output == &out ? "->" : "  ");
-      std::cerr << "output: " << IndexRange(output, 0, dbg_out_head)
-                << IndexRange(output, dbg_out_head) << "\n";)
 }
 size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
                                        TokenList& output,  //
@@ -108,6 +149,9 @@ size_t Preprocessor::prescan_tkz_macro(Token token, Tokeniser& tkz,
     if (!mark_arg_ranges(token.tag, output.size() - 1, balance)) continue;
     const size_t nargs = arg_rages.size() - args_head - 1;
     if (!macroStamp.is_valid_call(nargs)) break;
+    if (macroStamp.info.is_variadic) {
+      fit_va_args(macroStamp.info.nargs, nargs);
+    }
     return output.size();
   }
   // invalid macro use
@@ -156,18 +200,27 @@ void Preprocessor::preprocess_tkz_tokens(Tokeniser& tkz,
 std::optional<MacroStamp> Preprocessor::lookup_macro(Token& token) const {
   if (token.details.is_not_macro) return std::nullopt;
   const auto macro_name = token.get_text();
-  auto macroIt = macro_map.find(macro_name);
-  if (macroIt == macro_map.end()) {
-    token.details.is_not_macro = true;
-    return std::nullopt;
-  }
-  token.details.is_not_macro = false;
   if (in_process(macro_name)) return std::nullopt;
-  return MacroStamp{macroIt->second};
+
+  if (auto macro_it = macro_map.find(macro_name); macro_it != macro_map.end()) {
+    token.details.is_not_macro = false;
+    return MacroStamp{macro_it->second};
+  }
+
+  if (auto macro_it = context_macro_map.find(macro_name);
+      macro_it != context_macro_map.end()) {
+    token.details.is_not_macro = false;
+    // add to local map?
+    // macro_map.emplace(macro_it->first, macro_it->second);
+    return MacroStamp{macro_it->second};
+  }
+  token.details.is_not_macro = true;
+  return std::nullopt;
 }
 
-Preprocessor::TokenListSlice Preprocessor::get_arg_range(
-    TokenList& src, const IndexListSlice& arg_chunk, uint16_t arg_idx) {
+TokenListSlice Preprocessor::get_arg_range(TokenList& src,
+                                           const IndexListSlice& arg_chunk,
+                                           uint16_t arg_idx) {
   const size_t arg_ibegin = arg_chunk[arg_idx] + 1;
   const size_t arg_iend = arg_chunk[arg_idx + 1];
   TokenListSlice arg_range{src, arg_ibegin, arg_iend};
@@ -180,14 +233,13 @@ Preprocessor::TokenListSlice Preprocessor::get_arg_range(
 
   return arg_range;
 }
+
 void Preprocessor::expand_macro(MacroStamp macro_stamp,  //
                                 TokenListSlice input,
                                 IndexListSlice arg_chunk,  //
                                 TokenList& buffer,         //
                                 TokenList& output) {
-  DBG(indentos ios{std::cerr};)
   TokenBuffWriter writer{buffer, string_storage};
-  DBG(std::cerr << "expand: " << input << "\n";)
 
   const Token macro_token = input.front();
 
@@ -203,11 +255,9 @@ void Preprocessor::expand_macro(MacroStamp macro_stamp,  //
     }
 
     if (tag::is_macro_arg(token.tag)) {
-      DBG(indentos ios{std::cerr};)
       const IndexRange arg_tokens =
           get_arg_range(input.base(), arg_chunk, token.details.index);
 
-      DBG(std::cerr << "arg:\n";)
       if (token.tag == tag::arg) {
         preprocess_tokens(arg_tokens, output, buffer);
       } else if (token.tag == tag::arg_str) {
@@ -241,11 +291,8 @@ void Preprocessor::expand_macro(MacroStamp macro_stamp,  //
   arg_rages.resize(arg_chunk.ibegin());
 
   macro_stack.push_back(macro_token.get_text());
-  {
-    DBG(std::cerr << "postexpand: " << writer.as_input() << "\n";)
-    preprocess_tokens(writer.as_input(), buffer, output);
-    writer.clear();
-  }
+  preprocess_tokens(writer.as_input(), buffer, output);
+  writer.clear();
   macro_stack.pop_back();
 }
 
@@ -268,7 +315,7 @@ bool Preprocessor::mark_arg_ranges(Tag tag, size_t index, int& balance) {
   return false;
 }
 
-void Preprocessor::prepreprocess() {
+void Preprocessor::prepreprocess(std::string& src) {
   auto orig_it = src.begin();
   auto it = src.begin();
   const auto end = src.end();
@@ -337,13 +384,12 @@ bool Preprocessor::in_process(std::string_view macro_name) const {
 
 // public interface:
 
-void Preprocessor::process_code(std::string_view src_orig,
-                                std::string& output) {
+void Preprocessor::process_code(std::string& src, std::string& output) {
   output.clear();
   clear();
 
-  src = src_orig;
-  prepreprocess();
+  prepreprocess(src);
+  write_file(ROOT "BCM/pre.out.cpp", src);
 
   TokenCodeWriter writer{output};
   Tokeniser tkz{src};
@@ -361,6 +407,5 @@ void Preprocessor::clear() {
   offsets.clear();
   line_offset = 0;
   last_newline_offset = 0;
-  src.clear();
   offsets_it = offsets.begin();
 }

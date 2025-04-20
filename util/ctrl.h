@@ -1,47 +1,30 @@
 #pragma once
 
+#include <ostream>
 #include <string>
 
 namespace details {
 
-[[deprecated("for the sake of just slashes and cool font")]]  //
-inline int
-ctrl_encode(unsigned char c) {
-  if (c == 0 ||  //
-      '\t' <= c && c <= '\r')
-    return 224 | c;
-  return c;
-}
-
-inline auto& appendCtrlEncode(int code, std::string& out) {
-  if (!std::iscntrl(code)) return out += code;
+inline std::ostream& print_char(std::ostream& os, char c) {
   // clang-format off
-  switch (code) {
-    case '\0': return out += "\\0";
-    case '\a': return out += "\\a";
-    case '\b': return out += "\\b";
-    case '\t': return out += "\\t";
-    case '\n': return out += "\\n";
-    case '\v': return out += "\\v";
-    case '\f': return out += "\\f";
-    case '\r': return out += "\\r";
-    default: return out += "\\.";
+  switch (c) {
+    case '\\': return os << "\\\\";
+    case '\0': return os << "\\0";
+    case '\a': return os << "\\a";
+    case '\b': return os << "\\b";
+    case '\t': return os << "\\t";
+    case '\n': return os << "\\n";
+    case '\v': return os << "\\v";
+    case '\f': return os << "\\f";
+    case '\r': return os << "\\r";
+    default: break;
   }
   // clang-format on
+  const unsigned char uc = c;
+  if (!std::iscntrl(uc)) return os << c;
+  return os << "\\.";
 }
 
-inline void appendUTF8(int code, std::string& out) {
-  if (code < 128) {
-    out += static_cast<char>(code);
-  } else if (code < 2048) {
-    out += static_cast<char>((code >> 6) | 192);
-    out += static_cast<char>((code & 63) | 128);
-  } else if (code < 65536) {
-    out += static_cast<char>((code >> 12) | 224);
-    out += static_cast<char>(((code >> 6) & 63) | 128);
-    out += static_cast<char>((code & 63) | 128);
-  }
-}
 }  // namespace details
 
 struct ctrl_str {
@@ -51,10 +34,6 @@ struct ctrl_str {
   char letter;
 };
 inline std::ostream& operator<<(std::ostream& os, const ctrl_str& ctrls) {
-  std::string out;
-  for (unsigned char c : ctrls.sv) {
-    // details::appendUTF8(details::ctrl_encode(c), out);
-    details::appendCtrlEncode(c, out);
-  }
-  return os << out;
+  for (char c : ctrls.sv) details::print_char(os, c);
+  return os;
 }

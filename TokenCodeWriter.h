@@ -8,10 +8,10 @@
 #include <utility>
 #include <vector>
 
-#include "Position.h"
 #include "PositionMap.h"
-#include "Token.h"
 #include "ankerl/unordered_dense.h"
+#include "tkz/Position.h"
+#include "tkz/Token.h"
 #include "util/helper.h"
 
 class TokenCodeWriter {

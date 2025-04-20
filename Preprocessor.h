@@ -1,92 +1,93 @@
 #pragma once
 
 // #define debug
+#include <ostream>
 #include <string_view>
 #include <vector>
 
-#include "Cursor.h"
-#include "Macro.h"
-#include "Token.h"
+#include "MacroMap.h"
+#include "MacroStamp.h"
 #include "TokenCodeWriter.h"
-#include "TokenGroup.h"
+#include "tkz/Cursor.h"
+#include "tkz/Token.h"
+#include "tkz/TokenGroup.h"
 #include "util/ranges.h"
 #include "util/util.h"
 
-#ifdef debug
-#define DBG(...) __VA_ARGS__
-#else
-#define DBG(...)
-#endif
+using TokenList = std::vector<Token>;
+using TokenListSlice = IndexRange<TokenList>;
+using StringStorage = dense::segmented_vector<std::string>;
 
-inline Token cat_tokens(Token lhs, Token rhs, std::string& text) {
-  text += lhs.get_text();
-  text += rhs.get_text();
-  // TODONOW: deduce tag from both tags
-  Tokeniser tkz{text, lhs.start_pos};
+template <typename DirectiveHandlerImpl>
+class DirectiveHandler {
+ public:
+  void handle(DirectiveTokenImage& directive_image) {
+    impl()->handle(directive_image);
+  }
 
-  tkz.read_pptoken();
-  constexpr const auto cat_tags = [](Tag lhs, Tag rhs) { return lhs; };
+ private:
+  inline DirectiveHandlerImpl* impl() const {
+    return static_cast<DirectiveHandlerImpl*>(this);
+  }
+};
 
-#ifdef ENDPOS
-  return make_token(text, cat_tags(lhs.tag, rhs.tag), lhs.start_pos,
-                    rhs.end_pos);
-#else
-  return make_token(text, cat_tags(lhs.tag, rhs.tag), lhs.start_pos);
-#endif
+class DirectiveDumper : public DirectiveHandler<DirectiveDumper> {
+ public:
+  DirectiveDumper() {}
+  void handle(DirectiveTokenImage& directive_image) {}
+};
+
+
+template <typename Iter>
+std::ostream& operator<<(std::ostream& os, Range<Iter> range) {
+  os << "[";
+  for (auto val: range) {
+    os << val << ", ";
+  }
+  return os << "]";
+}
+template <typename Container>
+std::ostream& operator<<(std::ostream& os, IndexRange<Container> range) {
+  os << "[";
+  for (auto val: range) {
+    os << val << ", ";
+  }
+  return os << "]";
 }
 
 class Preprocessor {
-  using TokenList = std::vector<Token>;
-  using TokenListSlice = IndexRange<TokenList>;
 
   using IndexList = std::vector<size_t>;
   using IndexListSlice = IndexRange<IndexList>;
 
-  using MacroMapValue = std::string;
-  using MacroMapValuePtr = MacroMapValue*;
-
-  using StringStorage = dense::segmented_vector<std::string>;
-
-  class TokenBuffWriter {
-   public:
-    TokenBuffWriter(TokenList& buffer, StringStorage& string_storage)
-        : buffer(buffer), head(buffer.size()), string_storage(string_storage) {}
-
-    void write(Token tok) {
-      if (cat_mode) return cat_token(tok);
-      buffer.push_back(tok);
-    }
-
-    TokenListSlice as_input() const { return {buffer, head}; }
-    inline void clear() const { buffer.resize(head); }
-    inline void set_cat(bool value = true) { cat_mode = true; }
-
-   private:
-    TokenList& buffer;
-    size_t head;
-    StringStorage& string_storage;
-    bool cat_mode = false;
-
-    void cat_token(Token tok) {
-      cat_mode = false;
-      if (buffer.size() <= head) return buffer.push_back(tok);
-
-      std::string& text = string_storage.emplace_back(buffer.back().get_text());
-      text += tok.get_text();
-
-      Tokeniser tkz(text, buffer.back().start_pos);
-      buffer.pop_back();
-      while (!tkz.eof()) buffer.push_back(tkz.read_pptoken());
-    }
-  };
-
  public:
-  void process_code(std::string_view src_orig, std::string& output);
+  void process_code(std::string& src, std::string& output);
+  void collect_macro_map(std::string& src) {
+    clear();
+    prepreprocess(src);
+    Tokeniser tkz{src};
+    while (!tkz.eof()) read_token(tkz);
+  }
   void clear();
 
+  MacroMap&& take_macro_map() { return std::move(macro_map); }
+  const MacroMap& get_macro_map() const { return macro_map; }
+
+  MacroMap& context() { return context_macro_map; }
+
+  void merge_context() {
+    for (auto& [name, expansion] : macro_map)
+      context_macro_map[name] = std::move(expansion);
+    macro_map.clear();
+  }
+
  private:
-  SegStringMap<MacroMapValue> macro_map;
+  MacroMap macro_map;
+  MacroMap context_macro_map;
+
+  // for token cancat result texts
   StringStorage string_storage;
+
   TokenList out;
   TokenList buf;
   IndexList arg_rages;  // TokenList independent
@@ -98,7 +99,6 @@ class Preprocessor {
 
   size_t line_offset = 0;
   positer last_newline_offset = 0;
-  std::string src;
 
   // TODO: try to add macro call view?
   struct MacroUseView {
@@ -140,9 +140,11 @@ class Preprocessor {
   bool mark_arg_ranges(Tag tag, size_t index, int& balance);
 
   // token read related methods
-  void prepreprocess();
+  void prepreprocess(std::string& src);
   Token read_token(Tokeniser& tkz);
 
   // TODO: move to handler
   void process_ppline(const DirectiveTokenImage& directive);
+
+  void fit_va_args(size_t expected, size_t actual);
 };

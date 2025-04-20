@@ -2,12 +2,11 @@
 
 #include <charconv>
 
-#include "Cursor.h"
-#include "Position.h"
-#include "Token.h"
+#include "tkz/Cursor.h"
+#include "tkz/Position.h"
+#include "tkz/Token.h"
 
 class MacroExpansionTokeniser : private Tokeniser {
-
   inline static constexpr Tag arg_tag_marker_to_arg_tag(char op_tag) {
     switch (op_tag) {
       case tag::markerof(tag::arg_str):
@@ -24,12 +23,14 @@ class MacroExpansionTokeniser : private Tokeniser {
   MacroExpansionTokeniser(std::string_view src, Position start_pos = Position{})
       : Tokeniser(src, start_pos) {}
 
+  using Tokeniser::eof;
+
   inline Token read_token() {
     Token token;
     token.start = cur.it;
     token.start_pos = cur.to_position();
     token.details = {0};
-    token.tag = skip_next();
+    token.tag = tag_next();
     if (token.tag == tag::arg) {
       cur.it = std::from_chars(cur.it, cur.end, token.details.index).ptr;
       token.tag = arg_tag_marker_to_arg_tag(*cur.it++);
@@ -41,23 +42,14 @@ class MacroExpansionTokeniser : private Tokeniser {
     return token;
   }
 
-  inline Tag skip_next() {
+ private:
+  inline Tag tag_next() {
     if (cur.eof()) return tag::eof;
     if (*cur.it == '$') { /*5*/
       ++cur.it;
       if (*cur.it == '$') return tag::raw(*cur.it++);
       return tag::arg;
     }
-    if (*cur.it == '#') { /*5*/
-      ++cur.it;
-      if (!cur.eof() && *cur.it == '#') {
-        ++cur.it;
-        return tag::pp_op_cat;
-      }
-      return tag::pp_op_str;
-    }
     return Tokeniser::tag_ppnext();
   }
-
-  inline bool eof() const { return Tokeniser::eof(); }
 };

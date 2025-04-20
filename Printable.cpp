@@ -1,14 +1,13 @@
-#include "Cursor.h"
-
 #include <iomanip>
 #include <iostream>
+#include <ostream>
 #include <sstream>
 #include <unordered_map>
 
-#include "Token.h"
-#include "TokenGroup.h"
-
 #include "TokenPrinter.h"
+#include "tkz/Cursor.h"
+#include "tkz/Token.h"
+#include "tkz/TokenGroup.h"
 #include "util/ctrl.h"
 
 using positer = std::string_view::iterator;
@@ -38,29 +37,27 @@ void DefineView::print(std::ostream& os) const {
 }
 
 namespace {
+
 void print_tag(std::ostream& os, Tag tag) {
-  char kind_c = [tag]() {
+  char kind_char = [tag]() {
+    // clang-format off
     switch (tag::kindof(tag)) {
-      case tag::Kind::raw:
-        return 'r';
-      case tag::Kind::extra:
-        return 'e';
-      case tag::Kind::grouped:
-        return 'g';
-      case tag::Kind::ppline:
-        return 'p';
-      case tag::Kind::aux:
-        return 'a';
-      default:
-        return ' ';
-        break;
+      case tag::Kind::raw:     return 'r';
+      case tag::Kind::extra:   return 'e';
+      case tag::Kind::grouped: return 'g';
+      case tag::Kind::ppline:  return 'p';
+      case tag::Kind::aux:     return 'a';
+      default: break;
     }
+    // clang-format on
+    return ' ';
   }();
   std::stringstream ss;
-  ss << std::setw(2) << kind_c  //
-     << std::setw(2) << ctrl_str{static_cast<char>(tag & 0xFF)};
+  ss << std::setw(2) << kind_char  //
+     << std::setw(2) << ctrl_str{tag::markerof(tag)};
   os << ss.str();
 }
+
 }  // namespace
 
 void Token::print(std::ostream& os) const {
@@ -69,16 +66,23 @@ void Token::print(std::ostream& os) const {
   os << start_pos << ": -> `" << ctrl_str{get_text()} << "`\n";
 }
 
+inline std::ostream& operator<<(std::ostream& os, Token tok) {
+  os << 'T';
+  print_tag(os, tok.tag);
+  os << tok.start_pos << ": -> `" << ctrl_str{tok.get_text()} << "`\n";
+  return os;
+}
+
 inline std::ostream& operator<<(std::ostream& os,
-  const IndexRange<std::vector<Token>>& tokens) {
-TokenPrinter printer{os, false};
-os << "|";
-for (const auto& token : tokens) {
-if (token.tag == tag::newline) {
-os << " \\n ";
-} else {
-printer.print(token);
-}
-}
-return os;
+                                const IndexRange<std::vector<Token>>& tokens) {
+  TokenPrinter printer{os, false};
+  os << "|";
+  for (const auto& token : tokens) {
+    if (token.tag == tag::newline) {
+      os << " \\n ";
+    } else {
+      printer.print(token);
+    }
+  }
+  return os;
 }

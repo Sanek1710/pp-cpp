@@ -9,8 +9,12 @@
 #include "Position.h"
 #include "Token.h"
 #include "TokenGroup.h"
-#include "util/chars.h"
+#include "../util/chars.h"
 
+
+// TODO: 
+// make template method read token which takes Tagger 
+// and maybe args for specific scenarios
 struct Cursor {
   positer it;
   positer end;
@@ -64,6 +68,8 @@ class Tokeniser {
   inline Token read_pptoken() { return read<&Tokeniser::tag_ppnext>(); }
 
   inline bool eof() const { return cur.eof(); }
+
+  Cursor cursor() { return cur; }
 
   inline const DirectiveTokenImage& tokenImage() const {
     return mdirective_image;

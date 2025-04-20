@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Position.h"
+#include "tkz/Position.h"
 #include "util/util.h"
 
 // Position manipulations

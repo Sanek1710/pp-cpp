@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "Token.h"
-#include "util/ranges.h"
+#include "../util/ranges.h"
 
 struct MacroInfo {
   unsigned short nargs = 0;

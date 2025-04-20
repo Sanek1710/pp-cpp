@@ -86,7 +86,11 @@ inline void skip_string_literal(Cursor& cur, bool ppline) {
   const char quot = *cur.it;
   bool escaped = false;
   for (++cur.it; !cur.eof(); ++cur.it) {
-    if (ppline && *cur.it == '\n') return;
+    if (*cur.it == '\n') {
+      if (ppline) return;
+      cur.enter();
+      continue;
+    }
     if (*cur.it == '\\') {
       escaped = !escaped;
       continue;
@@ -196,14 +200,10 @@ inline Tag tag_skip(Cursor& cur, size_t n, Tag tag) {
 template <bool ppline>
 inline Tag tag_common_template(Cursor& cur) {
   if (consume_extras<ppline>(cur)) return tag::space;
-
-  const char c0 = cur.peek(0);
-  const char c1 = cur.peek(1);
-  const char c2 = cur.peek(2);
-  const char c3 = cur.peek(3);
-
   cur.clear_line = false;
-  switch (c0) {
+
+  const char c1 = cur.peek(1);
+  switch (cur.peek(0)) {
     case 0:
       return tag::eof;
 
@@ -247,26 +247,28 @@ inline Tag tag_common_template(Cursor& cur) {
 
     case '%':
       if (c1 == ':')
-        return (c2 == '%' && c3 == ':') ? tag_skip(cur, 4, tag::pp_op_cat)
-                                        : tag_skip(cur, 2, tag::pp_op_str);
+        return (cur.peek(2) == '%' && cur.peek(3) == ':')
+                   ? tag_skip(cur, 4, tag::pp_op_cat)
+                   : tag_skip(cur, 2, tag::pp_op_str);
       return c1 == '>' || c1 == '=' ? pskip(cur, 2) : pskip(cur, 1);
 
     case '-':
-      if (c1 == '>') return c2 == '*' ? pskip(cur, 3) : pskip(cur, 2);
+      if (c1 == '>') return cur.peek(2) == '*' ? pskip(cur, 3) : pskip(cur, 2);
       return c1 == '-' || c1 == '=' ? pskip(cur, 2) : pskip(cur, 1);
 
     case '.':
       if (c1 == '.')
-        return c2 == '.' ? tag_skip(cur, 3, tag::ellipsis) : pskip(cur, 1);
+        return cur.peek(2) == '.' ? tag_skip(cur, 3, tag::ellipsis)
+                                  : pskip(cur, 1);
       return c1 == '*' ? pskip(cur, 2) : pskip(cur, 1);
 
     case '<':
-      if (c1 == '=') return c2 == '>' ? pskip(cur, 3) : pskip(cur, 2);
-      if (c1 == '<') return c2 == '=' ? pskip(cur, 3) : pskip(cur, 2);
+      if (c1 == '=') return cur.peek(2) == '>' ? pskip(cur, 3) : pskip(cur, 2);
+      if (c1 == '<') return cur.peek(2) == '=' ? pskip(cur, 3) : pskip(cur, 2);
       return c1 == '%' || c1 == ':' ? pskip(cur, 2) : pskip(cur, 1);
 
     case '>':
-      if (c1 == '>') return c2 == '=' ? pskip(cur, 3) : pskip(cur, 2);
+      if (c1 == '>') return cur.peek(2) == '=' ? pskip(cur, 3) : pskip(cur, 2);
       return c1 == '=' ? pskip(cur, 2) : pskip(cur, 1);
 
     // clang-format off
@@ -293,12 +295,16 @@ inline Tag tag_common_template(Cursor& cur) {
   }
 }
 
-}  // namespace
+inline Tag tag_common(Cursor& cur) { return tag_common_template<false>(cur); }
+inline Tag tag_ppcommon(Cursor& cur) { return tag_common_template<true>(cur); }
+inline bool skip_common_extras(Cursor& cur) {
+  return consume_extras<false>(cur);
+}
+inline bool skip_ppcommon_extras(Cursor& cur) {
+  return consume_extras<true>(cur);
+}
 
-Tag tag_common(Cursor& cur) { return tag_common_template<false>(cur); }
-Tag tag_ppcommon(Cursor& cur) { return tag_common_template<true>(cur); }
-bool skip_common_extras(Cursor& cur) { return consume_extras<false>(cur); }
-bool skip_ppcommon_extras(Cursor& cur) { return consume_extras<true>(cur); }
+}  // namespace
 
 Tag Tokeniser::tag_if_include_string() {
   const char quot = *cur.it == '<' ? '>' :  //

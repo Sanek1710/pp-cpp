@@ -6,7 +6,7 @@
 #include <unordered_map>
 
 #include "Preprocessor.h"
-#include "TokenGroup.h"
+#include "tkz/TokenGroup.h"
 #include "TokenPrinter.h"
 #include "util/helper.h"
 #include "util/util.h"

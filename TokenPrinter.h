@@ -5,7 +5,7 @@
 #include <string_view>
 #include <unordered_set>
 
-#include "Token.h"
+#include "tkz/Token.h"
 
 // constexpr uint32_t mask3(Cursor::iterator it, Cursor::iterator end) {
 //   uint32_t val = 0;
@@ -29,9 +29,9 @@ class TokenPrinter {
     on_newline();
   }
 
-  inline void print(Token token) {
+  inline void print(Token token, char peek = 0) {
     std::string_view text = token.get_text();
-    auto clr = [text, &token]() -> const char* {
+    auto clr = [text, &token, peek]() -> const char* {
       std::unordered_set<std::string_view> keywords = {
           "return",  "if",     "using", "while", "do",    "break",
           "else",    "for",    "#",     "ifdef", "endif", "else",
@@ -55,9 +55,9 @@ class TokenPrinter {
       if (std::isdigit(text.front())) return "\033[38;5;193m";
       if (text.front() == '(' || text.front() == ')') return "\033[38;5;228m";
       if (std::ispunct(text.front())) return "\033[38;5;248m";
-      if (token.tag == tag::identifier && *token.end() == ':')
+      if (token.tag == tag::identifier && peek == ':')
         return "\033[38;5;37m";
-      if (token.tag == tag::identifier && *token.end() == '(')
+      if (token.tag == tag::identifier && peek == '(')
         return "\033[38;5;230m";
       return "\033[38;5;153m";
     };

@@ -12,10 +12,15 @@ add_subdirectory(third-party)
 add_executable(perftest perftest.cpp)
 target_link_libraries(perftest unordered_dense)
 
-add_library(preprocessor Cursor.cpp Printable.cpp Preprocessor.cpp)
-target_link_libraries(preprocessor unordered_dense)
+add_subdirectory(tkz)
+add_library(preprocessor Printable.cpp Preprocessor.cpp)
+target_link_libraries(preprocessor tkz unordered_dense)
 
 add_executable(main main.cpp)
 target_link_libraries(main preprocessor)
 
 add_subdirectory(tests)
+
+
+add_executable(storage Storage.cpp)
+target_link_libraries(storage unordered_dense)

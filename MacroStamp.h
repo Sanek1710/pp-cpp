@@ -4,10 +4,8 @@
 #include <charconv>
 #include <string_view>
 
-#include "Token.h"
-#include "TokenGroup.h"
-
-using FileID = unsigned;
+#include "tkz/Token.h"
+#include "tkz/TokenGroup.h"
 
 // Helper struct to parse macro information
 struct MacroStamp {
