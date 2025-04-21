@@ -1,5 +1,5 @@
 
-a + 
-a + 
+a +
+a +
 a + b
 a + b, c, d, e, f ,g

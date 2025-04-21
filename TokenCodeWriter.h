@@ -19,17 +19,33 @@ class TokenCodeWriter {
   TokenCodeWriter(std::string& out) : out(out) {}
 
   inline void write(const Token& token) {
-    if (tag::is_extra(token.tag)) return putspace();
+    if (tag::is_extra(token.tag)) {
+      pending_space = true;
+      return;
+    }
 
     if (!align(token.start_pos, !token.details.is_expansion)) {
       // TODO: add other token tags if you need to map them
-      if (token.tag == tag::identifier) map_position(token.start_pos);
+      map_position(token.start_pos);
+    }
+    if (pending_space || needs_space(token)) putspace();
+
+    // the most easiest way to do it correctly
+    // slightly slower than smart logic with position differences
+    for (char c : token.get_text()) {
+      ++last_pos.column;
+      if (c == '\n') {
+        ++last_pos.line;
+        last_pos.column = 0;
+      }
+      out += c;
     }
 
-    insert(token);
+    last_tag = token.tag;
   }
 
   inline void putspace() {
+    pending_space = false;
     if (last_tag == tag::space) return;
     out += ' ';
     ++last_pos.column;
@@ -48,27 +64,11 @@ class TokenCodeWriter {
   std::string& out;
   Token cache_tok;
   Tag last_tag = tag::space;
+  bool pending_space = false;
   std::vector<std::pair<Position, Position>> position_pairs;
 
   inline void map_position(Position pos) {
     position_pairs.emplace_back(last_pos, pos);
-  }
-
-  inline void insert(const Token& token) {
-    if (needs_space(token)) putspace();
-
-    // the most easiest way to do it correctly
-    // slightly slower than smart logic with position differences
-    for (char c : token.get_text()) {
-      ++last_pos.column;
-      if (c == '\n') {
-        ++last_pos.line;
-        last_pos.column = 0;
-      }
-      out += c;
-    }
-
-    last_tag = token.tag;
   }
 
   inline bool align(const Position& pos, bool align_column) {
@@ -83,6 +83,7 @@ class TokenCodeWriter {
     if (last_pos.column == pos.column) return true;
     if (!align_column) return false;
     if (last_pos.column > pos.column) return false;
+    // last_pos.column < pos.column
     out.append(pos.column - last_pos.column, ' ');
     last_tag = tag::space;
     last_pos.column = pos.column;
@@ -94,7 +95,7 @@ class TokenCodeWriter {
       return char_set.rfind(c) != std::string_view::npos;
     };
 
-    if (last_tag == tag::space || last_tag == tag::space) return false;
+    if (last_tag == tag::space || token.tag == tag::space) return false;
 
     const char crhs = token.get_text().front();
     // anything after categorised chars

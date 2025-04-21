@@ -36130,7 +36130,7 @@ static         sqlite3_int64 sqlite3StatusValue(int op){
 sqlite3StatType *x = &(*(sqlite3StatType*)sqlite3_wsd_find((void*)&(sqlite3Stat), sizeof(sqlite3Stat)));
   assert( op>=0 && op<((int)(sizeof(x[0].nowValue)/sizeof(x[0].nowValue[0]))));
   assert( op>=0 && op<((int)(sizeof(statMutex)/sizeof(statMutex[0]))));
-  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex() 
+  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex()
 : sqlite3MallocMutex()),1)                                         );
   return x[0]   .nowValue[op];
 }
@@ -36150,7 +36150,7 @@ static         void sqlite3StatusUp(int op, int N){
 sqlite3StatType *x = &(*(sqlite3StatType*)sqlite3_wsd_find((void*)&(sqlite3Stat), sizeof(sqlite3Stat)));
   assert( op>=0 && op<((int)(sizeof(x[0].nowValue)/sizeof(x[0].nowValue[0]))));
   assert( op>=0 && op<((int)(sizeof(statMutex)/sizeof(statMutex[0]))));
-  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex() 
+  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex()
 : sqlite3MallocMutex()),1)                                         );
 x[0]     .nowValue[op] += N;
   if(x[0]    .nowValue[op]>x[0]   .mxValue[op] ){
@@ -36161,7 +36161,7 @@ static         void sqlite3StatusDown(int op, int N){
 sqlite3StatType *x = &(*(sqlite3StatType*)sqlite3_wsd_find((void*)&(sqlite3Stat), sizeof(sqlite3Stat)));
   assert( N>=0 );
   assert( op>=0 && op<((int)(sizeof(statMutex)/sizeof(statMutex[0]))));
-  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex() 
+  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex()
 : sqlite3MallocMutex()),1)                                         );
   assert( op>=0 && op<((int)(sizeof(x[0].nowValue)/sizeof(x[0].nowValue[0]))));
 x[0]     .nowValue[op] -= N;
@@ -36178,7 +36178,7 @@ sqlite3StatType *x = &(*(sqlite3StatType*)sqlite3_wsd_find((void*)&(sqlite3Stat)
   newValue = (sqlite3StatValueType)X;
   assert( op>=0 && op<((int)(sizeof(x[0].nowValue)/sizeof(x[0].nowValue[0]))));
   assert( op>=0 && op<((int)(sizeof(statMutex)/sizeof(statMutex[0]))));
-  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex() 
+  assert(((void)(statMutex[op] ? sqlite3Pcache1Mutex()
 : sqlite3MallocMutex()),1)                                         );
   assert( op==5
           || op==7
@@ -41895,7 +41895,7 @@ static void winMutexEnter(sqlite3_mutex *p){
   p->owner = tid;
   p->nRef++;
   if( p->trace ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("ENTER-MUTEX tid=%lu, mutex(%d)=%p (%d), nRef=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("ENTER-MUTEX tid=%lu, mutex(%d)=%p (%d), nRef=%d\n",
 tid, p->id, p, p->trace, p->nRef)              ;
   }
 
@@ -41938,7 +41938,7 @@ static int winMutexTry(sqlite3_mutex *p){
 
 
   if( p->trace ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRY-MUTEX tid=%lu, mutex(%d)=%p (%d), owner=%lu, nRef=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRY-MUTEX tid=%lu, mutex(%d)=%p (%d), owner=%lu, nRef=%d, rc=%s\n",
 tid, p->id, p, p->trace, p->owner, p->nRef, sqlite3ErrName(rc))              ;
   }
 
@@ -41967,7 +41967,7 @@ static void winMutexLeave(sqlite3_mutex *p){
   LeaveCriticalSection(&p->mutex);
 
   if( p->trace ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LEAVE-MUTEX tid=%lu, mutex(%d)=%p (%d), nRef=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LEAVE-MUTEX tid=%lu, mutex(%d)=%p (%d), nRef=%d\n",
 tid, p->id, p, p->trace, p->nRef)              ;
   }
 
@@ -49106,8 +49106,8 @@ static int kvstorageWrite(
   kvstorageMakeKey(zClass, zKey, zXKey);
   fd = fopen(zXKey, "wb");
   if( fd ){
-printf ("KVVFS-WRITE  %-15s (%d) %.50s%s\n", zXKey, 
-(int)strlen(zData), zData, 
+printf ("KVVFS-WRITE  %-15s (%d) %.50s%s\n", zXKey,
+(int)strlen(zData), zData,
 strlen(zData)>50 ? "..." : "")                  ;
     fputs(zData, fd);
     fclose(fd);
@@ -49163,7 +49163,7 @@ printf ("KVVFS-READ   %-15s (-1)\n", zXKey)              ;
     return (int)buf.st_size;
   }else if( nBuf==1 ){
     zBuf[0] = 0;
-printf ("KVVFS-READ   %-15s (%d)\n", zXKey, 
+printf ("KVVFS-READ   %-15s (%d)\n", zXKey,
 (int)buf.st_size)                  ;
     return (int)buf.st_size;
   }
@@ -49178,7 +49178,7 @@ printf ("KVVFS-READ   %-15s (-1)\n", zXKey)              ;
     sqlite3_int64 n = fread(zBuf, 1, nBuf-1, fd);
     fclose(fd);
     zBuf[n] = 0;
-printf ("KVVFS-READ   %-15s (%lld) %.50s%s\n", zXKey, 
+printf ("KVVFS-READ   %-15s (%lld) %.50s%s\n", zXKey,
 n, zBuf, n>50 ? "..." : "")                  ;
     return (int)n;
   }
@@ -49395,7 +49395,7 @@ static int kvvfsWriteFileSize(KVVfsFile *pFile, sqlite3_int64 sz){
 static int kvvfsClose(sqlite3_file *pProtoFile){
   KVVfsFile *pFile = (KVVfsFile *)pProtoFile;
 
-printf ("xClose %s %s\n", pFile->zClass, 
+printf ("xClose %s %s\n", pFile->zClass,
 pFile->isJournal ? "journal" : "db")              ;
   sqlite3_free(pFile->aJrnl);
   sqlite3_free(pFile->aData);
@@ -51636,9 +51636,9 @@ static int unixLock(sqlite3_file *id, int eFileLock){
   int tErrno = 0;
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s was %s(%s,%d) pid=%d (unix)\n", pFile->h, 
-azFileLock(eFileLock), azFileLock(pFile->eFileLock), 
-azFileLock(pFile->pInode->eFileLock), pFile->pInode->nShared, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s was %s(%s,%d) pid=%d (unix)\n", pFile->h,
+azFileLock(eFileLock), azFileLock(pFile->eFileLock),
+azFileLock(pFile->pInode->eFileLock), pFile->pInode->nShared,
 (pid_t)1)          ;
 
 
@@ -51646,7 +51646,7 @@ azFileLock(pFile->pInode->eFileLock), pFile->pInode->nShared,
 
 
   if( pFile->eFileLock>=eFileLock ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s ok (already held) (unix)\n", pFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s ok (already held) (unix)\n", pFile->h,
 azFileLock(eFileLock))             ;
     return 0        ;
   }
@@ -51806,7 +51806,7 @@ azFileLock(eFileLock))             ;
 
 end_lock:
                                          ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (unix)\n", pFile->h, azFileLock(eFileLock), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (unix)\n", pFile->h, azFileLock(eFileLock),
 rc==0 ? "ok" : "failed")               ;
   return rc;
 }
@@ -51845,8 +51845,8 @@ static int posixUnlock(sqlite3_file *id, int eFileLock, int handleNFSUnlock){
   int rc =0         ;
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d(%d,%d) pid=%d (unix)\n", pFile->h, eFileLock, 
-pFile->eFileLock, pFile->pInode->eFileLock, pFile->pInode->nShared, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d(%d,%d) pid=%d (unix)\n", pFile->h, eFileLock,
+pFile->eFileLock, pFile->pInode->eFileLock, pFile->pInode->nShared,
 (pid_t)1)          ;
 
   assert( eFileLock<=1           );
@@ -52266,7 +52266,7 @@ static int dotlockUnlock(sqlite3_file *id, int eFileLock) {
   int rc;
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (dotlock)\n", pFile->h, eFileLock, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (dotlock)\n", pFile->h, eFileLock,
 pFile->eFileLock, (pid_t)1)               ;
   assert( eFileLock<=1           );
 
@@ -52455,7 +52455,7 @@ static int flockLock(sqlite3_file *id, int eFileLock) {
 
     pFile->eFileLock = eFileLock;
   }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (flock)\n", pFile->h, azFileLock(eFileLock), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (flock)\n", pFile->h, azFileLock(eFileLock),
 rc==0 ? "ok" : "failed")                    ;
 
   if( (rc & 0xff) ==10            ){
@@ -52477,7 +52477,7 @@ static int flockUnlock(sqlite3_file *id, int eFileLock) {
   unixFile *pFile = (unixFile*)id;
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (flock)\n", pFile->h, eFileLock, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (flock)\n", pFile->h, eFileLock,
 pFile->eFileLock, (pid_t)1)               ;
   assert( eFileLock<=1           );
 
@@ -52642,7 +52642,7 @@ static int semXUnlock(sqlite3_file *id, int eFileLock) {
 
   assert( pFile );
   assert( pSem );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (sem)\n", pFile->h, eFileLock, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d pid=%d (sem)\n", pFile->h, eFileLock,
 pFile->eFileLock, (pid_t)1)               ;
   assert( eFileLock<=1           );
 
@@ -52749,14 +52749,14 @@ static int afpSetLock(
   pb.length = length;
   pb.fd = pFile->h;
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("AFPSETLOCK [%s] for %d%s in range %llx:%llx\n", 
-(setLockFlag?"ON":"OFF"), pFile->h, (pb.fd==-1?"[testval-1]":""), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("AFPSETLOCK [%s] for %d%s in range %llx:%llx\n",
+(setLockFlag?"ON":"OFF"), pFile->h, (pb.fd==-1?"[testval-1]":""),
 offset, length)     ;
   err = fsctl(path,_IOWR('z', 23, struct ByteRangeLockPB2),&pb,0);
   if ( err==-1 ) {
     int rc;
     int tErrno = errno;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("AFPSETLOCK failed to fsctl() '%s' %d %s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("AFPSETLOCK failed to fsctl() '%s' %d %s\n",
 path, tErrno, strerror(tErrno))              ;
 
     rc =5           ;
@@ -52855,8 +52855,8 @@ static int afpLock(sqlite3_file *id, int eFileLock){
   afpLockingContext *context = (afpLockingContext *) pFile->lockingContext;
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s was %s(%s,%d) pid=%d (afp)\n", pFile->h, 
-azFileLock(eFileLock), azFileLock(pFile->eFileLock), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s was %s(%s,%d) pid=%d (afp)\n", pFile->h,
+azFileLock(eFileLock), azFileLock(pFile->eFileLock),
 azFileLock(pInode->eFileLock), pInode->nShared , (pid_t)1)               ;
 
 
@@ -52864,7 +52864,7 @@ azFileLock(pInode->eFileLock), pInode->nShared , (pid_t)1)               ;
 
 
   if( pFile->eFileLock>=eFileLock ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s ok (already held) (afp)\n", pFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s ok (already held) (afp)\n", pFile->h,
 azFileLock(eFileLock))            ;
     return 0        ;
   }
@@ -53018,7 +53018,7 @@ azFileLock(eFileLock))            ;
 
 afp_end_lock:
                                          ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (afp)\n", pFile->h, azFileLock(eFileLock), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK    %d %s %s (afp)\n", pFile->h, azFileLock(eFileLock),
 rc==0 ? "ok" : "failed")                  ;
   return rc;
 }
@@ -53041,8 +53041,8 @@ static int afpUnlock(sqlite3_file *id, int eFileLock) {
 
 
   assert( pFile );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d(%d,%d) pid=%d (afp)\n", pFile->h, eFileLock, 
-pFile->eFileLock, pFile->pInode->eFileLock, pFile->pInode->nShared, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK  %d %d was %d(%d,%d) pid=%d (afp)\n", pFile->h, eFileLock,
+pFile->eFileLock, pFile->pInode->eFileLock, pFile->pInode->nShared,
 (pid_t)1)               ;
 
   assert( eFileLock<=1           );
@@ -53256,7 +53256,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
     }
   }while( got>0 );
 g_elapsed=sqlite3Hwtime()-g_start;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ    %-3d %5d %7lld %llu\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ    %-3d %5d %7lld %llu\n",
 id->h, got+prior, offset-prior, g_elapsed)                 ;
   return got+prior;
 }
@@ -53697,7 +53697,7 @@ if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pendi
 
   if( pFile->ctrlFlags &0x08              ){
     int dirfd;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("DIRSYNC %s (have_fullfsync=%d fullsync=%d)\n", pFile->zPath, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("DIRSYNC %s (have_fullfsync=%d fullsync=%d)\n", pFile->zPath,
 1, isFullsync)                          ;
     rc =((int(*)(const char*,int*))aSyscall[17].pCurrent)(pFile->zPath,&dirfd);
     if( rc==0         ){
@@ -54365,7 +54365,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("read-lock failed");
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("write-lock %d failed", ofst);
     }
   }
-if( sqlite3OSTrace ) sqlite3DebugPrintf (" - afterwards %03x,%03x\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf (" - afterwards %03x,%03x\n",
 pShmNode->sharedMask, pShmNode->exclMask)            ;
   }
 
@@ -54963,7 +54963,7 @@ static int unixShmLock(
   }
   assert( assertLockingArrayOk(pShmNode) );
                                           ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK shmid-%d, pid-%d got %03x,%03x\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK shmid-%d, pid-%d got %03x,%03x\n",
 p->id, (pid_t)1, p->sharedMask, p->exclMask)               ;
   return rc;
 }
@@ -55337,72 +55337,72 @@ static int unixUnfetch(sqlite3_file *fd, i64 iOff, void *p){
 
 
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-posixIoMethods = { 
-3, 
-unixClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-unixLock, 
-unixUnlock, 
-unixCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+posixIoMethods = {
+3,
+unixClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+unixLock,
+unixUnlock,
+unixCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *posixIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &posixIoMethods; } static const sqlite3_io_methods *(*const posixIoFinder)(const char*,unixFile *p) = posixIoFinderImpl;
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-nolockIoMethods = { 
-3, 
-nolockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-nolockLock, 
-nolockUnlock, 
-nolockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+nolockIoMethods = {
+3,
+nolockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+nolockLock,
+nolockUnlock,
+nolockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *nolockIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &nolockIoMethods; } static const sqlite3_io_methods *(*const nolockIoFinder)(const char*,unixFile *p) = nolockIoFinderImpl;
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-dotlockIoMethods = { 
-1, 
-dotlockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-dotlockLock, 
-dotlockUnlock, 
-dotlockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+dotlockIoMethods = {
+1,
+dotlockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+dotlockLock,
+dotlockUnlock,
+dotlockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *dotlockIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &dotlockIoMethods; } static const sqlite3_io_methods *(*const dotlockIoFinder)(const char*,unixFile *p) = dotlockIoFinderImpl;
 
 
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-flockIoMethods = { 
-1, 
-flockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-flockLock, 
-flockUnlock, 
-flockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+flockIoMethods = {
+1,
+flockClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+flockLock,
+flockUnlock,
+flockCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *flockIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &flockIoMethods; } static const sqlite3_io_methods *(*const flockIoFinder)(const char*,unixFile *p) = flockIoFinderImpl;
 
 
 
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-semIoMethods = { 
-1, 
-semXClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-semXLock, 
-semXUnlock, 
-semXCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+semIoMethods = {
+1,
+semXClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+semXLock,
+semXUnlock,
+semXCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *semIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &semIoMethods; } static const sqlite3_io_methods *(*const semIoFinder)(const char*,unixFile *p) = semIoFinderImpl;
 
 
 
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-afpIoMethods = { 
-1, 
-afpClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-afpLock, 
-afpUnlock, 
-afpCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+afpIoMethods = {
+1,
+afpClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+afpLock,
+afpUnlock,
+afpCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *afpIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &afpIoMethods; } static const sqlite3_io_methods *(*const afpIoFinder)(const char*,unixFile *p) = afpIoFinderImpl;
 
 
@@ -55421,28 +55421,28 @@ static int proxyClose(sqlite3_file*);
 static int proxyLock(sqlite3_file*, int);
 static int proxyUnlock(sqlite3_file*, int);
 static int proxyCheckReservedLock(sqlite3_file*, int*);
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-proxyIoMethods = { 
-1, 
-proxyClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-proxyLock, 
-proxyUnlock, 
-proxyCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+proxyIoMethods = {
+1,
+proxyClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+proxyLock,
+proxyUnlock,
+proxyCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *proxyIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &proxyIoMethods; } static const sqlite3_io_methods *(*const proxyIoFinder)(const char*,unixFile *p) = proxyIoFinderImpl;
 
 
 
 
 
-static const sqlite3_io_methods 
+static const sqlite3_io_methods
 
-nfsIoMethods = { 
-1, 
-unixClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize, 
-unixLock, 
-nfsUnlock, 
-unixCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics, 
+nfsIoMethods = {
+1,
+unixClose, unixRead, unixWrite, unixTruncate, unixSync, unixFileSize,
+unixLock,
+nfsUnlock,
+unixCheckReservedLock, unixFileControl, unixSectorSize, unixDeviceCharacteristics,
 0, 0, 0, 0, unixFetch, unixUnfetch, }; static const sqlite3_io_methods *nfsIoFinderImpl(const char *z, unixFile *p){ (void)(z); (void)(p); return &nfsIoMethods; } static const sqlite3_io_methods *(*const nfsIoFinder)(const char*,unixFile *p) = nfsIoFinderImpl;
 
 
@@ -56897,7 +56897,7 @@ static int proxyGetLockPath(const char *dbPath, char *lPath, size_t maxLen){
 
   {
     if( !confstr(_CS_DARWIN_USER_TEMP_DIR, lPath, maxLen) ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("GETLOCKPATH  failed %s errno=%d pid=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("GETLOCKPATH  failed %s errno=%d pid=%d\n",
 lPath, errno, (pid_t)1)                   ;
       return(10 | (15<<8))    ;
     }
@@ -56945,8 +56945,8 @@ static int proxyCreateLockPath(const char *lockPath){
         if(((int(*)(const char*,mode_t))aSyscall[18].pCurrent)(buf,0755)){
           int err=errno;
           if( err!=EEXIST ) {
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("CREATELOCKPATH  FAILED creating %s, " 
-"'%s' proxy lock path=%s pid=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("CREATELOCKPATH  FAILED creating %s, "
+"'%s' proxy lock path=%s pid=%d\n",
 buf, strerror(err), lockPath, (pid_t)1)                         ;
             return err;
           }
@@ -57261,8 +57261,8 @@ static int proxyTakeConch(unixFile *pFile){
     int tryOldLockPath = 0;
     int forceNewLockPath = 0;
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TAKECONCH  %d for %s pid=%d\n", conchFile->h, 
-(pCtx->lockProxyPath ? pCtx->lockProxyPath : ":auto:"), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TAKECONCH  %d for %s pid=%d\n", conchFile->h,
+(pCtx->lockProxyPath ? pCtx->lockProxyPath : ":auto:"),
 (pid_t)1)                 ;
 
     rc = proxyGetHostID(myHostID, &pError);
@@ -57453,7 +57453,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY: OPEN  %d\n", fd);
       } else {
         conchFile->pMethod->xUnlock((sqlite3_file*)conchFile,0       );
       }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TAKECONCH  %d %s\n", conchFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TAKECONCH  %d %s\n", conchFile->h,
 rc==0?"ok":"failed")                        ;
       return rc;
     } while (1);
@@ -57471,14 +57471,14 @@ static int proxyReleaseConch(unixFile *pFile){
 
   pCtx = (proxyLockingContext *)pFile->lockingContext;
   conchFile = pCtx->conchFile;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("RELEASECONCH  %d for %s pid=%d\n", conchFile->h, 
-(pCtx->lockProxyPath ? pCtx->lockProxyPath : ":auto:"), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("RELEASECONCH  %d for %s pid=%d\n", conchFile->h,
+(pCtx->lockProxyPath ? pCtx->lockProxyPath : ":auto:"),
 (pid_t)1)               ;
   if( pCtx->conchHeld>0 ){
     rc = conchFile->pMethod->xUnlock((sqlite3_file*)conchFile,0       );
   }
   pCtx->conchHeld = 0;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("RELEASECONCH  %d %s\n", conchFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("RELEASECONCH  %d %s\n", conchFile->h,
 (rc==0 ? "ok" : "failed"))                    ;
   return rc;
 }
@@ -57614,7 +57614,7 @@ static int proxyTransformUnixFile(unixFile *pFile, const char *path) {
     lockPath=(char *)path;
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY  %d for %s pid=%d\n", pFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY  %d for %s pid=%d\n", pFile->h,
 (lockPath ? lockPath : ":auto:"), (pid_t)1)               ;
 
   pCtx = sqlite3_malloc64( sizeof(*pCtx) );
@@ -57675,7 +57675,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY  %d for %s pid=%d\n", pFile
     sqlite3_free(pCtx->conchFilePath);
     sqlite3_free(pCtx);
   }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY  %d %s\n", pFile->h, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRANSPROXY  %d %s\n", pFile->h,
 (rc==0 ? "ok" : "failed"))                    ;
   return rc;
 }
@@ -60713,7 +60713,7 @@ static int winClose(sqlite3_file *id){
   assert( pFile->pShm==0 );
 
   assert( pFile->h!=NULL && pFile->h!=INVALID_HANDLE_VALUE );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("CLOSE pid=%lu, pFile=%p, file=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("CLOSE pid=%lu, pFile=%p, file=%p\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
 
 
@@ -60748,7 +60748,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("CLOSE pid=%lu, pFile=%p, file=%p\n",
     pFile->h = NULL;
   }
 sqlite3_open_file_count+=(-1);
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("CLOSE pid=%lu, pFile=%p, file=%p, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("CLOSE pid=%lu, pFile=%p, file=%p, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h, rc ? "ok" : "failed");
   return rc ?0
             :winLogErrorAtLine((10 | (16<<8)),((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)(),
@@ -60777,8 +60777,8 @@ static int winRead(
   assert( amt>0 );
   assert( offset>=0 );
 if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pending-- == 1 ) { local_ioerr(); return (10 | (1<<8)); };
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, buffer=%p, amount=%d, " 
-"offset=%lld, lock=%d\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, buffer=%p, amount=%d, "
+"offset=%lld, lock=%d\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile,
 pFile->h, pBuf, amt, offset, pFile->locktype)            ;
 
 
@@ -60787,7 +60787,7 @@ pFile->h, pBuf, amt, offset, pFile->locktype)            ;
   if( offset<pFile->mmapSize ){
     if( offset+amt <= pFile->mmapSize ){
 {char*xxd=(char*)(pBuf);const char*xxs=(const char*)(&((u8 *)(pFile->pMapRegion))[offset]); int xxn=(amt);while(xxn-->0)*(xxd++)=*(xxs++);};
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ-MMAP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ-MMAP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
       return 0        ;
     }else{
@@ -60802,7 +60802,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ-MMAP pid=%lu, pFile=%p, file=%p, 
 
 
   if( winSeekFile(pFile, offset) ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_FULL\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_FULL\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return 13         ;
   }
@@ -60817,7 +60817,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQ
     DWORD lastErrno;
     if( winRetryIoerr(&nRetry, &lastErrno) ) continue;
     pFile->lastErrno = lastErrno;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_READ\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_READ\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return winLogErrorAtLine((10 | (1<<8)),pFile->lastErrno,
 "winRead",pFile->zPath,__LINE__)               ;
@@ -60826,12 +60826,12 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQ
   if( nRead<(DWORD)amt ){
 
     memset(&((char*)pBuf)[nRead], 0, amt-nRead);
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_SHORT_READ\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_SHORT_READ\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return(10 | (2<<8))           ;
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("READ pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
   return 0        ;
 }
@@ -60855,8 +60855,8 @@ static int winWrite(
 if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pending-- == 1 ) { local_ioerr(); return (10 | (3<<8)); };
 if( sqlite3_diskfull_pending ){ if( sqlite3_diskfull_pending == 1 ){ local_ioerr(); sqlite3_diskfull = 1; sqlite3_io_error_hit = 1; return 13; }else{ sqlite3_diskfull_pending--; } };
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, buffer=%p, amount=%d, " 
-"offset=%lld, lock=%d\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, buffer=%p, amount=%d, "
+"offset=%lld, lock=%d\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile,
 pFile->h, pBuf, amt, offset, pFile->locktype)            ;
 
 
@@ -60865,7 +60865,7 @@ pFile->h, pBuf, amt, offset, pFile->locktype)            ;
   if( offset<pFile->mmapSize ){
     if( offset+amt <= pFile->mmapSize ){
 {char*xxd=(char*)(&((u8 *)(pFile->pMapRegion))[offset]);const char*xxs=(const char*)(pBuf); int xxn=(amt);while(xxn-->0)*(xxd++)=*(xxs++);};
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE-MMAP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE-MMAP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
       return 0        ;
     }else{
@@ -60929,19 +60929,19 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE-MMAP pid=%lu, pFile=%p, file=%p,
   if( rc ){
     if(   ( pFile->lastErrno==ERROR_HANDLE_DISK_FULL )
        || ( pFile->lastErrno==ERROR_DISK_FULL )){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_FULL\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_FULL\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
       return winLogErrorAtLine(13,pFile->lastErrno,
 "winWrite1",pFile->zPath,__LINE__)                 ;
     }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_WRITE\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_WRITE\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return winLogErrorAtLine((10 | (3<<8)),pFile->lastErrno,
 "winWrite2",pFile->zPath,__LINE__)               ;
   }else{
     winLogIoerr(nRetry, __LINE__);
   }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("WRITE pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
   return 0        ;
 }
@@ -60979,7 +60979,7 @@ static int winTruncate(sqlite3_file *id, sqlite3_int64 nByte){
 
   assert( pFile );
 if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pending-- == 1 ) { local_ioerr(); return (10 | (6<<8)); };
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRUNCATE pid=%lu, pFile=%p, file=%p, size=%lld, lock=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRUNCATE pid=%lu, pFile=%p, file=%p, size=%lld, lock=%d\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h, nByte, pFile->locktype);
 
 
@@ -61021,7 +61021,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRUNCATE pid=%lu, pFile=%p, file=%p, s
   }
 
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRUNCATE pid=%lu, pFile=%p, file=%p, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TRUNCATE pid=%lu, pFile=%p, file=%p, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h, sqlite3ErrName(rc));
   return rc;
 }
@@ -61067,8 +61067,8 @@ static int winSync(sqlite3_file *id, int flags){
 
 if( sqlite3_diskfull_pending ){ if( sqlite3_diskfull_pending == 1 ){ local_ioerr(); sqlite3_diskfull = 1; sqlite3_io_error_hit = 1; return 13; }else{ sqlite3_diskfull_pending--; } };
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, flags=%x, lock=%d\n", 
-((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h, flags, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, flags=%x, lock=%d\n",
+((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h, flags,
 pFile->locktype)            ;
 
 
@@ -61084,20 +61084,20 @@ pFile->locktype)            ;
 
 
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-NOP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-NOP pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
   return 0        ;
 
 
   if( pFile->pMapRegion ){
     if(((BOOL(WINAPI*)(LPCVOID,SIZE_T))aSyscall[79].pCurrent)(pFile->pMapRegion,0)){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-MMAP pid=%lu, pFile=%p, pMapRegion=%p, " 
-"rc=SQLITE_OK\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-MMAP pid=%lu, pFile=%p, pMapRegion=%p, "
+"rc=SQLITE_OK\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(),
 pFile, pFile->pMapRegion)                ;
     }else{
       pFile->lastErrno =((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)();
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-MMAP pid=%lu, pFile=%p, pMapRegion=%p, " 
-"rc=SQLITE_IOERR_MMAP\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC-MMAP pid=%lu, pFile=%p, pMapRegion=%p, "
+"rc=SQLITE_IOERR_MMAP\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(),
 pFile, pFile->pMapRegion)                ;
       return winLogErrorAtLine((10 | (24<<8)),pFile->lastErrno,
 "winSync1",pFile->zPath,__LINE__)                 ;
@@ -61107,12 +61107,12 @@ pFile, pFile->pMapRegion)                ;
   rc =((BOOL(WINAPI*)(HANDLE))aSyscall[13].pCurrent)(pFile->h);
 if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pending-- == 1 ) { local_ioerr(); rc=FALSE; };
   if( rc ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return 0        ;
   }else{
     pFile->lastErrno =((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)();
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_FSYNC\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SYNC pid=%lu, pFile=%p, file=%p, rc=SQLITE_IOERR_FSYNC\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->h);
     return winLogErrorAtLine((10 | (4<<8)),pFile->lastErrno,
 "winSync2",pFile->zPath,__LINE__)               ;
@@ -61160,7 +61160,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("SIZE file=%p, pSize=%p\n", pFile->h, p
     }
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SIZE file=%p, pSize=%p, *pSize=%lld, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SIZE file=%p, pSize=%p, *pSize=%lld, rc=%s\n",
 pFile->h, pSize, *pSize, sqlite3ErrName(rc))            ;
   return rc;
 }
@@ -61292,7 +61292,7 @@ static int winLock(sqlite3_file *id, int locktype){
   DWORD lastErrno = NO_ERROR;
 
   assert( id!=0 );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK file=%p, oldLock=%d(%d), newLock=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK file=%p, oldLock=%d(%d), newLock=%d\n",
 pFile->h, pFile->locktype, pFile->sharedLockByte, locktype)            ;
 
 
@@ -61334,12 +61334,12 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-HELD file=%p, rc=SQLITE_OK\n", pF
 
 
       lastErrno =((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)();
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-PENDING-FAIL file=%p, count=%d, result=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-PENDING-FAIL file=%p, count=%d, result=%d\n",
 pFile->h, cnt, res)                ;
       if( lastErrno==ERROR_INVALID_HANDLE ){
         pFile->lastErrno = lastErrno;
         rc =(10 | (15<<8))    ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-FAIL file=%p, count=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-FAIL file=%p, count=%d, rc=%s\n",
 pFile->h, cnt, sqlite3ErrName(rc))                  ;
         return rc;
       }
@@ -61412,11 +61412,11 @@ pFile->h, cnt, sqlite3ErrName(rc))                  ;
   }else{
     pFile->lastErrno = lastErrno;
     rc =5           ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-FAIL file=%p, wanted=%d, got=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK-FAIL file=%p, wanted=%d, got=%d\n",
 pFile->h, locktype, newLocktype)              ;
   }
   pFile->locktype = (u8)newLocktype;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK file=%p, lock=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("LOCK file=%p, lock=%d, rc=%s\n",
 pFile->h, pFile->locktype, sqlite3ErrName(rc))            ;
   return rc;
 }
@@ -61446,7 +61446,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEST-WR-LOCK file=%p, result=%d (local
 if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEST-WR-LOCK file=%p, result=%d (remote)\n", pFile->h, res);
   }
   *pResOut = res;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEST-WR-LOCK file=%p, pResOut=%p, *pResOut=%d, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("TEST-WR-LOCK file=%p, pResOut=%p, *pResOut=%d, rc=SQLITE_OK\n",
 pFile->h, pResOut, *pResOut)            ;
   return 0        ;
 }
@@ -61468,7 +61468,7 @@ static int winUnlock(sqlite3_file *id, int locktype){
   int rc =0         ;
   assert( pFile!=0 );
   assert( locktype<=1           );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK file=%p, oldLock=%d(%d), newLock=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK file=%p, oldLock=%d(%d), newLock=%d\n",
 pFile->h, pFile->locktype, pFile->sharedLockByte, locktype)            ;
   type = pFile->locktype;
   if( type>=4              ){
@@ -61490,7 +61490,7 @@ pFile->h, pFile->locktype, pFile->sharedLockByte, locktype)            ;
     winUnlockFile(&pFile->h,(0x40000000) , 0, 1, 0);
   }
   pFile->locktype = (u8)locktype;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK file=%p, lock=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNLOCK file=%p, lock=%d, rc=%s\n",
 pFile->h, pFile->locktype, sqlite3ErrName(rc))            ;
   return rc;
 }
@@ -61637,7 +61637,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("FCNTL file=%p, rc=SQLITE_OK\n", pFile-
       HANDLE hOldFile = pFile->h;
       pFile->h = *phFile;
       *phFile = hOldFile;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("FCNTL oldFile=%p, newFile=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("FCNTL oldFile=%p, newFile=%p, rc=SQLITE_OK\n",
 hOldFile, pFile->h)                ;
       return 0        ;
     }
@@ -61844,7 +61844,7 @@ static int winShmSystemLock(
 
   assert( pFile->nRef==0 ||((void)(pFile->mutex),1)          );
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK file=%p, lock=%d, offset=%d, size=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK file=%p, lock=%d, offset=%d, size=%d\n",
 pFile->hFile.h, lockType, ofst, nByte)            ;
 
 
@@ -61864,8 +61864,8 @@ pFile->hFile.h, lockType, ofst, nByte)            ;
     rc =5           ;
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK file=%p, func=%s, errno=%lu, rc=%s\n", 
-pFile->hFile.h, (lockType == 1) ? "winUnlockFile" : 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK file=%p, func=%s, errno=%lu, rc=%s\n",
+pFile->hFile.h, (lockType == 1) ? "winUnlockFile" :
 "winLockFile", pFile->lastErrno, sqlite3ErrName(rc))            ;
 
   return rc;
@@ -61885,7 +61885,7 @@ static void winShmPurge(sqlite3_vfs *pVfs, int deleteFlag){
   winShmNode **pp;
   winShmNode *p;
   assert( winShmMutexHeld() );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE pid=%lu, deleteFlag=%d\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE pid=%lu, deleteFlag=%d\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), deleteFlag);
   pp = &winShmNodeList;
   while( (p = *pp)!=0 ){
@@ -61894,11 +61894,11 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE pid=%lu, deleteFlag=%d\n",
       if( p->mutex ){                             ; }
       for(i=0; i<p->nRegion; i++){
         BOOL bRc =((BOOL(WINAPI*)(LPCVOID))aSyscall[59].pCurrent)(p->aRegion[i].pMap);
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE-UNMAP pid=%lu, region=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE-UNMAP pid=%lu, region=%d, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), i, bRc ? "ok" : "failed");
 (void)(bRc)                       ;
         bRc =((BOOL(WINAPI*)(HANDLE))aSyscall[3].pCurrent)(p->aRegion[i].hMap);
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE-CLOSE pid=%lu, region=%d, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-PURGE-CLOSE pid=%lu, region=%d, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), i, bRc ? "ok" : "failed");
 (void)(bRc)                       ;
       }
@@ -62212,8 +62212,8 @@ static int winShmLock(
     }
   }
                                       ;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK pid=%lu, id=%d, sharedMask=%03x, exclMask=%03x, rc=%s\n", 
-((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), p->id, p->sharedMask, p->exclMask, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-LOCK pid=%lu, id=%d, sharedMask=%03x, exclMask=%03x, rc=%s\n",
+((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), p->id, p->sharedMask, p->exclMask,
 sqlite3ErrName(rc))            ;
   return rc;
 }
@@ -62348,8 +62348,8 @@ static int winShmMap(
           NULL, protect, 0, nByte, NULL
       );
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-MAP-CREATE pid=%lu, region=%d, size=%d, rc=%s\n", 
-((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pShmNode->nRegion, nByte, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-MAP-CREATE pid=%lu, region=%d, size=%d, rc=%s\n",
+((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pShmNode->nRegion, nByte,
 hMap ? "ok" : "failed")                ;
       if( hMap ){
         int iOffset = pShmNode->nRegion*szRegion;
@@ -62363,8 +62363,8 @@ hMap ? "ok" : "failed")                ;
             0, iOffset - iOffsetShift, szRegion + iOffsetShift
         );
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-MAP-MAP pid=%lu, region=%d, offset=%d, size=%d, rc=%s\n", 
-((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pShmNode->nRegion, iOffset, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("SHM-MAP-MAP pid=%lu, region=%d, offset=%d, size=%d, rc=%s\n",
+((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pShmNode->nRegion, iOffset,
 szRegion, pMap ? "ok" : "failed")                  ;
       }
       if( !pMap ){
@@ -62408,15 +62408,15 @@ shmpage_out:
 
 static int winUnmapfile(winFile *pFile){
   assert( pFile!=0 );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, hMap=%p, pMapRegion=%p, " 
-"mmapSize=%lld, mmapSizeMax=%lld\n", 
-((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->hMap, pFile->pMapRegion, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, hMap=%p, pMapRegion=%p, "
+"mmapSize=%lld, mmapSizeMax=%lld\n",
+((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->hMap, pFile->pMapRegion,
 pFile->mmapSize, pFile->mmapSizeMax)            ;
   if( pFile->pMapRegion ){
     if( !((BOOL(WINAPI*)(LPCVOID))aSyscall[59].pCurrent)(pFile->pMapRegion)){
       pFile->lastErrno =((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)();
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, pMapRegion=%p, " 
-"rc=SQLITE_IOERR_MMAP\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, pMapRegion=%p, "
+"rc=SQLITE_IOERR_MMAP\n", ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile,
 pFile->pMapRegion)                ;
       return winLogErrorAtLine((10 | (24<<8)),pFile->lastErrno,
 "winUnmapfile1",pFile->zPath,__LINE__)                 ;
@@ -62427,14 +62427,14 @@ pFile->pMapRegion)                ;
   if( pFile->hMap!=NULL ){
     if( !((BOOL(WINAPI*)(HANDLE))aSyscall[3].pCurrent)(pFile->hMap)){
       pFile->lastErrno =((DWORD(WINAPI*)(VOID))aSyscall[26].pCurrent)();
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, hMap=%p, rc=SQLITE_IOERR_MMAP\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, hMap=%p, rc=SQLITE_IOERR_MMAP\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile, pFile->hMap);
       return winLogErrorAtLine((10 | (24<<8)),pFile->lastErrno,
 "winUnmapfile2",pFile->zPath,__LINE__)                 ;
     }
     pFile->hMap = NULL;
   }
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNMAP-FILE pid=%lu, pFile=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFile);
   return 0        ;
 }
@@ -62460,7 +62460,7 @@ static int winMapfile(winFile *pFd, sqlite3_int64 nByte){
   int rc;
 
   assert( nMap>=0 || pFd->nFetchOut==0 );
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, size=%lld\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, size=%lld\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd, nByte);
 
   if( pFd->nFetchOut>0 ) return 0        ;
@@ -62468,7 +62468,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, size=%lld\
   if( nMap<0 ){
     rc = winFileSize((sqlite3_file*)pFd, &nMap);
     if( rc ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, rc=SQLITE_IOERR_FSTAT\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, rc=SQLITE_IOERR_FSTAT\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd);
       return(10 | (7<<8))      ;
     }
@@ -62509,7 +62509,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, rc=SQLITE_
       rc =winLogErrorAtLine((10 | (24<<8)),pFd->lastErrno,
 "winMapfile1",pFd->zPath,__LINE__)               ;
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-CREATE pid=%lu, pFile=%p, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-CREATE pid=%lu, pFile=%p, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd, sqlite3ErrName(rc));
       return 0        ;
     }
@@ -62527,7 +62527,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-CREATE pid=%lu, pFile=%p, rc=
       rc =winLogErrorAtLine((10 | (24<<8)),pFd->lastErrno,
 "winMapfile2",pFd->zPath,__LINE__)               ;
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-MAP pid=%lu, pFile=%p, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-MAP pid=%lu, pFile=%p, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd, sqlite3ErrName(rc));
       return 0        ;
     }
@@ -62535,7 +62535,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE-MAP pid=%lu, pFile=%p, rc=%s\
     pFd->mmapSize = nMap;
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("MAP-FILE pid=%lu, pFile=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd);
   return 0        ;
 }
@@ -62559,7 +62559,7 @@ static int winFetch(sqlite3_file *fd, i64 iOff, int nAmt, void **pp){
 
   *pp = 0;
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, offset=%lld, amount=%d, pp=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, offset=%lld, amount=%d, pp=%p\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), fd, iOff, nAmt, pp);
 
 
@@ -62567,7 +62567,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, offset=%lld, 
     if( pFd->pMapRegion==0 ){
       int rc = winMapfile(pFd, -1);
       if( rc!=0         ){
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, rc=%s\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, rc=%s\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd, sqlite3ErrName(rc));
         return rc;
       }
@@ -62580,7 +62580,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, rc=%s\n",
   }
 
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, pp=%p, *pp=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("FETCH pid=%lu, pFile=%p, pp=%p, *pp=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), fd, pp, *pp);
   return 0        ;
 }
@@ -62607,7 +62607,7 @@ static int winUnfetch(sqlite3_file *fd, i64 iOff, void *p){
 
   assert( p==0 || p==&((u8 *)pFd->pMapRegion)[iOff] );
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNFETCH pid=%lu, pFile=%p, offset=%lld, p=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNFETCH pid=%lu, pFile=%p, offset=%lld, p=%p\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), pFd, iOff, p);
 
   if( p ){
@@ -62623,7 +62623,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNFETCH pid=%lu, pFile=%p, offset=%lld
   assert( pFd->nFetchOut>=0 );
 
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNFETCH pid=%lu, pFile=%p, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("UNFETCH pid=%lu, pFile=%p, rc=SQLITE_OK\n",
 ((DWORD(WINAPI*)(VOID))aSyscall[17].pCurrent)(), fd);
   return 0        ;
 }
@@ -63099,7 +63099,7 @@ static int winOpen(
   ));
 
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, pFile=%p, flags=%x, pOutFlags=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, pFile=%p, flags=%x, pOutFlags=%p\n",
 zUtf8Name, id, flags, pOutFlags)            ;
 
 
@@ -63286,7 +63286,7 @@ if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN name=%s, rc=SQLITE_CANTOPEN_ISDIR
 
   winLogIoerr(cnt, __LINE__);
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN file=%p, name=%s, access=%lx, rc=%s\n", h, zUtf8Name, 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN file=%p, name=%s, access=%lx, rc=%s\n", h, zUtf8Name,
 dwDesiredAccess, (h==INVALID_HANDLE_VALUE) ? "failed" : "ok")            ;
 
   if( h==INVALID_HANDLE_VALUE ){
@@ -63312,8 +63312,8 @@ winLogErrorAtLine(14,pFile->lastErrno,"winOpen",zUtf8Name,__LINE__)       ;
     }
   }
 
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN file=%p, name=%s, access=%lx, pOutFlags=%p, *pOutFlags=%d, " 
-"rc=%s\n", h, zUtf8Name, dwDesiredAccess, pOutFlags, pOutFlags ? 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("OPEN file=%p, name=%s, access=%lx, pOutFlags=%p, *pOutFlags=%d, "
+"rc=%s\n", h, zUtf8Name, dwDesiredAccess, pOutFlags, pOutFlags ?
 *pOutFlags : 0, (h==INVALID_HANDLE_VALUE) ? "failed" : "ok")            ;
 
   pAppData = (winVfsAppData*)pVfs->pAppData;
@@ -63497,7 +63497,7 @@ static int winAccess(
 (void)(pVfs)            ;
 
 if( (sqlite3_io_error_persist && sqlite3_io_error_hit) || sqlite3_io_error_pending-- == 1 ) { local_ioerr(); return (10 | (13<<8));; };
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("ACCESS name=%s, flags=%x, pResOut=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("ACCESS name=%s, flags=%x, pResOut=%p\n",
 zFilename, flags, pResOut)            ;
 
   zConverted = winConvertFromUtf8Filename(zFilename);
@@ -63553,7 +63553,7 @@ zFilename,__LINE__)                  ;
       assert(!"Invalid flags argument");
   }
   *pResOut = rc;
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("ACCESS name=%s, pResOut=%p, *pResOut=%d, rc=SQLITE_OK\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("ACCESS name=%s, pResOut=%p, *pResOut=%d, rc=SQLITE_OK\n",
 zFilename, pResOut, *pResOut)            ;
   return 0        ;
 }
@@ -63869,7 +63869,7 @@ static void (*winDlSym(sqlite3_vfs *pVfs,void *pH,const char *zSym))(void){
   FARPROC proc;
 (void)(pVfs)            ;
   proc =((FARPROC(WINAPI*)(HMODULE, LPCSTR))aSyscall[27].pCurrent)((HANDLE)pH,zSym);
-if( sqlite3OSTrace ) sqlite3DebugPrintf ("DLSYM handle=%p, symbol=%s, address=%p\n", 
+if( sqlite3OSTrace ) sqlite3DebugPrintf ("DLSYM handle=%p, symbol=%s, address=%p\n",
 (void*)pH, zSym, (void*)proc)            ;
   return (void(*)(void))proc;
 }
@@ -65768,8 +65768,8 @@ static         int sqlite3PcachePageSanity(PgHdr *pPg){
 static void pcacheManageDirtyList(PgHdr *pPage, u8 addRemove){
   PCache *p = pPage->pCache;
 
-if(sqlite3PcacheTrace){sqlite3DebugPrintf ("%p.DIRTYLIST.%s %d\n", p, 
-addRemove==1 ? "REMOVE" : addRemove==2 ? "ADD" : "FRONT", 
+if(sqlite3PcacheTrace){sqlite3DebugPrintf ("%p.DIRTYLIST.%s %d\n", p,
+addRemove==1 ? "REMOVE" : addRemove==2 ? "ADD" : "FRONT",
 pPage->pgno);}               ;
   if( addRemove &1                        ){
     assert( pPage->pDirtyNext || pPage==p->pDirtyTail );
@@ -65998,7 +65998,7 @@ static         sqlite3_pcache_page *sqlite3PcacheFetch(
   assert( createFlag==0 || pCache->eCreate==eCreate );
   assert( createFlag==0 || eCreate==1 +(!pCache->bPurgeable||!pCache->pDirty));
   pRes =(*(struct Sqlite3Config*)sqlite3_wsd_find((void*)&(sqlite3Config), sizeof(sqlite3Config))).pcache2.xFetch(pCache->pCache,pgno,eCreate);
-if(sqlite3PcacheTrace){sqlite3DebugPrintf ("%p.FETCH %d%s (result: %p) ",pCache,pgno, 
+if(sqlite3PcacheTrace){sqlite3DebugPrintf ("%p.FETCH %d%s (result: %p) ",pCache,pgno,
 createFlag?" create":"",pRes);}              ;
                              ;
   return pRes;
@@ -70814,9 +70814,9 @@ static int pager_playback_one_page(
   }
   assert( pPg || !0     );
   assert( pPager->eState!=0          || pPg==0 || pPager->tempFile );
-if( sqlite3PagerTrace ){ printf ("PLAYBACK %d page %d hash(%08x) %s\n", 
-(((int)(intptr_t)(pPager->fd))), pgno, 0, 
-(isMainJrnl?"main-journal":"sub-journal") 
+if( sqlite3PagerTrace ){ printf ("PLAYBACK %d page %d hash(%08x) %s\n",
+(((int)(intptr_t)(pPager->fd))), pgno, 0,
+(isMainJrnl?"main-journal":"sub-journal")
 ); };
   if( isMainJrnl ){
     isSynced = pPager->noSync || (*pOffset <= pPager->journalHdr);
@@ -71472,7 +71472,7 @@ static int readDbPage(PgHdr *pPg){
 sqlite3_pager_readdb_count++            ;
 pPager->nRead++            ;
 if( sqlite3IoTrace ){ sqlite3IoTrace ("PGIN %p %d\n", pPager, pPg->pgno); };
-if( sqlite3PagerTrace ){ printf ("FETCH %d page %d hash(%08x)\n", 
+if( sqlite3PagerTrace ){ printf ("FETCH %d page %d hash(%08x)\n",
 (((int)(intptr_t)(pPager->fd))), pPg->pgno, 0); }               ;
 
   return rc;
@@ -72884,7 +72884,7 @@ static int pager_write_pagelist(Pager *pPager, PgHdr *pList){
 
       sqlite3BackupUpdate(pPager->pBackup, pgno, (u8*)pList->pData);
 
-if( sqlite3PagerTrace ){ printf ("STORE %d page %d hash(%08x)\n", 
+if( sqlite3PagerTrace ){ printf ("STORE %d page %d hash(%08x)\n",
 (((int)(intptr_t)(pPager->fd))), pgno, 0); }                     ;
 if( sqlite3IoTrace ){ sqlite3IoTrace ("PGOUT %p %d\n", pPager, pgno); };
 sqlite3_pager_writedb_count++                ;
@@ -74392,11 +74392,11 @@ static __attribute__((noinline))int pagerAddPageToRollbackJournal(PgHdr*pPg){
   rc = write32bits(pPager->jfd, iOff+pPager->pageSize+4, cksum);
   if( rc!=0         ) return rc;
 
-if( sqlite3IoTrace ){ sqlite3IoTrace ("JOUT %p %d %lld %d\n", pPager, pPg->pgno, 
+if( sqlite3IoTrace ){ sqlite3IoTrace ("JOUT %p %d %lld %d\n", pPager, pPg->pgno,
 pPager->journalOff, pPager->pageSize); }         ;
 sqlite3_pager_writej_count++            ;
-if( sqlite3PagerTrace ){ printf ("JOURNAL %d page %d needSync=%d hash(%08x)\n", 
-(((int)(intptr_t)(pPager->fd))), pPg->pgno, 
+if( sqlite3PagerTrace ){ printf ("JOURNAL %d page %d needSync=%d hash(%08x)\n",
+(((int)(intptr_t)(pPager->fd))), pPg->pgno,
 ((pPg->flags&0x008)?1:0), 0); }                                 ;
 
   pPager->journalOff += 8 + pPager->pageSize;
@@ -74471,8 +74471,8 @@ checkPage(pPg)   ;
       if( pPager->eState!=4                  ){
         pPg->flags |=0x008           ;
       }
-if( sqlite3PagerTrace ){ printf ("APPEND %d page %d needSync=%d\n", 
-(((int)(intptr_t)(pPager->fd))), pPg->pgno, 
+if( sqlite3PagerTrace ){ printf ("APPEND %d page %d needSync=%d\n",
+(((int)(intptr_t)(pPager->fd))), pPg->pgno,
 ((pPg->flags&0x008)?1:0)); }                     ;
     }
   }
@@ -74854,7 +74854,7 @@ static         int sqlite3PagerCommitPhaseOne(
 
   if(0                     ) return 10          ;
 
-if( sqlite3PagerTrace ){ printf ("DATABASE SYNC: File=%s zSuper=%s nSize=%d\n", 
+if( sqlite3PagerTrace ){ printf ("DATABASE SYNC: File=%s zSuper=%s nSize=%d\n",
 pPager->zFilename, zSuper, pPager->dbSize); }    ;
 
 
@@ -75565,7 +75565,7 @@ static         int sqlite3PagerMovepage(Pager *pPager, DbPage *pPg, Pgno pgno, i
     return rc;
   }
 
-if( sqlite3PagerTrace ){ printf ("MOVE %d page %d (needSync=%d) moves to %d\n", 
+if( sqlite3PagerTrace ){ printf ("MOVE %d page %d (needSync=%d) moves to %d\n",
 (((int)(intptr_t)(pPager->fd))), pPg->pgno, (pPg->flags&0x008)?1:0, pgno); };
 if( sqlite3IoTrace ){ sqlite3IoTrace ("MOVE %p %d %d\n", pPager, pPg->pgno, pgno); }
 
@@ -75960,9 +75960,9 @@ static int pagerOpenWal(Pager *pPager){
 
 
   if( rc==0         ){
-    rc = sqlite3WalOpen(pPager->pVfs, 
-        pPager->fd, pPager->zWal, pPager->exclusiveMode, 
-        pPager->journalSizeLimit, &pPager->pWal 
+    rc = sqlite3WalOpen(pPager->pVfs,
+        pPager->fd, pPager->zWal, pPager->exclusiveMode,
+        pPager->journalSizeLimit, &pPager->pWal
     );
   }
   pagerFixMaplimit(pPager);
@@ -77122,7 +77122,7 @@ static int walLockShared(Wal *pWal, int lockIdx){
   if( pWal->exclusiveMode ) return 0        ;
   rc = sqlite3OsShmLock(pWal->pDbFd, lockIdx, 1,
 2                                       |4                 );
-if(sqlite3WalTrace) printf ("WAL%p: acquire SHARED-%s %s\n", pWal, 
+if(sqlite3WalTrace) printf ("WAL%p: acquire SHARED-%s %s\n", pWal,
 walLockName(lockIdx), rc ? "failed" : "ok")             ;
 pWal->lockError = (u8)(rc!=0 && (rc&0xFF)!=5);
   return rc;
@@ -77138,7 +77138,7 @@ static int walLockExclusive(Wal *pWal, int lockIdx, int n){
   if( pWal->exclusiveMode ) return 0        ;
   rc = sqlite3OsShmLock(pWal->pDbFd, lockIdx, n,
 2                                       |8                    );
-if(sqlite3WalTrace) printf ("WAL%p: acquire EXCLUSIVE-%s cnt=%d %s\n", pWal, 
+if(sqlite3WalTrace) printf ("WAL%p: acquire EXCLUSIVE-%s cnt=%d %s\n", pWal,
 walLockName(lockIdx), n, rc ? "failed" : "ok")             ;
 pWal->lockError = (u8)(rc!=0 && (rc&0xFF)!=5);
   return rc;
@@ -77147,7 +77147,7 @@ static void walUnlockExclusive(Wal *pWal, int lockIdx, int n){
   if( pWal->exclusiveMode ) return;
   (void)sqlite3OsShmLock(pWal->pDbFd, lockIdx, n,
 1                                          |8                    );
-if(sqlite3WalTrace) printf ("WAL%p: release EXCLUSIVE-%s cnt=%d\n", pWal, 
+if(sqlite3WalTrace) printf ("WAL%p: release EXCLUSIVE-%s cnt=%d\n", pWal,
 walLockName(lockIdx), n)              ;
 }
 
@@ -77658,13 +77658,13 @@ static void walIndexClose(Wal *pWal, int isDelete){
 
 
 
-static         int sqlite3WalOpen( 
-  sqlite3_vfs *pVfs, 
-  sqlite3_file *pDbFd, 
-  const char *zWalName, 
-  int bNoShm, 
-  i64 mxWalSize, 
-  Wal **ppWal 
+static         int sqlite3WalOpen(
+  sqlite3_vfs *pVfs,
+  sqlite3_file *pDbFd,
+  const char *zWalName,
+  int bNoShm,
+  i64 mxWalSize,
+  Wal **ppWal
 ){
   int rc;
   Wal *pRet;
@@ -79817,7 +79817,7 @@ static         int 0
 
 
   { int cnt; for(cnt=0, p=pList; p; p=p->pDirty, cnt++){}
-if(sqlite3WalTrace) printf ("WAL%p: frame write begin. %d frames. mxFrame=%d. %s\n", 
+if(sqlite3WalTrace) printf ("WAL%p: frame write begin. %d frames. mxFrame=%d. %s\n",
 pWal, cnt, pWal->hdr.mxFrame, isCommit ? "Commit" : "Spill")               ;
   }
 
@@ -85192,7 +85192,7 @@ static int relocatePage(
   if( iDbPage<3 ) return sqlite3CorruptError(__LINE__);
 
 
-if(sqlite3BtreeTrace){printf ("AUTOVACUUM: Moving %d to free page %d (ptr page %d type %d)\n", 
+if(sqlite3BtreeTrace){printf ("AUTOVACUUM: Moving %d to free page %d (ptr page %d type %d)\n",
 iDbPage, iFreePage, iPtrPage, eType);fflush(stdout);};
   rc = sqlite3PagerMovepage(pPager, pDbPage->pDbPage, iFreePage, isCommit);
   if( rc!=0         ){
@@ -87852,8 +87852,8 @@ if( iPage==mxPage ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
         ){
           int noContent;
           *pPgno = iPage;
-if(sqlite3BtreeTrace){printf ("ALLOCATE: %d was leaf %d of %d on trunk %d" 
-": %d more free pages\n", 
+if(sqlite3BtreeTrace){printf ("ALLOCATE: %d was leaf %d of %d on trunk %d"
+": %d more free pages\n",
 *pPgno, closest+1, k, pTrunk->pgno, n-1);fflush(stdout);} ;
           rc = sqlite3PagerWrite(pTrunk->pDbPage);
           if( rc ) goto end_allocate_page;
@@ -89667,10 +89667,10 @@ int nCellAtStart = b.nCell;
 
 
   assert( cntNew[0]>0 || (pParent->pgno==1 && pParent->nCell==0) ||(sqlite3Config.neverCorrupt==0));
-if(sqlite3BtreeTrace){printf ("BALANCE: old: %d(nc=%d) %d(nc=%d) %d(nc=%d)\n", 
-apOld[0]->pgno, apOld[0]->nCell, 
-nOld>=2 ? apOld[1]->pgno : 0, nOld>=2 ? apOld[1]->nCell : 0, 
-nOld>=3 ? apOld[2]->pgno : 0, nOld>=3 ? apOld[2]->nCell : 0 
+if(sqlite3BtreeTrace){printf ("BALANCE: old: %d(nc=%d) %d(nc=%d) %d(nc=%d)\n",
+apOld[0]->pgno, apOld[0]->nCell,
+nOld>=2 ? apOld[1]->pgno : 0, nOld>=2 ? apOld[1]->nCell : 0,
+nOld>=3 ? apOld[2]->pgno : 0, nOld>=3 ? apOld[2]->nCell : 0
 );fflush(stdout);};
 
 
@@ -89751,17 +89751,17 @@ nOld>=3 ? apOld[2]->pgno : 0, nOld>=3 ? apOld[2]->nCell : 0
     }
   }
 
-if(sqlite3BtreeTrace){printf ("BALANCE: new: %d(%d nc=%d) %d(%d nc=%d) %d(%d nc=%d) " 
-"%d(%d nc=%d) %d(%d nc=%d)\n", 
-apNew[0]->pgno, szNew[0], cntNew[0], 
-nNew>=2 ? apNew[1]->pgno : 0, nNew>=2 ? szNew[1] : 0, 
-nNew>=2 ? cntNew[1] - cntNew[0] - !leafData : 0, 
-nNew>=3 ? apNew[2]->pgno : 0, nNew>=3 ? szNew[2] : 0, 
-nNew>=3 ? cntNew[2] - cntNew[1] - !leafData : 0, 
-nNew>=4 ? apNew[3]->pgno : 0, nNew>=4 ? szNew[3] : 0, 
-nNew>=4 ? cntNew[3] - cntNew[2] - !leafData : 0, 
-nNew>=5 ? apNew[4]->pgno : 0, nNew>=5 ? szNew[4] : 0, 
-nNew>=5 ? cntNew[4] - cntNew[3] - !leafData : 0 
+if(sqlite3BtreeTrace){printf ("BALANCE: new: %d(%d nc=%d) %d(%d nc=%d) %d(%d nc=%d) "
+"%d(%d nc=%d) %d(%d nc=%d)\n",
+apNew[0]->pgno, szNew[0], cntNew[0],
+nNew>=2 ? apNew[1]->pgno : 0, nNew>=2 ? szNew[1] : 0,
+nNew>=2 ? cntNew[1] - cntNew[0] - !leafData : 0,
+nNew>=3 ? apNew[2]->pgno : 0, nNew>=3 ? szNew[2] : 0,
+nNew>=3 ? cntNew[2] - cntNew[1] - !leafData : 0,
+nNew>=4 ? apNew[3]->pgno : 0, nNew>=4 ? szNew[3] : 0,
+nNew>=4 ? cntNew[3] - cntNew[2] - !leafData : 0,
+nNew>=5 ? apNew[4]->pgno : 0, nNew>=5 ? szNew[4] : 0,
+nNew>=5 ? cntNew[4] - cntNew[3] - !leafData : 0
 );fflush(stdout);};
 
   assert( sqlite3PagerIswriteable(pParent->pDbPage) );
@@ -89997,7 +89997,7 @@ if( rc!=0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
   }
 
   assert( pParent->isInit );
-if(sqlite3BtreeTrace){printf ("BALANCE: finished: old=%d new=%d cells=%d\n", 
+if(sqlite3BtreeTrace){printf ("BALANCE: finished: old=%d new=%d cells=%d\n",
 nOld, nNew, b.nCell);fflush(stdout);};
 
 
@@ -90580,8 +90580,8 @@ if( pCur->eState==4 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
     if( rc ) return rc;
   }
 
-if(sqlite3BtreeTrace){printf ("INSERT: table=%d nkey=%lld ndata=%d page=%d %s\n", 
-pCur->pgnoRoot, pX->nKey, pX->nData, pPage->pgno, 
+if(sqlite3BtreeTrace){printf ("INSERT: table=%d nkey=%lld ndata=%d page=%d %s\n",
+pCur->pgnoRoot, pX->nKey, pX->nData, pPage->pgno,
 loc==0 ? "overwrite" : "new entry");fflush(stdout);};
   assert( pPage->isInit ||(sqlite3Config.neverCorrupt==0));
   newCell = p->pBt->pTmpSpace;
@@ -121559,7 +121559,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
 
       sqlite3OpenTable(pParse, iTab, iDb, pTab,112         );
       eType =1              ;
-sqlite3VdbeExplain (pParse, 0, 
+sqlite3VdbeExplain (pParse, 0,
 "USING ROWID SEARCH ON TABLE %s FOR IN-OPERATOR",pTab->zName)             ;
       sqlite3VdbeJumpHere(v, iAddr);
     }else{
@@ -121640,7 +121640,7 @@ if( pIdx->nColumn==((int)(sizeof(Bitmask)*8))-1 ){ sqlite3CoverageCounter += (un
           if( colUsed==((((Bitmask)1)<<(nExpr))-1)){
 
             int iAddr = sqlite3VdbeAddOp0(v,15      );sqlite3VdbeSetLineNumber(v,__LINE__);
-sqlite3VdbeExplain (pParse, 0, 
+sqlite3VdbeExplain (pParse, 0,
 "USING INDEX %s FOR IN-OPERATOR",pIdx->zName)                               ;
             sqlite3VdbeAddOp3(v,112         , iTab, pIdx->tnum, iDb);
             sqlite3VdbeSetP4KeyInfo(pParse, pIdx);
@@ -121840,7 +121840,7 @@ static         void sqlite3CodeRhsOfIN(
     if((((pExpr)->flags&(0x2000000))!=0)  ){
       addrOnce = sqlite3VdbeAddOp0(v,15      );sqlite3VdbeSetLineNumber(v,__LINE__);
       if((((pExpr)->flags&0x001000)!=0)){
-sqlite3VdbeExplain (pParse, 0, "REUSE LIST SUBQUERY %d", 
+sqlite3VdbeExplain (pParse, 0, "REUSE LIST SUBQUERY %d",
 pExpr->x.pSelect->selId)               ;
       }
       assert((((pExpr)->flags&0x2000000)!=0));
@@ -121890,8 +121890,8 @@ sqlite3VdbeComment (v, "RHS of IN operator");
     Select *pSelect = pExpr->x.pSelect;
     ExprList *pEList = pSelect->pEList;
 
-sqlite3VdbeExplain (pParse, 1, "%sLIST SUBQUERY %d", 
-addrOnce?"":"CORRELATED ", pSelect->selId 
+sqlite3VdbeExplain (pParse, 1, "%sLIST SUBQUERY %d",
+addrOnce?"":"CORRELATED ", pSelect->selId
 )     ;
 
 
@@ -122069,7 +122069,7 @@ sqlite3VdbeExplain (pParse, 0, "REUSE SUBQUERY %d", pSel->selId)   ;
 
 
 
-(addrExplain = sqlite3VdbeExplain (pParse, 1, "%sSCALAR SUBQUERY %d", 
+(addrExplain = sqlite3VdbeExplain (pParse, 1, "%sSCALAR SUBQUERY %d",
 addrOnce?"":"CORRELATED ", pSel->selId))        ;
                                                                 ;
   nReg = pExpr->op==138       ? pSel->pEList->nExpr : 1;
@@ -122919,7 +122919,7 @@ expr_code_doover:
         }else if( pCol->iColumn<0 ){
 sqlite3VdbeComment (v,"%s.rowid",pTab->zName)    ;
         }else{
-sqlite3VdbeComment (v,"%s.%s", 
+sqlite3VdbeComment (v,"%s.%s",
 pTab->zName, pTab->aCol[pCol->iColumn].zCnName)               ;
           if( pTab->aCol[pCol->iColumn].affinity==0x45            ){
             sqlite3VdbeAddOp1(v,87              , target);
@@ -123484,9 +123484,9 @@ if( op==138 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
       assert( p1>=0 && p1<(pTab->nCol*2 +2));
 
       sqlite3VdbeAddOp2(v,157      , p1, target);
-sqlite3VdbeComment (v, "r[%d]=%s.%s", target, 
-(pExpr->iTable ? "new" : "old"), 
-(pExpr->iColumn<0 ? "rowid" : pExpr->y.pTab->aCol[iCol].zCnName) 
+sqlite3VdbeComment (v, "r[%d]=%s.%s", target,
+(pExpr->iTable ? "new" : "old"),
+(pExpr->iColumn<0 ? "rowid" : pExpr->y.pTab->aCol[iCol].zCnName)
 )       ;
 
 
@@ -130681,7 +130681,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
         pSchema->iGeneration
       );
       if( db->init.busy==0 ) sqlite3VdbeChangeP5(v, 1);
-sqlite3VdbeComment (v, 
+sqlite3VdbeComment (v,
 "usesStmtJournal=%d", pParse->mayAbort && pParse->isMultiWrite)             ;
     }while( ++iDb<db->nDb );
 
@@ -131478,11 +131478,11 @@ static         int sqlite3TwoPartName(
 
 static         int sqlite3WritableSchema(sqlite3 *db){
 if( (db->flags&(0x00000001|0x10000000))==0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
-if( (db->flags&(0x00000001|0x10000000))== 
+if( (db->flags&(0x00000001|0x10000000))==
 0x00000001 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
-if( (db->flags&(0x00000001|0x10000000))== 
+if( (db->flags&(0x00000001|0x10000000))==
 0x10000000 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
-if( (db->flags&(0x00000001|0x10000000))== 
+if( (db->flags&(0x00000001|0x10000000))==
 (0x00000001|0x10000000) ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
   return (db->flags&(0x00000001        |0x10000000      ))==0x00000001        ;
 }
@@ -134318,8 +134318,8 @@ static         Index *sqlite3AllocateIndexObject(
 
   nByte =(((sizeof(Index))+7)&~7)+
 (((sizeof(char*)*nCol)+7)&~7)        +
-(((sizeof(LogEst)*(nCol+1) + 
-sizeof(i16)*nCol + 
+(((sizeof(LogEst)*(nCol+1) +
+sizeof(i16)*nCol +
 sizeof(u8)*nCol)+7)&~7)          ;
   p = sqlite3DbMallocZero(db, nByte + nExtra);
   if( p ){
@@ -136040,12 +136040,12 @@ static         KeyInfo *sqlite3KeyInfoOfIndex(Parse *pParse, Index *pIdx){
 
 
 
-static         Cte *sqlite3CteNew( 
-  Parse *pParse, 
-  Token *pName, 
-  ExprList *pArglist, 
-  Select *pQuery, 
-  u8 eM10d 
+static         Cte *sqlite3CteNew(
+  Parse *pParse,
+  Token *pName,
+  ExprList *pArglist,
+  Select *pQuery,
+  u8 eM10d
 ){
   Cte *pNew;
   sqlite3 *db = pParse->db;
@@ -137445,7 +137445,7 @@ static         void sqlite3GenerateRowDelete(
 
 
   assert( v );
-sqlite3VdbeNoopComment (v, "BEGIN: GenRowDel(%d,%d,%d,%d)", 
+sqlite3VdbeNoopComment (v, "BEGIN: GenRowDel(%d,%d,%d,%d)",
 iDataCur, iIdxCur, iPk, (int)nPk)                          ;
 
 
@@ -143420,7 +143420,7 @@ static         void sqlite3GenerateConstraintChecks(
   }
 
 
-sqlite3VdbeNoopComment (v, "BEGIN: GenCnstCks(%d,%d,%d,%d,%d)", 
+sqlite3VdbeNoopComment (v, "BEGIN: GenCnstCks(%d,%d,%d,%d,%d)",
 iDataCur, iIdxCur, regNewData, regOldData, pkChng)                      ;
 
 
@@ -144002,7 +144002,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
             assert( pPk->aiColumn[i]>=0 );
             x = sqlite3TableColumnToIndex(pIdx, pPk->aiColumn[i]);
             sqlite3VdbeAddOp3(v,94        , iThisCur, x, regR+i);
-sqlite3VdbeComment (v, "%s.%s", pTab->zName, 
+sqlite3VdbeComment (v, "%s.%s", pTab->zName,
 pTab->aCol[pPk->aiColumn[i]].zCnName)                          ;
           }
         }
@@ -152905,7 +152905,7 @@ static void generateSortTail(
   int addrExplain;
 
 
-(addrExplain = sqlite3VdbeExplain (pParse, 0, 
+(addrExplain = sqlite3VdbeExplain (pParse, 0,
 "USE TEMP B-TREE FOR %sORDER BY", pSort->nOBSat>0?"RIGHT PART OF ":""))
    ;
                                                                                ;
@@ -154051,7 +154051,7 @@ static int multiSelectValues(
     p = p->pPrior;
     nRow += bShowAll;
   }while(1);
-sqlite3VdbeExplain (pParse, 0, "SCAN %d CONSTANT ROW%s", nRow, 
+sqlite3VdbeExplain (pParse, 0, "SCAN %d CONSTANT ROW%s", nRow,
 nRow==1 ? "" : "S")                     ;
   while( p ){
     selectInnerLoop(pParse, p, -1, 0, 0, pDest, 1, 1);
@@ -154270,7 +154270,7 @@ if(sqlite3TreeTrace&(0x200)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplai
         pLimit = p->pLimit;
         p->pLimit = 0;
         uniondest.eDest = op;
-sqlite3VdbeExplain (pParse, 1, "%s USING TEMP B-TREE", 
+sqlite3VdbeExplain (pParse, 1, "%s USING TEMP B-TREE",
 sqlite3SelectOpName(p->op))                           ;
 if(sqlite3TreeTrace&(0x200)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("multiSelect EXCEPT/UNION right...\n");
         rc = sqlite3Select(pParse, p, &uniondest);
@@ -154348,7 +154348,7 @@ if(sqlite3TreeTrace&(0x400)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplai
         pLimit = p->pLimit;
         p->pLimit = 0;
         intersectdest.iSDParm = tab2;
-sqlite3VdbeExplain (pParse, 1, "%s USING TEMP B-TREE", 
+sqlite3VdbeExplain (pParse, 1, "%s USING TEMP B-TREE",
 sqlite3SelectOpName(p->op))                           ;
 if(sqlite3TreeTrace&(0x400)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("multiSelect INTERSECT right...\n");
         rc = sqlite3Select(pParse, p, &intersectdest);
@@ -155718,7 +155718,7 @@ if( pSub1->pSrc->nSrc>1 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
   }
 
 
-if(sqlite3TreeTrace&(0x4)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("flatten %u.%p from term %d\n", 
+if(sqlite3TreeTrace&(0x4)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("flatten %u.%p from term %d\n",
 pSub->selId, pSub, iFrom)                    ;
 
 
@@ -155797,7 +155797,7 @@ if( i==1 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
       if( pPrior ) pPrior->pNext = pNew;
       pNew->pNext = p;
       p->pPrior = pNew;
-if(sqlite3TreeTrace&(0x4)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("compound-subquery flattener" 
+if(sqlite3TreeTrace&(0x4)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf ("compound-subquery flattener"
 " creates %u as peer\n",pNew->selId)                               ;
     }
     assert( pSubitem->pSelect==0 );
@@ -157641,7 +157641,7 @@ static void optimizeAggregateUseOfIndexedExpr(
 
   if( sqlite3TreeTrace & 0x20 ){
     IndexedExpr *pIEpr;
-if(sqlite3TreeTrace&(0x20)) printf("%u/%d/%p: ",(pSelect)->selId,(pParse)->addrExplain,(pSelect)), printf 
+if(sqlite3TreeTrace&(0x20)) printf("%u/%d/%p: ",(pSelect)->selId,(pParse)->addrExplain,(pSelect)), printf
 ("AggInfo (possibly) adjusted for Indexed Exprs\n")         ;
     sqlite3TreeViewSelect(0, pSelect, 0);
     for(pIEpr=pParse->pIdxEpr; pIEpr; pIEpr=pIEpr->pIENext){
@@ -157749,7 +157749,7 @@ static void resetAccumulator(Parse *pParse, AggInfo *pAggInfo){
         KeyInfo *pKeyInfo = sqlite3KeyInfoFromExprList(pParse, pE->x.pList,0,0);
         pFunc->iDistAddr = sqlite3VdbeAddOp4(v,118              ,
             pFunc->iDistinct, 0, 0, (char*)pKeyInfo,(-8)       );
-sqlite3VdbeExplain (pParse, 0, "USE TEMP B-TREE FOR %s(DISTINCT)", 
+sqlite3VdbeExplain (pParse, 0, "USE TEMP B-TREE FOR %s(DISTINCT)",
 pFunc->pFunc->zName)                           ;
       }
     }
@@ -158365,7 +158365,7 @@ if(sqlite3TreeTrace&(0x40)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain
      && sqlite3ExprImpliesNonNullRow(p->pWhere, pItem->iCursor)
      &&(((db)->dbOptFlags&(0x00002000))==0)
     ){
-if(sqlite3TreeTrace&(0x1000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf 
+if(sqlite3TreeTrace&(0x1000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf
 ("LEFT-JOIN simplifies to JOIN on term %d\n",i)                 ;
       pItem->fg.jointype &= ~(0x08   |0x20    );
       assert( pItem->iCursor>=0 );
@@ -158421,7 +158421,7 @@ if(sqlite3TreeTrace&(0x1000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExpla
      && (p->selFlags &0x8000000      )==0
      &&(((db)->dbOptFlags&(0x00040000))==0)
     ){
-if(sqlite3TreeTrace&(0x800)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf 
+if(sqlite3TreeTrace&(0x800)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf
 ("omit superfluous ORDER BY on %r FROM-clause subquery\n",i+1)                 ;
       sqlite3ParserAddCleanup(pParse,
          (void(*)(sqlite3*,void*))sqlite3ExprListDelete,
@@ -158576,7 +158576,7 @@ if(sqlite3TreeTrace&(0x2000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExpla
     ){
 
       if( sqlite3TreeTrace & 0x4000 ){
-if(sqlite3TreeTrace&(0x4000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf 
+if(sqlite3TreeTrace&(0x4000)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf
 ("After WHERE-clause push-down into subquery %d:\n", pSub->selId)             ;
         sqlite3TreeViewSelect(0, p, 0);
       }
@@ -159137,7 +159137,7 @@ sqlite3VdbeComment (v, "GROUP BY sort")  ;sqlite3VdbeSetLineNumber(v,__LINE__);
         aggregateConvertIndexedExprRefToColumn(pAggInfo);
 
         if( sqlite3TreeTrace & 0x20 ){
-if(sqlite3TreeTrace&(0x20)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf 
+if(sqlite3TreeTrace&(0x20)) printf("%u/%d/%p: ",(p)->selId,(pParse)->addrExplain,(p)), printf
 ("AggInfo function expressions converted to reference index\n")              ;
           sqlite3TreeViewSelect(0, p, 0);
           printAggInfo(pAggInfo);
@@ -160866,13 +160866,13 @@ static TriggerPrg *codeRowTrigger(
 
   v = sqlite3GetVdbe(&sSubParse);
   if( v ){
-sqlite3VdbeComment (v, "Start: %s.%s (%s %s%s%s ON %s)", 
-pTrigger->zName, onErrorText(orconf), 
-(pTrigger->tr_tm==1 ? "BEFORE" : "AFTER"), 
-(pTrigger->op==129 ? "UPDATE" : ""), 
-(pTrigger->op==127 ? "INSERT" : ""), 
-(pTrigger->op==128 ? "DELETE" : ""), 
-pTab->zName 
+sqlite3VdbeComment (v, "Start: %s.%s (%s %s%s%s ON %s)",
+pTrigger->zName, onErrorText(orconf),
+(pTrigger->tr_tm==1 ? "BEFORE" : "AFTER"),
+(pTrigger->op==129 ? "UPDATE" : ""),
+(pTrigger->op==127 ? "INSERT" : ""),
+(pTrigger->op==128 ? "DELETE" : ""),
+pTab->zName
 )     ;
 
     if( pTrigger->zName ){
@@ -160987,7 +160987,7 @@ static         void
 
     sqlite3VdbeAddOp4(v,48         , reg, ignoreJump, ++pParse->nMem,
                       (const char *)pPrg->pProgram,(-4)          );
-sqlite3VdbeComment 
+sqlite3VdbeComment
 (v, "Call: %s.%s", (p->zName?p->zName:"fkey"), onErrorText(orconf))         ;
 
 
@@ -162798,7 +162798,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
         assert( pPk->aiColumn[i]>=0 );
         k = sqlite3TableColumnToIndex(pIdx, pPk->aiColumn[i]);
         sqlite3VdbeAddOp3(v,94        , iCur, k, iPk+i);
-sqlite3VdbeComment (v, "%s.%s", pIdx->zName, 
+sqlite3VdbeComment (v, "%s.%s", pIdx->zName,
 pTab->aCol[pPk->aiColumn[i]].zCnName)                     ;
       }
                                              ;
@@ -165942,8 +165942,8 @@ if(!bRev)sqlite3VdbeSetLineNumber(v,__LINE__);
           pIn++;
         }
       }
-if( iEq>0 
-&& (pLoop->wsFlags & 0x00100000)==0 
+if( iEq>0
+&& (pLoop->wsFlags & 0x00100000)==0
 && (pLoop->wsFlags & 0x00000400)!=0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
       if( iEq>0
        && (pLoop->wsFlags & (0x00100000       |0x00000400        ))==0
@@ -167525,7 +167525,7 @@ sqlite3VdbeExplain (pParse, 1, "MULTI-INDEX OR")   ;
         Expr *pOrExpr = pOrTerm->pExpr;
         Expr *pDelete;
         int jmp1 = 0;
-if( (pTabItem[0].fg.jointype & 0x08)!=0 
+if( (pTabItem[0].fg.jointype & 0x08)!=0
 && !(((pOrExpr)->flags&(0x000001))!=0) ){ sqlite3CoverageCounter += (unsigned)__LINE__; }
          ;
         pDelete = pOrExpr = sqlite3ExprDup(db, pOrExpr, 0);
@@ -167727,7 +167727,7 @@ if( pTerm->wtFlags & 0x0002 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
 if( pTerm->wtFlags & 0x0004 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
       if( pTerm->wtFlags & (0x0002      |0x0004    ) ) continue;
       if( (pTerm->prereqAll & pLevel->notReady)!=0 ){
-if( pWInfo->untestedTerms==0 
+if( pWInfo->untestedTerms==0
 && (pWInfo->wctrlFlags & 0x0020)!=0 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
         pWInfo->untestedTerms = 1;
         continue;
@@ -167778,7 +167778,7 @@ if((x&1)==0)sqlite3VdbeSetLineNumber(v,__LINE__);
       }
 
       if( sqlite3WhereTrace ){
-sqlite3VdbeNoopComment (v, "WhereTerm[%d] (%p) priority=%d", 
+sqlite3VdbeNoopComment (v, "WhereTerm[%d] (%p) priority=%d",
 pWC->nTerm-j, pTerm, iLoop)                          ;
       }
       if( sqlite3WhereTrace & 0x4000 ){
@@ -171713,7 +171713,7 @@ static int whereRangeSkipScanEst(
       int nAdjust = (sqlite3LogEst(p->nSample) - sqlite3LogEst(nDiff));
       pLoop->nOut -= nAdjust;
       *pbDone = 1;
-if(sqlite3WhereTrace&(0x20)) printf ("range skip-scan regions: %u..%u  adjust=%d est=%d\n", 
+if(sqlite3WhereTrace&(0x20)) printf ("range skip-scan regions: %u..%u  adjust=%d est=%d\n",
 nLower, nUpper, nAdjust*-1, pLoop->nOut)                            ;
     }
 
@@ -171891,7 +171891,7 @@ if( pRec->nField!=pBuilder->nRecValid ){ sqlite3CoverageCounter += (unsigned)__L
         if( nNew<nOut ){
           nOut = nNew;
         }
-if(sqlite3WhereTrace&(0x20)) printf ("STAT4 range scan: %u..%u  est=%d\n", 
+if(sqlite3WhereTrace&(0x20)) printf ("STAT4 range scan: %u..%u  est=%d\n",
 (u32)iLower, (u32)iUpper, nOut)                            ;
       }
     }else{
@@ -171924,7 +171924,7 @@ if(sqlite3WhereTrace&(0x20)) printf ("STAT4 range scan: %u..%u  est=%d\n",
   if( nNew<nOut ) nOut = nNew;
 
   if( pLoop->nOut>nOut ){
-if(sqlite3WhereTrace&(0x20)) printf ("Range scan lowers nOut from %d to %d\n", 
+if(sqlite3WhereTrace&(0x20)) printf ("Range scan lowers nOut from %d to %d\n",
 pLoop->nOut, nOut)                     ;
   }
 
@@ -171989,7 +171989,7 @@ static int whereEqualScanEst(
   pBuilder->nRecValid = nEq;
 
   whereKeyStats(pParse, p, pRec, 0, a);
-if(sqlite3WhereTrace&(0x20)) printf ("equality scan regions %s(%d): %d\n", 
+if(sqlite3WhereTrace&(0x20)) printf ("equality scan regions %s(%d): %d\n",
 p->zName, nEq-1, (int)a[1])                    ;
   *pnRow = a[1];
 
@@ -172331,18 +172331,18 @@ static void whereLoopAdjustCost(const WhereLoop *p, WhereLoop *pTemplate){
     if( whereLoopCheaperProperSubset(p, pTemplate) ){
 
 
-if(sqlite3WhereTrace&(0x80)) printf ("subset cost adjustment %d,%d to %d,%d\n", 
-pTemplate->rRun, pTemplate->nOut, 
-((p->rRun)<(pTemplate->rRun)?(p->rRun):(pTemplate->rRun)), 
+if(sqlite3WhereTrace&(0x80)) printf ("subset cost adjustment %d,%d to %d,%d\n",
+pTemplate->rRun, pTemplate->nOut,
+((p->rRun)<(pTemplate->rRun)?(p->rRun):(pTemplate->rRun)),
 ((p->nOut - 1)<(pTemplate->nOut)?(p->nOut - 1):(pTemplate->nOut)));
       pTemplate->rRun =((p->rRun)<(pTemplate->rRun)?(p->rRun):(pTemplate->rRun));
       pTemplate->nOut =((p->nOut - 1)<(pTemplate->nOut)?(p->nOut - 1):(pTemplate->nOut));
     }else if( whereLoopCheaperProperSubset(pTemplate, p) ){
 
 
-if(sqlite3WhereTrace&(0x80)) printf ("subset cost adjustment %d,%d to %d,%d\n", 
-pTemplate->rRun, pTemplate->nOut, 
-((p->rRun)>(pTemplate->rRun)?(p->rRun):(pTemplate->rRun)), 
+if(sqlite3WhereTrace&(0x80)) printf ("subset cost adjustment %d,%d to %d,%d\n",
+pTemplate->rRun, pTemplate->nOut,
+((p->rRun)>(pTemplate->rRun)?(p->rRun):(pTemplate->rRun)),
 ((p->nOut + 1)>(pTemplate->nOut)?(p->nOut + 1):(pTemplate->nOut)));
       pTemplate->rRun =((p->rRun)>(pTemplate->rRun)?(p->rRun):(pTemplate->rRun));
       pTemplate->nOut =((p->nOut + 1)>(pTemplate->nOut)?(p->nOut + 1):(pTemplate->nOut));
@@ -172784,8 +172784,8 @@ static int whereLoopAddBtreeIndex(
   if( pParse->nErr ){
     return pParse->rc;
   }
-if(sqlite3WhereTrace&(0x800)) printf ("BEGIN %s.addBtreeIdx(%s), nEq=%d, nSkip=%d, rRun=%d\n", 
-pProbe->pTable->zName,pProbe->zName, 
+if(sqlite3WhereTrace&(0x800)) printf ("BEGIN %s.addBtreeIdx(%s), nEq=%d, nSkip=%d, rRun=%d\n",
+pProbe->pTable->zName,pProbe->zName,
 pNew->u.btree.nEq, pNew->nSkip, pNew->rRun)                      ;
 
   assert( (pNew->wsFlags &0x00000400         )==0 );
@@ -172909,20 +172909,20 @@ pNew->u.btree.nEq, pNew->nSkip, pNew->rRun)                      ;
 
         x = M + logK + 10 - (nIn + rLogSize);
         if( x>=0 ){
-if(sqlite3WhereTrace&(0x40)) printf 
-("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d) " 
-"prefers indexed lookup\n", 
+if(sqlite3WhereTrace&(0x40)) printf
+("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d) "
+"prefers indexed lookup\n",
 saved_nEq, M, logK, nIn, rLogSize, x)              ;
         }else if( nInMul<2 &&(((db)->dbOptFlags&(0x00020000))==0)      ){
-if(sqlite3WhereTrace&(0x40)) printf 
-("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d" 
-" nInMul=%d) prefers skip-scan\n", 
+if(sqlite3WhereTrace&(0x40)) printf
+("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d"
+" nInMul=%d) prefers skip-scan\n",
 saved_nEq, M, logK, nIn, rLogSize, x, nInMul)              ;
           pNew->wsFlags |=0x00100000        ;
         }else{
-if(sqlite3WhereTrace&(0x40)) printf 
-("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d" 
-" nInMul=%d) prefers normal scan\n", 
+if(sqlite3WhereTrace&(0x40)) printf
+("IN operator (N=%d M=%d logK=%d nIn=%d rLogSize=%d x=%d"
+" nInMul=%d) prefers normal scan\n",
 saved_nEq, M, logK, nIn, rLogSize, x, nInMul)              ;
           continue;
         }
@@ -173155,7 +173155,7 @@ pNew->rRun += pProbe->pTable->costMult                       ;
     pNew->wsFlags = saved_wsFlags;
   }
 
-if(sqlite3WhereTrace&(0x800)) printf ("END %s.addBtreeIdx(%s), nEq=%d, rc=%d\n", 
+if(sqlite3WhereTrace&(0x800)) printf ("END %s.addBtreeIdx(%s), nEq=%d, rc=%d\n",
 pProbe->pTable->zName, pProbe->zName, saved_nEq, rc)                       ;
   return rc;
 }
@@ -173598,27 +173598,27 @@ pNew->rRun += pTab->costMult                         ;
         if( m==(((Bitmask)1)<<(((int)(sizeof(Bitmask)*8))-1))||(pProbe->bHasExpr&&!pProbe->bHasVCol&&m!=0)){
           u32 isCov = whereIsCoveringIndex(pWInfo, pProbe, pSrc->iCursor);
           if( isCov==0 ){
-if(sqlite3WhereTrace&(0x200)) printf 
-("-> %s is not a covering index" 
+if(sqlite3WhereTrace&(0x200)) printf
+("-> %s is not a covering index"
 " according to whereIsCoveringIndex()\n", pProbe->zName)                 ;
             assert( m!=0 );
           }else{
             m = 0;
             pNew->wsFlags |= isCov;
             if( isCov &0x00000040      ){
-if(sqlite3WhereTrace&(0x200)) printf 
-("-> %s is a covering expression index" 
+if(sqlite3WhereTrace&(0x200)) printf
+("-> %s is a covering expression index"
 " according to whereIsCoveringIndex()\n", pProbe->zName)                   ;
             }else{
               assert( isCov==0x04000000    );
-if(sqlite3WhereTrace&(0x200)) printf 
-("-> %s might be a covering expression index" 
+if(sqlite3WhereTrace&(0x200)) printf
+("-> %s might be a covering expression index"
 " according to whereIsCoveringIndex()\n", pProbe->zName)                   ;
             }
           }
         }else if( m==0 ){
-if(sqlite3WhereTrace&(0x200)) printf 
-("-> %s a covering index according to bitmasks\n", 
+if(sqlite3WhereTrace&(0x200)) printf
+("-> %s a covering index according to bitmasks\n",
 pProbe->zName, m==0 ? "is" : "is not")              ;
           pNew->wsFlags =0x00000040      |0x00000200    ;
         }
@@ -173905,8 +173905,8 @@ if( pIdxInfo->needToFreeIdxStr ){ sqlite3CoverageCounter += (unsigned)__LINE__; 
 sqlite3_api->free(pNew->u.vtab.idxStr);
     pNew->u.vtab.needFree = 0;
   }
-if(sqlite3WhereTrace&(0xffffffff)) printf ("  bIn=%d prereqIn=%04llx prereqOut=%04llx\n", 
-*pbIn, (sqlite3_uint64)mPrereq, 
+if(sqlite3WhereTrace&(0xffffffff)) printf ("  bIn=%d prereqIn=%04llx prereqOut=%04llx\n",
+*pbIn, (sqlite3_uint64)mPrereq,
 (sqlite3_uint64)(pNew->prereq & ~mPrereq))                       ;
 
   return rc;
@@ -174148,7 +174148,7 @@ if(sqlite3WhereTrace&(0x800)) printf ("  VirtualOne: all usable w/o IN\n");
       mPrev = mNext;
       if( mNext==((Bitmask)-1))break;
       if( mNext==mBest || mNext==mBestNoIn ) continue;
-if(sqlite3WhereTrace&(0x800)) printf ("  VirtualOne: mPrev=%04llx mNext=%04llx\n", 
+if(sqlite3WhereTrace&(0x800)) printf ("  VirtualOne: mPrev=%04llx mNext=%04llx\n",
 (sqlite3_uint64)mPrev, (sqlite3_uint64)mNext)                        ;
       rc = whereLoopAddVirtualOne(
           pBuilder, mPrereq, mNext|mPrereq, 0, p, mNoOmit, &bIn, 0);
@@ -174245,7 +174245,7 @@ if(sqlite3WhereTrace&(0x400)) printf ("Begin processing OR-clause %p\n", pTerm);
         }
         sCur.n = 0;
 
-if(sqlite3WhereTrace&(0x400)) printf ("OR-term %d of %p has %d subterms:\n", 
+if(sqlite3WhereTrace&(0x400)) printf ("OR-term %d of %p has %d subterms:\n",
 (int)(pOrTerm-pOrWC->a), pTerm, sSubBuild.pWC->nTerm)                    ;
         if( sqlite3WhereTrace & 0x20000 ){
           sqlite3WhereClausePrint(sSubBuild.pWC);
@@ -174995,9 +174995,9 @@ if(sqlite3WhereTrace&(0x002)) printf ("---- begin solver.  (nRowEst=%d)\n", nRow
 
           rCost = sqlite3LogEstAdd(rUnsorted, aSortCost[isOrdered]) + 3;
 
-if(sqlite3WhereTrace&(0x002)) printf 
-("---- sort cost=%-3d (%d/%d) increases cost %3d to %-3d\n", 
-aSortCost[isOrdered], (nOrderBy-isOrdered), nOrderBy, 
+if(sqlite3WhereTrace&(0x002)) printf
+("---- sort cost=%-3d (%d/%d) increases cost %3d to %-3d\n",
+aSortCost[isOrdered], (nOrderBy-isOrdered), nOrderBy,
 rUnsorted, rCost)                ;
         }else{
           rCost = rUnsorted;
@@ -175534,10 +175534,10 @@ static __attribute__((noinline))void whereCheckIfBloomFilterIsUseful(
 if( pItem->fg.jointype & 0x08 ){ sqlite3CoverageCounter += (unsigned)__LINE__; };
         pLoop->wsFlags |=0x00400000        ;
         pLoop->wsFlags &= ~0x00000040    ;
-if(sqlite3WhereTrace&(0xffffffff)) printf ( 
-"-> use Bloom-filter on loop %c because there are ~%.1e " 
-"lookups into %s which has only ~%.1e rows\n", 
-pLoop->cId, (sqlite_int64)sqlite3LogEstToInt(nSearch), pTab->zName, 
+if(sqlite3WhereTrace&(0xffffffff)) printf (
+"-> use Bloom-filter on loop %c because there are ~%.1e "
+"lookups into %s which has only ~%.1e rows\n",
+pLoop->cId, (sqlite_int64)sqlite3LogEstToInt(nSearch), pTab->zName,
 (sqlite_int64)sqlite3LogEstToInt(pTab->nRowLogEst))      ;
       }
     }
@@ -175945,8 +175945,8 @@ printf                  ("---- WHERE clause at start of analysis:\n");
 
     if( sWLB.bldFlags2 &0x0004                ){
 showAllWhereLoops(pWInfo,sWLB.pWC)          ;
-if(sqlite3WhereTrace&(0xffffffff)) printf 
-("**** Redo all loop computations due to" 
+if(sqlite3WhereTrace&(0xffffffff)) printf
+("**** Redo all loop computations due to"
 " TERM_HIGHTRUTH changes ****\n")             ;
       while( pWInfo->pLoops ){
         WhereLoop *p = pWInfo->pLoops;
@@ -176510,7 +176510,7 @@ sqlite3VdbeSetLineNumber(v,__LINE__);
       }
       sqlite3VdbeJumpHere(v, addr);
     }
-sqlite3VdbeNoopComment (v, "End WHERE-loop%d: %s", i, 
+sqlite3VdbeNoopComment (v, "End WHERE-loop%d: %s", i,
 pWInfo->pTabList->a[pLevel->iFrom].pTab->zName)                      ;
   }
 
@@ -177747,8 +177747,8 @@ static         int sqlite3WindowRewrite(Parse *pParse, Select *p){
     pSub = sqlite3SelectNew(
         pParse, pSublist, pSrc, pWhere, pGroupBy, pHaving, pSort, 0, 0
     );
-if(sqlite3TreeTrace&(0x40)) printf("%u/%d/%p: ",(pSub)->selId,(pParse)->addrExplain,(pSub)), printf 
-("New window-function subquery in FROM clause of (%u/%p)\n", 
+if(sqlite3TreeTrace&(0x40)) printf("%u/%d/%p: ",(pSub)->selId,(pParse)->addrExplain,(pSub)), printf
+("New window-function subquery in FROM clause of (%u/%p)\n",
 p->selId, p)        ;
     p->pSrc = sqlite3SrcListAppend(pParse, 0, 0, 0);
     assert( pSub!=0 || p->pSrc==0 );
@@ -178804,9 +178804,9 @@ static void windowCodeRangeTest(
     arith =107         ;
   }
 
-sqlite3VdbeNoopComment (v, "CodeRangeTest: if( R%d %s R%d %s R%d ) goto lbl", 
-reg1, (arith==106 ? "+" : "-"), regVal, 
-((op==57) ? ">=" : (op==55) ? "<=" : (op==54) ? ">" : "<"), reg2 
+sqlite3VdbeNoopComment (v, "CodeRangeTest: if( R%d %s R%d %s R%d ) goto lbl",
+reg1, (arith==106 ? "+" : "-"), regVal,
+((op==57) ? ">=" : (op==55) ? "<=" : (op==54) ? ">" : "<"), reg2
 )   ;
 
 
@@ -220005,8 +220005,8 @@ if(geo_debug)printf ("Segment %d.%d %g->%g\n", pSeg->side, pSeg->idx, pSeg->y, y
         if( pPrev ){
           if( pPrev->y>pSeg->y && pPrev->side!=pSeg->side ){
             rc = 1;
-if(geo_debug)printf ("Crossing: %d.%d and %d.%d\n", 
-pPrev->side, pPrev->idx, 
+if(geo_debug)printf ("Crossing: %d.%d and %d.%d\n",
+pPrev->side, pPrev->idx,
 pSeg->side, pSeg->idx)                     ;
             goto geopolyOverlapDone;
           }else if( pPrev->y!=pSeg->y ){
@@ -220018,10 +220018,10 @@ if(geo_debug)printf ("MASK: %d\n", iMask)  ;
         pPrev = pSeg;
       }
     }
-if(geo_debug)printf ("%s %d.%d C=%g B=%g\n", 
-pThisEvent->eType ? "RM " : "ADD", 
-pThisEvent->pSeg->side, pThisEvent->pSeg->idx, 
-pThisEvent->pSeg->C, 
+if(geo_debug)printf ("%s %d.%d C=%g B=%g\n",
+pThisEvent->eType ? "RM " : "ADD",
+pThisEvent->pSeg->side, pThisEvent->pSeg->idx,
+pThisEvent->pSeg->C,
 pThisEvent->pSeg->B)       ;
     if( pThisEvent->eType==0 ){
 
@@ -246108,9 +246108,9 @@ sqlite3_api->bind_null(pIdxSelect,2);
 
 
 
-assert(sqlite3_fts5_may_be_corrupt || (p->rc!=0 
-|| pIter->pLeaf==0 
-|| fts5BufferCompareBlob(&pIter->term, pTerm, nTerm)==0 
+assert(sqlite3_fts5_may_be_corrupt || (p->rc!=0
+|| pIter->pLeaf==0
+|| fts5BufferCompareBlob(&pIter->term, pTerm, nTerm)==0
 || (bGe && fts5BufferCompareBlob(&pIter->term, pTerm, nTerm)>0)))
    ;
 }
@@ -251169,9 +251169,9 @@ static int fts5StmtType(Fts5Cursor *pCsr){
 
 static void fts5CsrNewrow(Fts5Cursor *pCsr){
 ((pCsr)->csrflags |= (
-0x02 
-| 0x04 
-| 0x08 
+0x02
+| 0x04
+| 0x08
 | 0x40))
    ;
 }
